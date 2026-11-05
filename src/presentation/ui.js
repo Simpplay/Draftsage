@@ -9,6 +9,7 @@
 // Las pantallas concretas del plugin viven en menus.js.
 
 import { log } from '../shared/logger.js'
+import { t } from '../shared/i18n.js'
 
 const STYLE_ID = 'easy-coachless-style'
 const T0 = performance.now()
@@ -72,6 +73,27 @@ const asNodes = (body) =>
   [].concat(body ?? [])
     .filter((x) => x != null && x !== false)
     .map((x) => (x instanceof Node ? x : h('p', null, String(x))))
+
+// Texto con **negrita** y `código` (los dos marcadores de los diccionarios) → nodos del DOM, sin innerHTML.
+export function richText(text) {
+  return String(text).split(/(\*\*[^*]+\*\*|`[^`]+`)/).filter(Boolean).map((part) =>
+    part.startsWith('**') ? h('b', null, part.slice(2, -2)) : part.startsWith('`') ? h('code', null, part.slice(1, -1)) : part)
+}
+
+// Abre un enlace en el navegador del sistema (el cliente de League delega los enlaces externos). Si no se puede, copia el enlace.
+// Solo https. ❓ Sin verificar en el cliente real: si no abre nada, se verá en los logs `[easy-coachless]`.
+export async function openExternal(url) {
+  if (!/^https:\/\//.test(String(url))) return false
+  try {
+    const w = window.open(url, '_blank')
+    if (w) w.opener = null
+    return true
+  } catch (e) {
+    log.warn('window.open falló:', String(e))
+  }
+  notify.error(await copyText(url) ? t('web.copied', url) : t('web.failed'))
+  return false
+}
 
 export async function copyText(text) {
   try {
@@ -159,7 +181,7 @@ function show(entry) {
         out = await a.onClick(handle)
       } catch (e) {
         log.error('error en la acción', a.id, e)
-        if (!entry.closed) { setBusy(false); setStatus('Error inesperado: ' + (e?.message ?? e), 'error') }
+        if (!entry.closed) { setBusy(false); setStatus(t('common.unexpected', e?.message ?? e), 'error') }
         return
       }
       if (entry.closed) return
@@ -250,7 +272,7 @@ export function openDialog(opts = {}) {
 
 // ---------- confirmación ----------
 
-export async function confirm({ id, title, message, confirmLabel = 'Aceptar', cancelLabel = 'Cancelar', danger = false } = {}) {
+export async function confirm({ id, title, message, confirmLabel = t('common.ok'), cancelLabel = t('common.cancel'), danger = false } = {}) {
   const r = await openDialog({
     id, title, body: message,
     actions: [
@@ -272,7 +294,7 @@ export async function confirm({ id, title, message, confirmLabel = 'Aceptar', ca
  *   - cualquier otra cosa -> se cierra con { action: 'submit', value: <lo devuelto> }
  * Enter envía el formulario. Los valores nunca se guardan: al cerrar se vacían los campos.
  */
-export function openForm({ id, title, description, fields = [], submitLabel = 'Aceptar', cancelLabel = 'Cancelar', closable = true, width, onSubmit } = {}) {
+export function openForm({ id, title, description, fields = [], submitLabel = t('common.ok'), cancelLabel = t('common.cancel'), closable = true, width, onSubmit } = {}) {
   const inputs = {}
   const rows = fields.map((f) => {
     const check = f.type === 'checkbox'
@@ -308,7 +330,7 @@ export function openForm({ id, title, description, fields = [], submitLabel = 'A
         onClick: async (hd) => {
           const values = Object.fromEntries(fields.map((f) => [f.name, f.type === 'checkbox' ? inputs[f.name].checked : inputs[f.name].value]))
           const missing = fields.find((f) => f.required && f.type !== 'checkbox' && !String(values[f.name]).trim())
-          if (missing) { hd.setStatus(`Falta: ${missing.label}`, 'error'); return false }
+          if (missing) { hd.setStatus(t('common.missing', missing.label), 'error'); return false }
           const out = await onSubmit?.(values, hd)
           if (typeof out === 'string') { hd.setStatus(out, 'error'); return false }
           return out === false ? false : (out ?? true)
@@ -347,7 +369,7 @@ export function openMenu({ id, title, description, items = [], closable = true, 
   const handle = openDialog({
     id, title, closable, width,
     body: [description, list].filter(Boolean),
-    actions: [{ id: 'close', label: 'Cerrar' }],
+    actions: [{ id: 'close', label: t('common.close') }],
   })
   return handle
 }

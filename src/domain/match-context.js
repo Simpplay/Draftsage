@@ -7,6 +7,9 @@
  * @property {number} [opponentChampionId] rival directo (mismo rol) si ya se conoce
  * @property {number} [role]               0 Top · 1 Jungla · 2 Mid · 3 ADC · 4 Support · 5 cualquiera (ver domain/lobby.js)
  * @property {number} [lobbyTier]          3 (Gold) … 7 (Master+); undefined si no se conoce. Nunca < 3.
+ * @property {string} [mode]               modo de juego del LCU en mayúsculas: 'CLASSIC' | 'ARAM' | 'CHERRY' (Arena)… (ver domain/spells.js)
+ * @property {number} [keystoneOverride]   runa clave elegida por el usuario (a mano o fijada)
+ * @property {number[]} [spellOverride]    pareja de hechizos elegida por el usuario
  * @property {'lcu'|'manual'} [source]
  */
 

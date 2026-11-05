@@ -30,7 +30,7 @@ export function createGameData({ lcuGet }) {
       for (const k of keystones) keystoneTrees.set(k, s.id)
     }
     for (const s of sp ?? []) spells.set(s.id, { id: s.id, name: s.name, icon: s.iconPath })
-    for (const c of ch ?? []) if (c.id > 0) champions.set(c.id, { id: c.id, name: c.name, icon: c.squarePortraitPath })
+    for (const c of ch ?? []) if (c.id > 0) champions.set(c.id, { id: c.id, name: c.name, alias: c.alias, icon: c.squarePortraitPath })
     loaded = true
     log.debug('datos del cliente:', runes.size, 'runas,', spells.size, 'hechizos,', champions.size, 'campeones')
     if (!perks && !ch) loading = null // nada cargó (cliente aún no listo): permitir reintento

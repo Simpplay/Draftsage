@@ -12,8 +12,12 @@ easy-coachless/
 │   │   ├── match-context.js         Tipos: MatchContext, MatchContextProvider, AuthState (JSDoc)
 │   │   ├── lobby.js                 Roles (LCU → Coachless), rangos (media de la lobby, mínimo Gold), parseRole/parseTier
 │   │   ├── patch.js                 choosePatch: último parche con muestra suficiente
+│   │   ├── filters.js               Filtros elegidos por el usuario: rango de Elo y de parches (normalizar, resolver, alternar)
 │   │   ├── runes.js                 Árboles y keystones (ids Riot) y keystone → árbol
-│   │   ├── selection.js             Qué runa/hechizo/árbol secundario elegir (umbral de muestra, WPA)
+│   │   ├── selection.js             Qué runa/hechizo/árbol secundario elegir (umbral de muestra, WPA) y ranking para alternativas
+│   │   ├── spells.js                Hechizos válidos según modo de juego y rol (Aplastar en jungla, ARAM, Arena…)
+│   │   ├── confidence.js            Nivel de fiabilidad según las partidas y datos escasos
+│   │   ├── web.js                   Enlace a coachless.gg (campeón, rol, rival) y slug del campeón
 │   │   └── configuration.js         Recomendación → página de runas (9 ids) y pareja de hechizos; nombre «[EC] …»
 │   ├── application/                 Casos de uso y flujos
 │   │   ├── bootstrap.js             Arranque: acceso API → panel → sesión → vigilar Champion Select
@@ -22,7 +26,7 @@ easy-coachless/
 │   │   ├── champ-select.js          Controlador: proveedor → recomendación → estado para la UI (cancelación, debounce)
 │   │   ├── configuration.js         ConfigurationApplier: aplicar runas/hechizos (canApply desactivado de inicio)
 │   │   ├── catalog.js               Nombres e iconos de campeones/runas/hechizos (fachada de lcu/game-data)
-│   │   ├── preferences.js           Ajustes de interfaz (DataStore): panel visible, plegado, posición
+│   │   ├── preferences.js           Ajustes de interfaz (DataStore): panel, idioma, aplicar, filtros de parches/Elo y elecciones fijadas (pins)
 │   │   ├── ensure-api-access.js     Comprueba CORS y avisa al usuario
 │   │   └── session.js               Fachada de sesión (login/logout/api/apiGet/premium)
 │   ├── infrastructure/              Detalles externos
@@ -40,7 +44,7 @@ easy-coachless/
 │   │   ├── settings.js              Ajustes gráficos: Aplicar, destino de runas, tecla de Destello; lo raro, plegado en «Más»
 │   │   ├── icons.js                 Iconos SVG de trazo (createElementNS, sin innerHTML)
 │   │   └── panel.js                 Panel flotante en Champion Select + botón EC + atajo Ctrl+Shift+E
-│   └── shared/logger.js             Logger transversal con prefijo [easy-coachless]
+│   └── shared/                      logger.js (prefijo [easy-coachless]) · i18n.js + strings.js (textos es/en, t('clave'))
 ├── dev/                             NO se distribuye
 │   ├── api-probes/                  Scripts Node que sondean la API real (piden credenciales por prompt)
 │   ├── tests/                       node dev/tests/run.mjs  (node:test, sin dependencias) + ui/ (Playwright, opcional)
@@ -74,4 +78,9 @@ easy-coachless/
   (ajuste en DataStore `easy-coachless/apply`, también en el menú). Nunca hay aplicación automática. Por defecto solo se sobrescribe la página propia
   «[EC] …»; «reemplazar la página activa» es opcional. Nunca se envía una página incompleta. El riesgo con las políticas de Riot/Pengu
   sigue abierto: el usuario debe validarlas antes de distribuir.
+- **Elecciones del usuario (añadido 2026-11-05)**: el contexto (`MatchContext`) puede llevar `keystoneOverride`, `spellOverride` y `mode`. El controlador
+  los compone (elección de la selección > fijado en `pins` > automático) y el servicio los valida; una elección inválida o sin datos se ignora. La clave de
+  caché del resultado incluye reglas de hechizos y elecciones. El controlador conserva la recomendación anterior (`state.stale`) mientras llega la nueva.
+- **Idiomas**: `shared/i18n.js` (`t`) con diccionarios `es`/`en` en `shared/strings.js`; solo la presentación y los diálogos usan `t`. El dominio no depende del idioma
+  (`tiersLabel` acepta nombres traducidos). Los logs y comentarios siguen en español.
 - Pengu solo carga `index.js` de la carpeta del plugin: los subdirectorios no se ejecutan por sí solos.

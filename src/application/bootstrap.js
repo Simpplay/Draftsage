@@ -1,4 +1,5 @@
 // easy-coachless/src/application/bootstrap.js — arranque del plugin (lo invoca index.js)
+import { initLanguage } from './preferences.js'
 import { ensureApiAccess } from './ensure-api-access.js'
 import { restoreSession } from './session.js'
 import { app } from './app.js'
@@ -18,6 +19,7 @@ window.easyCoachless = Object.assign(window.easyCoachless ?? {}, {
 })
 
 export async function start() {
+  initLanguage() // antes de abrir ninguna pantalla: los textos salen en el idioma elegido (o el del cliente)
   log.info('plugin cargado | menú: easyCoachless.menu() o Ctrl+Shift+E')
 
   if (!(await ensureApiAccess())) {

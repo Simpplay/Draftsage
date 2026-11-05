@@ -22,6 +22,9 @@ const PATHS = {
   close: ['M6 6l12 12', 'M18 6 6 18'],
   check: 'M5 12l5 5 9-10',
   spark: 'M12 3l2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5z',
+  pin: ['M9 3h6l-1 6 3 4H7l3-4z', 'M12 13v8'],
+  link: ['M14 4h6v6', 'M20 4l-9 9', 'M18 14v5H5V6h5'],
+  globe: ['M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z', 'M3 12h18', 'M12 3c3.5 3.5 3.5 14.5 0 18', 'M12 3c-3.5 3.5-3.5 14.5 0 18'],
 }
 
 export function icon(name, size = 16, cls = '') {

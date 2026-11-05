@@ -25,3 +25,11 @@ export function choosePatch(patches, { minRatio = 0.3, lookback = 3 } = {}) {
   const p = list[0]
   return { major: p.major, patch: p.patch, label: p.label ?? `${p.major}.${p.patch}`, matchCount: p.matchCount, fallback: list.length > 1 }
 }
+
+/** «16.21–22» para un rango de parches (premium); sin rango o si no se puede calcular, la etiqueta del parche (+N). */
+export function patchSpanLabel(patch, additions = 0) {
+  const n = Math.max(0, Math.round(additions) || 0)
+  if (!patch || n === 0) return patch?.label ?? ''
+  const from = patch.patch - n
+  return from >= 1 ? `${patch.major}.${from}–${patch.patch}` : `${patch.label}+${n}`
+}

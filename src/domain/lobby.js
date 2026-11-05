@@ -40,10 +40,11 @@ export function tiersForLobby(lobbyTier) {
   return [t - 1, t, t + 1].filter((x) => x >= MIN_TIER && x <= MAX_TIER)
 }
 
-export function tiersLabel(tiers) {
+/** «Platino – Diamante». `names` permite traducir los nombres (la interfaz pasa los de shared/strings.js). */
+export function tiersLabel(tiers, names = TIER_NAMES) {
   const ts = [...(tiers ?? [])].sort((a, b) => a - b)
   if (!ts.length) return ''
-  const name = (t) => TIER_NAMES[t] ?? '?'
+  const name = (t) => names[t] ?? '?'
   return ts.length === 1 ? name(ts[0]) : `${name(ts[0])} – ${name(ts[ts.length - 1])}`
 }
 

@@ -20,8 +20,23 @@ export function pickBest(entries, { minShare = MIN_SHARE, minAbs = MIN_ABS, excl
   return pool.reduce(better)
 }
 
+/**
+ * Todas las opciones con muestra suficiente, de mejor a peor WPA (para ofrecer alternativas con un clic).
+ * Cada una lleva `share` = fracción de las partidas del grupo. Aquí no hay «la más jugada» de reserva: puede salir vacío.
+ */
+export function rankBest(entries, { minShare = MIN_SHARE, minAbs = MIN_ABS, exclude } = {}) {
+  const list = (entries ?? []).filter((e) => e && Number.isFinite(e.wpa) && e.occurrence > 0 && !(exclude && exclude(e)))
+  const total = list.reduce((s, e) => s + e.occurrence, 0)
+  return list
+    .filter((e) => e.occurrence >= Math.max(minAbs, total * minShare))
+    .map((e) => ({ ...e, share: e.occurrence / total }))
+    .sort((a, b) => b.wpa - a.wpa || b.occurrence - a.occurrence)
+}
+
 /** Keystone: umbral de muestra más bajo (hay pocos y uno domina). */
-export const pickKeystone = (entries) => pickBest(entries, { minShare: 0.03 })
+export const KEYSTONE_MIN_SHARE = 0.03
+export const pickKeystone = (entries) => pickBest(entries, { minShare: KEYSTONE_MIN_SHARE })
+export const rankKeystones = (entries) => rankBest(entries, { minShare: KEYSTONE_MIN_SHARE })
 
 /** Una runa por fila (null si la fila está vacía o sin datos). */
 export const pickRows = (rows) => (rows ?? []).map((r) => pickBest(r))

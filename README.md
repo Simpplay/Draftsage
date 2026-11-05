@@ -18,6 +18,12 @@ Requiere `DisableWebSecurity=1` en el archivo `config` de Pengu (el plugin guía
   (simula una selección sin estar en partida) y mostrar/ocultar el panel.
 - **Aplicar** (panel o **Ctrl+Shift+A**): «Aplicar todo», «Runas» o «Hechizos». La primera vez pide aceptar un aviso sobre las políticas de Riot/Pengu.
   Por defecto escribe en una página propia «[EC] …» (no toca las tuyas); en el menú puedes elegir reemplazar la página activa y la tecla de Destello.
+- **Alternativas**: bajo la runa clave verás las otras runas clave con su % de uso; un clic y la página cambia. Junto a los hechizos, los sustitutos del hechizo intercambiable.
+- **Fiabilidad**: el medidor de barras del pie indica cuántas partidas respaldan la recomendación; lo poco fiable se ve atenuado.
+- **Fijar** (📌): recuerda tu runa clave y hechizos para ese campeón y rol; el resto sigue los datos del parche.
+- **Enlace** (icono de la cabecera): abre la misma build en coachless.gg (`/builds/caitlyn?role=adc&matchup=jinx`).
+- Los hechizos se ajustan al modo y al rol (Aplastar en jungla, ninguno en Arena, sin Aplastar en ARAM…).
+- **Idioma**: español o inglés (automático según el cliente; cambiable en Ajustes → Más → ES/EN).
 - Cuenta gratuita: datos del campeón y rango, sin matchup ni rango de parches. Premium: matchup y dos parches.
 - Desde DevTools: `easyCoachless.state()`, `easyCoachless.simulate({championId:145, opponentChampionId:222, role:3, lobbyTier:5})`, `easyCoachless.debug(true)`.
 

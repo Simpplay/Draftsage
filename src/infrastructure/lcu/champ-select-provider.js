@@ -15,7 +15,7 @@
 import { log } from '../../shared/logger.js'
 import { lobbyTierFromRaw, rawTierFromLcu, roleFromPosition } from '../../domain/lobby.js'
 
-const key = (c) => (c ? [c.championId, c.opponentChampionId ?? 0, c.role, c.lobbyTier ?? 0, (c.enemies ?? []).map((e) => e.championId).join(',')].join('|') : 'null')
+const key = (c) => (c ? [c.championId, c.opponentChampionId ?? 0, c.role, c.lobbyTier ?? 0, c.mode ?? '', (c.enemies ?? []).map((e) => e.championId).join(',')].join('|') : 'null')
 const revealed = (list) => (list ?? []).filter((p) => p.championId > 0).map((p) => ({ championId: p.championId, position: p.assignedPosition || '' }))
 
 export function createChampSelectProvider({ lcuGet, activeMs = 1000, idleMs = 2500, rankTimeoutMs = 3000 } = {}) {
@@ -24,6 +24,15 @@ export function createChampSelectProvider({ lcuGet, activeMs = 1000, idleMs = 25
   let timer = null
   let lastKey = 'none'
   let busy = false
+  let queue = null // { mode, queueId } de la partida en curso (se pide una vez por Champion Select)
+
+  // Modo de juego (CLASSIC, ARAM, CHERRY…): decide qué hechizos tienen sentido (domain/spells.js). Opcional: si falla, no se filtra por modo.
+  async function queueOf() {
+    if (queue) return queue
+    const q = (await lcuGet('/lol-gameflow/v1/session'))?.gameData?.queue
+    if (q && typeof q.gameMode === 'string') queue = { mode: q.gameMode.toUpperCase(), ...(Number.isInteger(q.id) && { queueId: q.id }) }
+    return queue
+  }
 
   async function rawTierOf(puuid) {
     if (rankCache.has(puuid)) return rankCache.get(puuid)
@@ -54,17 +63,17 @@ export function createChampSelectProvider({ lcuGet, activeMs = 1000, idleMs = 25
     const opponent = position
       ? (session.theirTeam ?? []).find((p) => p.assignedPosition === position && p.championId > 0)?.championId
       : undefined
-    const lobbyTier = championId ? await lobbyTierOf(session) : undefined
+    const [lobbyTier, q] = championId ? await Promise.all([lobbyTierOf(session), queueOf()]) : [undefined, null]
     // enemies = todos los rivales ya revelados (aunque el cliente no informe su posición); allies = tus compañeros.
     return {
-      championId, ...(opponent && { opponentChampionId: opponent }), role: roleFromPosition(position), ...(lobbyTier && { lobbyTier }),
+      championId, ...(opponent && { opponentChampionId: opponent }), role: roleFromPosition(position), ...(lobbyTier && { lobbyTier }), ...(q && { mode: q.mode }),
       enemies: revealed(session.theirTeam), allies: revealed((session.myTeam ?? []).filter((p) => p.cellId !== me.cellId)), source: 'lcu',
     }
   }
 
   async function getCurrentContext() {
     const phase = await lcuGet('/lol-gameflow/v1/gameflow-phase')
-    if (phase !== 'ChampSelect') return null
+    if (phase !== 'ChampSelect') { queue = null; return null }
     const session = await lcuGet('/lol-champ-select/v1/session')
     return session ? buildContext(session) : null
   }
