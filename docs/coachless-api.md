@@ -44,7 +44,7 @@ Otras secciones del menú (no analizadas): Items, Runes, Abilities, Spells, Revi
 
 ## 3. Parámetros comunes: `commonFilters`
 
-Todos los endpoints de estadísticas reciben este objeto:
+Todos los endpoints de estadísticas reciben este objeto. ✅ Es el conjunto completo de filtros de la web (revisado en su código el 2026-11-05): **no existe filtro por campeones aliados**.
 
 ```json
 {
@@ -93,18 +93,19 @@ Por defecto (Emerald+, Diamond, Master+) se enviaba `[5, 6, 7]`; con Platinum, `
 
 ### 3.3 `role`
 
+- ✅ **Verificado (2026-11-05, GetRecommendedBuilds con `role` 0–4 y campeones de cada rol):** 0 Top (Darius) · 1 Jungla (Lee Sin) · 2 Mid (Ahri) · 3 ADC (Kai'Sa) · 4 Support (Thresh); `role: 5` devuelve el rol principal del campeón.
 - La petición envía **`role: 5`** tanto para Kai'Sa como para Thresh ✅ → `5` actúa como "sin rol / el que decida el servidor" 🔶.
 - La respuesta de `GetRecommendedBuilds` incluye el **rol resuelto**: Kai'Sa → `3`, Thresh → `4` ✅.
 - Mapeo consistente con el orden de iconos de la UI (fill, top, jungle, mid, adc, support) 🔶:
 
 | Valor | Rol |
 |---|---|
-| 0 | Top 🔶 |
-| 1 | Jungle 🔶 |
-| 2 | Mid 🔶 |
-| 3 | ADC ✅ (Kai'Sa) |
-| 4 | Support ✅ (Thresh) |
-| 5 | Fill / todos 🔶 |
+| 0 | Top ✅ |
+| 1 | Jungle ✅ |
+| 2 | Mid ✅ |
+| 3 | ADC ✅ |
+| 4 | Support ✅ |
+| 5 | Fill / rol principal del campeón ✅ |
 
 ---
 
@@ -265,7 +266,8 @@ El orden del array **no está ordenado por WPA** (se vio orden por `itemId`) ✅
 { "summonerSpell": 3, "wpaOverall": 0.82, "occurrence": 275246,
   "occurrenceRelative": 7.41, "winrateExpected": 50.09, "winrateObserved": 50.91 }
 ```
-`summonerSpell` = ID de Riot (1 = Cleanse, 3 = Exhaust, 4 = Flash, 7 = Heal…) 🔶.
+`summonerSpell` = ID de Riot (1 = Cleanse, 3 = Exhaust, 4 = Flash, 6 = Ghost, 7 = Heal, 11 = Smite, 12 = Teleport, 14 = Ignite, 21 = Barrier) 🔶.
+✅ Con `pairedSpell: 4` la lista **excluye** el hechizo fijado (8 elementos en vez de 9) y los WPA cambian ligeramente: sirve para elegir el segundo hechizo dado el primero. El plugin elige el 1.º por WPA (con ≥ 10 % de las partidas) y consulta `pairedSpell` para el 2.º.
 
 ---
 
@@ -292,6 +294,26 @@ El orden del array **no está ordenado por WPA** (se vio orden por `itemId`) ✅
 ```
 `runeEffects` parece ser el valor del efecto de la runa (daño, curación… acumulado) 🔶; el significado de `type` no se pudo confirmar.
 
+### 4.4b `POST /api/Rune/GetRunesForKeystoneAndTree` 🔶
+
+Filas de runas de **un árbol** (las de la página `/runes/tree/{champ}/{principal}/{secundario}` del sitio). Verificado con sondas el 2026-11-05 (`dev/api-probes/test-coachless-runes.mjs`).
+
+**Request**
+```json
+{ "commonFilters": { ... }, "mainTree": 8000, "treeToLoad": 8100, "keystone": 8008 }
+```
+- `mainTree`, `treeToLoad`: **ids Riot numéricos** de árbol (8000 Precisión, 8100 Dominación, 8200 Brujería, 8300 Inspiración, 8400 Valor). Strings («Precision», «precision») → 400 (`could not be converted to ...RuneTreeSelection`); 0/1 → 500.
+- `keystone` (opcional): **sí se aplica y filtra las filas de ambos árboles** (principal y secundario). Kai'Sa, Precisión, sin keystone: 404746 ocurrencias en 8009; con 8008: 380817; con 8005: 22943; con 8010: 119. Con 8021 (sin datos) todo vacío. **`keystoneId` se ignora** (resultado idéntico a no enviar nada): usar siempre `keystone`.
+- `commonFilters` se respeta (campeón, matchup premium: con Jinx baja la muestra y desaparecen runas).
+
+**Response**: `{ rowOnes, rowTwos, rowThrees }`, cada una `{ rune, runeType, wpaOverall, occurrence, runeEffects }[]` (mismo formato que 4.4).
+- Devuelve las filas del árbol `treeToLoad` (no el keystone). Con `treeToLoad == mainTree` salen las filas del árbol principal (p. ej. 8000: 8009/9101/9111, 9103/9104/9105, 8014/8017/8299); con otro `treeToLoad`, las del secundario.
+- Una fila puede traer 2 o 3 runas, o ninguna (sin datos para esos filtros).
+- ⚠ `rowTwos` vino **vacío para Dominación (8100)** con la cuenta gratuita (parche 16.21, `patchAdditions: 0`) en todas las pruebas, pero ✅ **con datos con premium** (`patchAdditions: 1`); con 8200, 8300, 8400 y 8000 siempre trae datos. Causa desconocida. Tratar una fila vacía como «sin dato» (el plugin ya lo hace). `rowOnes/Twos/Threes` = filas 1–3 del árbol **sin** la fila del keystone (ver tabla en §6b).
+- ✅ **Selección en el plugin:** el árbol secundario se elige entre los 4 restantes tomando, por árbol, la mejor runa (por WPA) de cada fila y quedándose con las 2 mejores de filas distintas; solo compiten los árboles con ≥ 10 % de las partidas del más usado como secundario (sin ese filtro ganaba Valor con 465 partidas, WPA +4, frente a Inspiración con 300 000).
+- ⚠ Escala de `wpaOverall` ❓: aquí salen valores de ±0.1 a ±5 (en 4.4 son fracciones pequeñas, p. ej. -0.027). Posiblemente puntos porcentuales de winrate, sin confirmar. Sirve para ordenar/comparar dentro de una fila; no mostrarlo como cifra hasta aclarar su significado. Con poca muestra (<~300) salta mucho (p. ej. 8010: ±3).
+- Cuenta gratuita: funciona con `patchAdditions: 0` y sin matchup (verificado en la ronda 3).
+
 ---
 
 ### 4.5 `GET /api/ChampionWinprob/GetPatches` ✅
@@ -302,7 +324,7 @@ Sin cuerpo. **`POST` devuelve 405.** Probado con `Authorization` de una cuenta g
 ```json
 { "label": "16.4", "major": 16, "patch": 4, "matchCount": 6255794 }
 ```
-`matchCount` = partidas analizadas en ese parche. Sirve para elegir un parche con muestra suficiente: el más reciente puede tener poca (16.22 devolvió solo 3 runas en `GetKeystoneData`, frente a 13 en 16.21).
+`matchCount` = partidas analizadas en ese parche. ✅ Medido el 2026-11-05: 16.19–16.21 ≈ 6,8 M cada uno; 16.22 solo 243 k (3,6 %). El plugin usa el último parche cuya muestra sea ≥ 30 % de la mayor de los 3 anteriores (`domain/patch.js`). Sirve para elegir un parche con muestra suficiente: el más reciente puede tener poca (16.22 devolvió solo 3 runas en `GetKeystoneData`, frente a 13 en 16.21).
 
 ---
 
@@ -345,6 +367,22 @@ Objeto indexado por `Id` (string/número):
 ```
 
 `ItemType` (🔶 por ejemplos): `0` placeholder/recall · `1` legendario · `2` botas mejoradas · `3` ítem especial (Celestial Opposition, Dream Maker…) · `4` básico (Boots, Faerie Charm) · `5` épico (Giant's Belt…) · `6` starter (Doran's…).
+
+---
+
+## 6b. Runas: ids por árbol y fila (Data Dragon, temporada 2026) ✅
+
+Las filas 1–3 de `GetRunesForKeystoneAndTree` corresponden a las filas 2–4 de esta tabla (la fila 1 son los keystones).
+
+| Árbol (id) | Keystones | Fila 1 | Fila 2 | Fila 3 |
+|---|---|---|---|---|
+| Dominación 8100 | 8112 Electrocute · 8128 Dark Harvest · 9923 Hail of Blades | 8126 Cheap Shot · 8139 Taste of Blood · 8143 Sudden Impact | 8137 Sixth Sense · 8140 Grisly Mementos · 8141 Deep Ward | 8135 Treasure Hunter · 8105 Relentless Hunter · 8106 Ultimate Hunter |
+| Inspiración 8300 | 8351 Glacial Augment · 8360 Unsealed Spellbook · 8369 First Strike | 8306 Hextech Flashtraption · 8304 Magical Footwear · 8321 Cash Back | 8313 Perfect Timing · 8352 Time Warp Tonic · 8345 Biscuit Delivery | 8347 Cosmic Insight · 8410 Approach Velocity · 8316 Jack of All Trades |
+| Precisión 8000 | 8005 Press the Attack · 8008 Lethal Tempo · 8021 Fleet Footwork · 8010 Conqueror | 9101 Absorb Life · 9111 Triumph · 8009 Presence of Mind | 9104 Legend: Alacrity · 9105 Legend: Haste · 9103 Legend: Bloodline | 8014 Coup de Grace · 8017 Cut Down · 8299 Last Stand |
+| Valor 8400 | 8437 Grasp · 8439 Aftershock · 8465 Guardian | 8446 Demolish · 8463 Font of Life · 8401 Shield Bash | 8429 Conditioning · 8444 Second Wind · 8473 Bone Plating | 8451 Overgrowth · 8453 Revitalize · 8242 Unflinching |
+| Brujería 8200 | 8214 Summon Aery · 8229 Arcane Comet · 8230 Phase Rush · 8992 Deathfire Touch | 8224 Nullifying Orb · 8226 Manaflow Band · 8275 Nimbus Cloak | 8210 Transcendence · 8234 Celerity · 8233 Absolute Focus | 8237 Scorch · 8232 Waterwalking · 8236 Gathering Storm |
+
+Fragmentos (`selectedShards` de `GetRecommendedBuilds`, no dependen del matchup): ids 5001–5013 (5005 vel. de ataque, 5008 adaptativo, 5011 vida…). El plugin muestra los de la build cuyo keystone coincide con el elegido.
 
 ---
 
@@ -418,6 +456,7 @@ def items(champion_id, item_type=1, slots=None, **kw):
 
 1. ✅ Resuelto: requieren `Authorization: Bearer <accessToken>` (JWT). Con cuenta gratuita funcionan con `patchAdditions: 0` (≥ 1 da 403); con premium (`isSubscribed: "1"`) funcionan también los rangos ✅.
 2. ✅ `Auth/refresh` es `POST` con `{refreshToken}`; `GetPatches` es `GET` sin cuerpo.
+2b. ✅ Medido (cuenta gratuita, 2026-11-05): una recomendación completa del plugin son ≈ 10 peticiones (GetPatches + 3 + 6) y tarda 0,4–0,6 s con la caché de parches caliente (hasta ~3 s en frío). ❓ Límites de tasa: sin señales de 429 con ~100 peticiones, pero solo se ha probado con la gratuita (ver `dev/api-probes/test-coachless-premium.mjs`).
 3. ❓ IDs de todas las regiones (solo Korea = 4 verificado) y el ID de Gold.
 4. ❓ Significado de `runeType` (siempre 0), `runeEffects.type` (observados: 0, 3, 7, 12, 14, 15, 20) y `loadFirstEpicPurchase`.
 5. ❓ Valores de `itemType` distintos de 1, 2 y 6 en `GetGlobalItemStatistics`, y de `keystone`/`starterId`/`firstPurchaseId` encadenados (la UI los usa al elegir una build concreta).

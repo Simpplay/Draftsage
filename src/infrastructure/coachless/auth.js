@@ -16,16 +16,27 @@ const SKEW_MS = 5 * 60 * 1000                // renovar 5 min antes de que caduq
 let access = null                            // { token, exp (ms), claims }
 let inflight = null                          // renovación en curso (evita refrescos en paralelo)
 
-const post = async (path, body, token) => {
-  const r = await fetch(API + path, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...(token && { Authorization: 'Bearer ' + token }) },
-    body: JSON.stringify(body),
-  })
-  let data = null
-  try { data = await r.json() } catch {}
-  return { status: r.status, data }
+const TIMEOUT_MS = 15000                     // ninguna petición debe dejar colgado el cliente
+
+// method 'POST' (con cuerpo JSON) o 'GET'. Lanza si hay error de red o se supera el tiempo.
+const request = async (method, path, body, token) => {
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS)
+  try {
+    const r = await fetch(API + path, {
+      method,
+      headers: { ...(method === 'POST' && { 'Content-Type': 'application/json' }), ...(token && { Authorization: 'Bearer ' + token }) },
+      body: method === 'POST' ? JSON.stringify(body) : undefined,
+      signal: ctrl.signal,
+    })
+    let data = null
+    try { data = await r.json() } catch {}
+    return { status: r.status, data }
+  } finally {
+    clearTimeout(timer)
+  }
 }
+const post = (path, body, token) => request('POST', path, body, token)
 
 function claimsOf(jwt) {
   try {
@@ -117,21 +128,29 @@ export async function restoreSession() {
 // Llamada autenticada a un endpoint de datos. Devuelve { ok, status, data, reason?, premium? }
 // reason: 'auth' (sin sesión válida) | 'forbidden' (403: ese filtro no está disponible para tu cuenta;
 // una cuenta gratuita recibe 403 con patchAdditions >= 1, así que NO es un error de sesión:
-// no renueves el token; reintenta con patchAdditions: 0).
-export async function api(path, body) {
-  let token = await getAccessToken()
-  if (!token) return { ok: false, reason: 'auth' }
-
-  let res = await post(path, body, token)
-  if (res.status === 401) {                 // token caducado antes de tiempo: una renovación y un reintento
-    access = null
-    token = await getAccessToken()
+// no renueves el token; reintenta con patchAdditions: 0) | 'network' (sin conexión o tiempo agotado).
+async function authed(method, path, body) {
+  try {
+    let token = await getAccessToken()
     if (!token) return { ok: false, reason: 'auth' }
-    res = await post(path, body, token)
+
+    let res = await request(method, path, body, token)
+    if (res.status === 401) {                 // token caducado antes de tiempo: una renovación y un reintento
+      access = null
+      token = await getAccessToken()
+      if (!token) return { ok: false, reason: 'auth' }
+      res = await request(method, path, body, token)
+    }
+    if (res.status === 403) return { ok: false, status: 403, reason: 'forbidden', premium: hasPremium() }
+    return { ok: res.status === 200, status: res.status, data: res.data }
+  } catch (e) {
+    log.warn('petición fallida:', path, String(e)) // sin cuerpo ni cabeceras: nunca tokens en los logs
+    return { ok: false, reason: 'network' }
   }
-  if (res.status === 403) return { ok: false, status: 403, reason: 'forbidden', premium: hasPremium() }
-  return { ok: res.status === 200, status: res.status, data: res.data }
 }
+
+export const api = (path, body) => authed('POST', path, body)
+export const apiGet = (path) => authed('GET', path)
 
 // Solo para pruebas desde DevTools (la contraseña quedaría en el historial de la consola):
 //   await easyCoachless.auth.login('email', 'pass')   |   easyCoachless.auth.status()

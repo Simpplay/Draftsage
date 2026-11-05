@@ -2,8 +2,12 @@
 // Para añadir una pantalla nueva: crea aquí una función que use openDialog/openForm/openMenu
 // y devuelve su handle (así quien la llame puede esperar `.result` o cerrarla).
 
-import { openDialog, openForm, openMenu, confirm, notify, copyText, h } from './ui.js'
+import { openDialog, openForm, confirm, notify, copyText, h } from './ui.js'
+import { openSettings } from './settings.js'
 import { login, logout, sessionInfo } from '../application/session.js'
+import { app } from '../application/app.js'
+import { getPanelPrefs, setPanelPrefs } from '../application/preferences.js'
+import { ROLE_FILL, parseRole, parseTier } from '../domain/lobby.js'
 import { log } from '../shared/logger.js'
 
 export const CONFIG_LINE = 'DisableWebSecurity=1'
@@ -61,7 +65,12 @@ export function loginMenu() {
     submitLabel: 'Iniciar sesión',
     onSubmit: async ({ email, password }) => {
       const r = await login(email.trim(), password)
-      if (r.ok) { notify.success('Easy Coachless: sesión iniciada'); return { premium: r.premium } }
+      if (r.ok) {
+        notify.success('Easy Coachless: sesión iniciada')
+        app.resetData()              // la cuenta puede ser otra (otro plan): nada cacheado le sirve
+        app.controller.refresh()
+        return { premium: r.premium }
+      }
       return r.reason === 'network'
         ? 'No se pudo conectar con Coachless. Revisa tu conexión.'
         : 'Email o contraseña incorrectos (o la cuenta no está confirmada).'
@@ -75,23 +84,87 @@ async function logoutFlow() {
     message: 'Se borrará el token de sesión guardado en este equipo.',
     confirmLabel: 'Cerrar sesión', danger: true,
   })
-  if (ok) { logout(); notify.success('Easy Coachless: sesión cerrada') }
+  if (ok) {
+    logout()
+    app.resetData()
+    app.controller.refresh()
+    notify.success('Easy Coachless: sesión cerrada')
+  }
 }
 
-// Menú principal del plugin (punto de entrada para el resto de pantallas).
-export function mainMenu() {
-  const s = sessionInfo()
-  return openMenu({
-    id: 'main',
-    title: 'Easy Coachless',
-    description: s.loggedIn
-      ? `Sesión iniciada${s.email ? ' como ' + s.email : ''}${s.email ? ` · cuenta ${s.premium ? 'premium' : 'gratuita'}` : ''}`
-      : 'Sin sesión iniciada',
-    items: [
-      s.loggedIn
-        ? { id: 'logout', label: 'Cerrar sesión', description: 'Borra el token guardado en este equipo', onSelect: logoutFlow }
-        : { id: 'login', label: 'Iniciar sesión', description: 'Con tu cuenta de coachless.gg', onSelect: loginMenu },
-      { id: 'cors', label: 'Conexión con Coachless (Pengu)', description: 'Pasos para activar DisableWebSecurity', onSelect: corsSetupMenu },
+// Simula un Champion Select para ver la recomendación sin estar en una partida. Campos de texto libres:
+// campeón (nombre), rival (opcional), rol (top/jungla/mid/adc/support) y rango (oro/platino/esmeralda/diamante/master).
+export function simulateMenu() {
+  return openForm({
+    id: 'simulate',
+    title: 'Ver runas de un matchup',
+    description: 'Prueba la recomendación sin estar en Champion Select. El rival, el rol y el rango son opcionales.',
+    fields: [
+      { name: 'champion', label: 'Tu campeón', placeholder: 'Kai\'Sa', required: true },
+      { name: 'opponent', label: 'Rival (solo cuentas premium)', placeholder: 'Jinx' },
+      { name: 'role', label: 'Rol', placeholder: 'top, jungla, mid, adc, support' },
+      { name: 'tier', label: 'Rango de la lobby', placeholder: 'oro, platino, esmeralda, diamante, master' },
     ],
+    submitLabel: 'Ver runas',
+    onSubmit: async (v, hd) => {
+      hd.setStatus('Buscando…')
+      await app.catalog.load()
+      const champ = app.catalog.findChampion(v.champion)
+      if (!champ) return app.catalog.isLoaded() ? `No encuentro el campeón «${v.champion.trim()}».` : 'El cliente aún no ha cargado la lista de campeones; inténtalo en unos segundos.'
+      let opp = null
+      if (v.opponent.trim()) {
+        opp = app.catalog.findChampion(v.opponent)
+        if (!opp) return `No encuentro el rival «${v.opponent.trim()}».`
+      }
+      const role = v.role.trim() ? parseRole(v.role) : ROLE_FILL
+      if (role === undefined) return 'Rol no válido (top, jungla, mid, adc, support).'
+      const tier = v.tier.trim() ? parseTier(v.tier) : undefined
+      if (v.tier.trim() && tier === undefined) return 'Rango no válido (oro, platino, esmeralda, diamante, master).'
+      app.controller.simulate({ championId: champ.id, ...(opp && { opponentChampionId: opp.id }), role, ...(tier && { lobbyTier: tier }) })
+      return { champion: champ.id }
+    },
+  })
+}
+
+// Aviso previo a activar «Aplicar». Devuelve Promise<boolean>: true si el usuario acepta (y queda activado).
+export async function enableApplyFlow() {
+  if (app.applier.canApply()) return true
+  const ok = await confirm({
+    id: 'apply-consent', title: 'Aplicar en el cliente',
+    message:
+      'Al pulsar «Aplicar», Easy Coachless escribirá en tu cliente de League la página de runas y los hechizos recomendados. ' +
+      'Solo actúa cuando tú pulsas el botón (o Ctrl+Shift+A), nunca de forma automática. ' +
+      'Usa la API interna del cliente, que no es oficial: revisa las políticas de Riot y de Pengu Loader antes de activarlo y úsalo bajo tu responsabilidad. ' +
+      'Por defecto solo toca una página propia llamada «[EC] …». Puedes desactivarlo en el menú.',
+    confirmLabel: 'Activar y aplicar',
+  })
+  if (ok) app.applier.setEnabled(true)
+  return ok
+}
+
+// Menú principal del plugin: la pantalla gráfica de ajustes (presentation/settings.js).
+function togglePanel(enabled) {
+  setPanelPrefs({ enabled })
+  window.dispatchEvent(new Event('easy-coachless:prefs'))
+  if (enabled) window.dispatchEvent(new Event('easy-coachless:show-panel'))
+}
+
+export function mainMenu() {
+  return openSettings({
+    applier: app.applier,
+    catalog: app.catalog,
+    getSession: sessionInfo,
+    isSimulating: () => app.controller.getState().context?.source === 'manual',
+    panelEnabled: () => getPanelPrefs().enabled,
+    actions: {
+      login: loginMenu,
+      logout: logoutFlow,
+      simulate: simulateMenu,
+      cors: corsSetupMenu,
+      enableApply: enableApplyFlow,
+      reopen: mainMenu,
+      unsimulate: () => app.controller.simulate(null),
+      togglePanel: () => togglePanel(!getPanelPrefs().enabled),
+    },
   })
 }
