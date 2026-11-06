@@ -9,6 +9,7 @@
 const num = (x) => (typeof x === 'number' && Number.isFinite(x) ? x : null)
 
 const runeStat = (x) => ({ rune: x.rune, wpa: num(x.wpaOverall ?? x.wpa), occurrence: num(x.occurrence) ?? 0 })
+const itemStat = (x) => ({ item: x.itemId, wpa: num(x.wpaOverall), occurrence: num(x.occurrence) ?? 0 })
 const spellStat = (x) => ({ spell: x.summonerSpell, wpa: num(x.wpaOverall), occurrence: num(x.occurrence) ?? 0 })
 
 const asList = (data, map) => (Array.isArray(data) ? data.map(map).filter((x) => x.wpa != null) : null)
@@ -55,7 +56,11 @@ export function createCoachlessClient({ post, get, cache }) {
       call('role|' + body(filters, {}), () => post('ChampionWinprob/GetRecommendedBuilds', { commonFilters: filters }), (d) =>
         d && Number.isInteger(d.role) ? d.role : null),
 
-    /** Builds recomendadas (ignoran el matchup). Se usan para los fragmentos → [{keystone, primaryTree, secondaryTree, shards, occurrence}] */
+    /**
+     * Builds recomendadas (ignoran el matchup). Llevan los fragmentos y los ítems →
+     * [{keystone, primaryTree, secondaryTree, shards, occurrence, tier, winrate, mostPopular, starterIds, firstItemId, secondItemId, itemBlocks}]
+     * itemBlocks: [{type, items:[{item, wpa, occurrence, chooseOne, highlighted}]}] (sin filtrar: un ítem sin partidas trae wpa 0 de relleno).
+     */
     builds: (filters) =>
       postNorm('ChampionWinprob/GetRecommendedBuilds', filters, {}, (d) =>
         d && Array.isArray(d.builds)
@@ -66,7 +71,30 @@ export function createCoachlessClient({ post, get, cache }) {
               selectedRunes: b.runes?.selectedRunes ?? [],
               shards: b.runes?.selectedShards ?? [],
               occurrence: num(b.occurrence) ?? 0,
+              tier: Number.isInteger(b.tier) ? b.tier : null,
+              winrate: num(b.winrate),
+              mostPopular: b.mostPopular === true,
+              starterIds: Array.isArray(b.starterIds) ? b.starterIds : [],
+              firstItemId: num(b.firstItemId),
+              secondItemId: num(b.secondItemId),
+              itemBlocks: (Array.isArray(b.itemBlocks) ? b.itemBlocks : []).map((blk) => ({
+                type: blk?.type,
+                items: (Array.isArray(blk?.items) ? blk.items : []).map((i) => ({
+                  item: i?.itemId, wpa: num(i?.wpa), occurrence: num(i?.occurrence) ?? 0, chooseOne: i?.chooseOne === true, highlighted: i?.highlighted === true,
+                })),
+              })),
             }))
           : null),
+
+    /**
+     * Estadísticas de ítems (GetGlobalItemStatistics) → [{item, wpa, occurrence}] sin ordenar.
+     * `o`: { type (1 ítems completos por posición · 2 botas · 6 iniciales), slots (p. ej. [3]), first, second (1.er y 2.º legendario ya comprados) }.
+     * ❓ Que `first`/`second` condicionen el resultado y que el matchup se respete en ítems no está verificado (dev/api-probes/test-coachless-items.mjs).
+     */
+    items: (filters, o = {}) =>
+      postNorm('ChampionWinprob/GetGlobalItemStatistics', filters, {
+        itemSlots: o.slots ?? null, itemType: o.type ?? 1, keystone: null, starterId: null, firstPurchaseId: null,
+        firstLegendaryId: o.first ?? null, secondLegendaryId: o.second ?? null, loadFirstEpicPurchase: false, includeSupportItems: false,
+      }, (d) => asList(d, itemStat)),
   }
 }

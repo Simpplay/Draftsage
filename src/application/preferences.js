@@ -2,6 +2,7 @@
 // aquí solo hay ajustes de interfaz, nunca credenciales)
 import { setLang } from '../shared/i18n.js'
 import { normalizeFilters } from '../domain/filters.js'
+import { normalizeSource } from '../domain/sources.js'
 
 const KEY = 'easy-coachless/panel'
 const DEFAULTS = { enabled: true, collapsed: false, x: null, y: null, lang: 'auto' }
@@ -80,5 +81,48 @@ export function getFilterPrefs() {
 export function setFilterPrefs(patch) {
   const next = normalizeFilters({ ...getFilterPrefs(), ...patch })
   try { DataStore.set(FILTERS_KEY, next) } catch {}
+  return next
+}
+
+// Fuente de las recomendaciones (domain/sources.js): 'coachless' (por defecto) | 'lolalytics' | 'auto'. Solo un modo, nada sensible.
+const SOURCE_KEY = 'easy-coachless/source'
+
+export function getSourcePrefs() {
+  try { return normalizeSource(DataStore.get(SOURCE_KEY, {})) } catch { return normalizeSource(null) }
+}
+export function setSourcePrefs(patch) {
+  const next = normalizeSource({ ...getSourcePrefs(), ...patch })
+  try { DataStore.set(SOURCE_KEY, next) } catch {}
+  return next
+}
+
+// Consejero de picks (application/pick-advisor.js): DESACTIVADO hasta que el usuario acepte el aviso (la composición del draft se envía
+// a iTero, un tercero). `weight` = peso de LoLalytics en la mezcla (0–1); `minPick` = uso mínimo del candidato (fracción). Solo números y un booleano.
+const ADVISOR_KEY = 'easy-coachless/advisor'
+const ADVISOR_DEFAULTS = { enabled: false, weight: 0.5, minPick: 0.0025 }
+const clampNum = (x, lo, hi, d) => (Number.isFinite(Number(x)) && x !== null && x !== '' ? Math.min(hi, Math.max(lo, Number(x))) : d)
+const cleanAdvisor = (o) => ({ enabled: o?.enabled === true, weight: clampNum(o?.weight, 0, 1, ADVISOR_DEFAULTS.weight), minPick: clampNum(o?.minPick, 0.0005, 0.02, ADVISOR_DEFAULTS.minPick) })
+
+export function getAdvisorPrefs() {
+  try { return cleanAdvisor(DataStore.get(ADVISOR_KEY, {})) } catch { return { ...ADVISOR_DEFAULTS } }
+}
+export function setAdvisorPrefs(patch) {
+  const next = cleanAdvisor({ ...getAdvisorPrefs(), ...patch })
+  try { DataStore.set(ADVISOR_KEY, next) } catch {}
+  return next
+}
+
+// Estadísticas sobre la selección de campeones (application/overlay.js). `selector`: selector CSS de los campeones de la
+// cuadrícula, solo si la detección automática no acierta con el cliente (easyCoachless.overlaySelector('…')).
+const OVERLAY_KEY = 'easy-coachless/overlay'
+const OVERLAY_DEFAULTS = { enabled: true, selector: '' }
+const cleanOverlay = (o) => ({ enabled: o?.enabled !== false, selector: typeof o?.selector === 'string' ? o.selector.trim().slice(0, 200) : '' })
+
+export function getOverlayPrefs() {
+  try { return cleanOverlay({ ...OVERLAY_DEFAULTS, ...(DataStore.get(OVERLAY_KEY, {}) ?? {}) }) } catch { return { ...OVERLAY_DEFAULTS } }
+}
+export function setOverlayPrefs(patch) {
+  const next = cleanOverlay({ ...getOverlayPrefs(), ...patch })
+  try { DataStore.set(OVERLAY_KEY, next) } catch {}
   return next
 }

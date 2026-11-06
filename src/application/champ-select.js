@@ -1,12 +1,14 @@
 // easy-coachless/src/application/champ-select.js — controlador: contexto de la partida → recomendación → estado para la UI
 //
 // Estados (state.status):
-//   idle          sin Champion Select ni simulación
+//   idle          sin Champion Select, partida ni simulación
 //   waiting       en Champion Select pero aún sin campeón elegido
-//   needs-login   hay campeón pero no hay sesión de Coachless
+//   needs-login   hay campeón pero la fuente elegida necesita una sesión de Coachless que no existe (`isLoggedIn()` ya lo decide)
 //   loading       consultando Coachless (state.stale = la recomendación anterior del mismo campeón, para no parpadear)
 //   ready         state.data = Recommendation (ver recommendation.js)
-//   error         state.reason: 'network' | 'forbidden' | 'no-data' | 'auth' | …
+//   error         state.reason: 'network' | 'forbidden' | 'no-data' | 'auth' | 'blocked' | …  (state.source: la fuente que falló, si se sabe)
+// state.context.phase === 'game': la partida ya empezó; se conserva la última recomendación (los ítems se consultan con Alt+Tab).
+//   Termina (idle) cuando el cliente sale de la partida. Si el plugin arranca ya en partida no hay contexto y no se muestra nada.
 // state.pinned: el usuario tiene fijada una elección para este campeón y rol.
 // La UI solo se suscribe (subscribe) y llama a refresh()/simulate()/setOpponent()/setKeystone()/setSpells()/togglePin();
 // no conoce ni el LCU ni la API.
@@ -20,8 +22,12 @@ import { log } from '../shared/logger.js'
 const enemiesKey = (c) => (c.enemies ?? []).map((e) => e.championId).join(',')
 const sameCtx = (a, b) =>
   a === b || (!!a && !!b && a.championId === b.championId && a.opponentChampionId === b.opponentChampionId &&
-    a.role === b.role && a.lobbyTier === b.lobbyTier && a.mode === b.mode && enemiesKey(a) === enemiesKey(b) &&
+    a.role === b.role && a.lobbyTier === b.lobbyTier && a.mode === b.mode && a.phase === b.phase && enemiesKey(a) === enemiesKey(b) &&
     a.keystoneOverride === b.keystoneOverride && (a.spellOverride ?? []).join() === (b.spellOverride ?? []).join())
+
+// Lo que solo mira el consejero de picks (aliados con su posición, bans y lado): si es lo único que cambia se avisa a los suscriptores
+// SIN volver a consultar la recomendación (Coachless/LoLalytics no dependen de ello).
+const extrasKey = (c) => [c.side ?? '', (c.bans ?? []).join(','), (c.allies ?? []).map((a) => a.championId + ':' + a.position).join(',')].join('|')
 
 const loadoutKey = (c) => `${c.championId}|${c.role ?? ROLE_FILL}`
 const spellIds = (d) => (d.spells.length === 2 ? d.spells.map((s) => s.spell) : null)
@@ -66,7 +72,15 @@ export function createChampSelectController({ provider, recommend, isLoggedIn, h
     let ctx = base && opponentOverride ? { ...base, opponentChampionId: opponentOverride, opponentSource: 'manual' } : base
     if (ctx?.championId) ctx = withLoadout(ctx)
     const prev = state.context
-    if (!force && sameCtx(ctx, prev) && state.status !== 'idle') return
+    if (!force && sameCtx(ctx, prev) && state.status !== 'idle') {
+      if (ctx && prev && extrasKey(ctx) !== extrasKey(prev)) setState({ ...state, context: ctx })
+      return
+    }
+    // Empieza la partida: se conserva la recomendación que ya había (sin consultar de nuevo: la partida dura y la red puede fallar).
+    if (ctx?.phase === 'game' && state.status === 'ready' && prev?.championId === ctx.championId) {
+      abort?.abort(); generation++
+      return setState({ ...state, context: ctx })
+    }
     abort?.abort()
     const gen = ++generation
     const pin = pinOf(ctx)
@@ -89,9 +103,12 @@ export function createChampSelectController({ provider, recommend, isLoggedIn, h
     try { r = await recommend(ctx, { premium: hasPremium(), signal: abort.signal }) }
     catch (e) { log.error('recomendación falló:', String(e)); r = { ok: false, reason: 'network' } }
     if (gen !== generation) return // llegó tarde: el usuario ya cambió de campeón
-    if (r.ok) setState({ status: 'ready', context: ctx, data: r.data, pinned: matchesPin(pin, r.data) })
+    // Mientras se consultaba pudo cambiar algo que no reconsulta (un aliado, un ban): el contexto publicado lleva lo último.
+    const b = manualCtx ?? lcuCtx
+    const fresh = b ? { ...ctx, ...(b.side && { side: b.side }), ...(b.bans && { bans: b.bans }), ...(b.allies && { allies: b.allies }) } : ctx
+    if (r.ok) setState({ status: 'ready', context: fresh, data: r.data, pinned: matchesPin(pin, r.data) })
     else if (r.reason === 'aborted') return
-    else setState({ status: 'error', context: ctx, reason: r.reason, pinned })
+    else setState({ status: 'error', context: fresh, reason: r.reason, ...(r.source && { source: r.source }), pinned })
   }
 
   // Guarda una elección de esta selección (runa clave y/o hechizos) y relanza la consulta.

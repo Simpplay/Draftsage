@@ -21,13 +21,14 @@ function fakeClient(over = {}) {
       ? [{ spell: 3, wpa: 0.8, occurrence: 111000 }, { spell: 4, wpa: 0.0, occurrence: 575000 }, { spell: 21, wpa: -0.2, occurrence: 400000 }]
       : [{ spell: 4, wpa: 0, occurrence: 575250 }, { spell: 3, wpa: 0.78, occurrence: 111388 }, { spell: 6, wpa: 1.4, occurrence: 7838 }] }),
     builds: async () => ({ ok: true, data: [{ keystone: 8008, primaryTree: 8000, secondaryTree: 8300, shards: [5005, 5008, 5011], occurrence: 98136 }] }),
+    items: async () => ({ ok: true, data: [] }),
     treeRunes: async (f, main, tree) => ({ ok: true, data: { rows: tree === main
       ? [[e(8009, -0.4, 404746), e(9111, 1.1, 157765)], [e(9104, 0.77, 65115), e(9103, -0.1, 497560)], [e(8017, 0.6, 197962), e(8014, -0.3, 364425)]]
       : tree === 8200 ? [[e(8275, 8.2, 1761)], [e(8234, 7.1, 2290)], []]
       : tree === 8300 ? [[e(8321, 1, 3000)], [e(8313, 1, 3000)], []]
       : [[], [], []] } }),
   }
-  return { client: { patches: rec('patches'), keystones: rec('keystones'), spells: rec('spells'), builds: rec('builds'), treeRunes: rec('treeRunes'), championRole: rec('championRole') }, calls }
+  return { client: { patches: rec('patches'), keystones: rec('keystones'), spells: rec('spells'), builds: rec('builds'), items: rec('items'), treeRunes: rec('treeRunes'), championRole: rec('championRole') }, calls }
 }
 const mk = (over) => { const f = fakeClient(over); return { ...f, svc: createRecommendationService({ client: f.client, log, cache: createCache() }) } }
 const CTX = { championId: 145, role: 3, lobbyTier: 5 }

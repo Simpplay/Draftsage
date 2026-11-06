@@ -20,6 +20,7 @@ const jwt = (claims) => 'h.' + btoa(JSON.stringify(claims)).replace(/=+$/, '').r
 const j = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { 'content-type': 'application/json' } })
 const e = (rune, w, n) => ({ rune, runeType: 0, wpaOverall: w, occurrence: n, runeEffects: [] })
 window.__premium = false
+window.__live = null // foto de allgamedata que devuelve el «juego» (null = sin partida)
 window.__rankedTier = 'EMERALD'
 const realFetch = window.fetch.bind(window)
 window.fetch = async (url, init = {}) => {
@@ -41,8 +42,14 @@ window.fetch = async (url, init = {}) => {
     if (url === '/lol-perks/v1/perks') return j(Object.entries(RUNES).map(([id, name]) => ({ id: +id, name, iconPath: icon('#785a28', id) })))
     if (url === '/lol-perks/v1/styles') return j([{ id: 8000, name: 'Precisión', iconPath: icon('#c8aa6e', 'P'), slots: [{ type: 'kKeyStone', perks: [8005, 8008, 8021, 8010] }] }])
     if (url.includes('summoner-spells')) return j([{ id: 4, name: 'Destello', iconPath: icon('#0ac8b9', 'F') }, { id: 3, name: 'Extenuación', iconPath: icon('#e84057', 'E') }, { id: 7, name: 'Curar', iconPath: icon('#3a9a4a', 'C') }, { id: 11, name: 'Aplastar', iconPath: icon('#c8aa6e', 'A') }])
+    if (url.includes('/items.json')) return j([[1055, 'Hoja de Doran', 450, []], [1037, 'Pico', 875, []], [1042, 'Daga', 300, []], [3087, 'Filo Estático', 2600, [1037, 1042]], [3124, 'Hoja de Guinsoo', 3000, [1042, 1037]], [3006, 'Grebas de Berserker', 1100, [], ['Boots']], [3009, 'Botas de Rapidez', 900, [], ['Boots']], [3031, 'Filo del Infinito', 3450, [1037]], [3036, 'Lord Dominik', 3000, [1037]], [3026, 'Ángel Guardián', 3200, [1037]], [3139, 'Cimitarra Mercurial', 3300, [1037]], [3085, 'Huracán de Runaan', 2700, [1037]]]
+      .map(([id, name, priceTotal, from, categories]) => ({ id, name, priceTotal, from, iconPath: icon('#4a3b78', String(id).slice(-2)), categories: categories ?? [] })))
     if (url.includes('champion-summary')) return j([{ id: -1, name: 'None' }, ...ch.map(([id, name, alias]) => ({ id, name, alias, squarePortraitPath: icon('#3c3c41', name[0]) }))])
     return j({}, 404)
+  }
+  if (url.startsWith('https://127.0.0.1:2999/liveclientdata/')) { // Live Client Data API: solo responde durante la partida
+    if (!window.__live) throw new TypeError('Failed to fetch')
+    return j(window.__live)
   }
   if (url.startsWith('https://api.coachless.gg/api/')) {
     const path = url.slice('https://api.coachless.gg/api/'.length)
@@ -62,7 +69,22 @@ window.fetch = async (url, init = {}) => {
       const S = [{ summonerSpell: 3, wpaOverall: 0.8, occurrence: 111000 }, { summonerSpell: 4, wpaOverall: 0, occurrence: 575000 }, { summonerSpell: 7, wpaOverall: -0.2, occurrence: 120000 }, { summonerSpell: 11, wpaOverall: 2.5, occurrence: 150000 }]
       return j(body.pairedSpell ? S.filter((s) => s.summonerSpell !== body.pairedSpell) : S)
     }
-    if (path === 'ChampionWinprob/GetRecommendedBuilds') return j({ role: 3, builds: [{ keystone: 8008, runes: { primaryTree: 8000, secondaryTree: 8300, selectedRunes: [], selectedShards: [5005, 5008, 5011] }, occurrence: 9 }], spellDuos: [] })
+    if (path === 'ChampionWinprob/GetRecommendedBuilds') {
+      const it = (itemId, wpa = 0, occurrence = 0, extra = {}) => ({ itemId, wpa, occurrence, chooseOne: false, highlighted: false, ...extra })
+      return j({ role: 3, builds: [{ keystone: 8008, runes: { primaryTree: 8000, secondaryTree: 8300, selectedRunes: [], selectedShards: [5005, 5008, 5011] }, occurrence: 67479, tier: 0, winrate: 51.28, mostPopular: true,
+        starterIds: [1055], firstItemId: 3087, secondItemId: 3124,
+        itemBlocks: [
+          { type: 0, items: [it(1055, 0, 0, { chooseOne: true })] },
+          { type: 1, items: [it(3006, 0.4, 30000), it(1055, 0.1, 25000)] },
+          { type: 2, items: [it(3087, 0.9, 60000), it(3006, 0.5, 58000), it(3124, 0.6, 50000)] },
+          { type: 3, items: [it(3124, 0.6, 50000, { chooseOne: true }), it(3085, 0.2, 9000, { chooseOne: true })] },
+          { type: 4, items: [it(3139, 0.3, 4000), it(3036, 0.8, 20000, { highlighted: true }), it(3026, 0.1, 15000)] },
+        ] }], spellDuos: [] })
+    }
+    if (path === 'ChampionWinprob/GetGlobalItemStatistics') {
+      const st = (itemId, w, n) => ({ itemId, wpaOverall: w, occurrenceRelative: 0, winrateExpected: 50, winrateObserved: 50, occurrence: n })
+      return j(body.itemType === 2 ? [st(3009, -0.3, 40000), st(3006, 0.6, 200000)] : body.itemSlots?.join() === '3' ? [st(3031, 1.2, 80000), st(3036, 0.4, 60000), st(3026, -0.2, 50000)] : [])
+    }
     if (path === 'Rune/GetRunesForKeystoneAndTree') {
       const main = body.mainTree === body.treeToLoad
       return j(main ? { rowOnes: [e(8009, -0.4, 400000), e(9111, 1.1, 150000)], rowTwos: [e(9104, 0.77, 65000), e(9103, -0.1, 497000)], rowThrees: [e(8017, 0.6, 190000), e(8014, -0.3, 360000)] }

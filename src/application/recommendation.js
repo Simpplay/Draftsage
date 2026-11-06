@@ -16,7 +16,9 @@
 //  - Hechizos: domain/spells.js los ajusta al modo de juego y al rol (Aplastar en jungla, ninguno en Arena, sin Aplastar en ARAM…).
 //  - Elección del usuario: `keystoneOverride` (runa clave) y `spellOverride` (pareja de hechizos) mandan sobre la recomendación
 //    si son válidos; el resto de la página (filas, secundario) sigue los datos para esa runa clave.
-//  - Cada recomendación pide ≈ 10 peticiones en dos tandas (se cachean 30 min por parche/campeón/filtros).
+//  - Ítems: salen de la build de GetRecommendedBuilds que lleva la runa clave elegida (esa petición ya se hacía) y se completan con
+//    dos peticiones de GetGlobalItemStatistics (botas y 3.er ítem por WPA) en la 2.ª tanda; si fallan, solo faltan esas filas.
+//  - Cada recomendación pide ≈ 12 peticiones en dos tandas (se cachean 30 min por parche/campeón/filtros).
 //    Cambiar de runa clave solo añade las 5 peticiones de filas de runas (lo demás ya está en caché).
 //  - Una petición obsoleta (el usuario cambió de campeón) se descarta con `signal`.
 
@@ -24,12 +26,15 @@ import { choosePatch, patchSpanLabel } from '../domain/patch.js'
 import { ROLE_FILL } from '../domain/lobby.js'
 import { resolveAdditions, resolveTiers } from '../domain/filters.js'
 import { TREE_IDS, treeOfKeystone } from '../domain/runes.js'
+import { buildItemPlan, pickBuild } from '../domain/items.js'
 import { pickKeystone, pickRows, pickSecondary, pickSpell, rankBest, rankKeystones } from '../domain/selection.js'
 import { isValidPair, replaceableIndex, rulesKey, spellRules } from '../domain/spells.js'
 
 export const MIN_MATCHUP_SAMPLE = 3000 // partidas mínimas (suma de keystones) para fiarse de un matchup (con ~1 000 el error del WPA es ±1,6; medido: Kai'Sa vs Zed 1 039, vs Draven 30 802)
 export const ALT_KEYSTONES = 4         // runas clave que se ofrecen en total (la elegida incluida)
 export const ALT_SPELLS = 3            // alternativas para el hechizo intercambiable
+export const MIN_BOOTS_SHARE = 0.10    // botas: al menos el 10 % de las partidas de su grupo
+export const MIN_NEXT_SHARE = 0.05     // 3.er ítem: al menos el 5 % (está más repartido)
 
 /**
  * @typedef {Object} Recommendation
@@ -40,6 +45,7 @@ export const ALT_SPELLS = 3            // alternativas para el hechizo intercamb
  * @property {{rune:number,wpa:number,occurrence:number,row:number}[]} secondaryPicks  2 runas
  * @property {number[]} shards   3 ids (de la build recomendada; no dependen del matchup)
  * @property {{spell:number,wpa:number|null,occurrence:number}[]} spells   0–2 (wpa null = sin dato)
+ * @property {import('../domain/items.js').ItemPlan|null} items   ítems de la build de la runa clave elegida (null si Coachless no los dio)
  * @property {{keystones:{rune:number,wpa:number,occurrence:number,share:number}[], autoKeystone:number,
  *             spells:{spell:number,wpa:number,occurrence:number,share:number,pair:number[]}[]}} alternatives
  * @property {{keystone:boolean, spells:boolean}} custom   true = lo eligió el usuario (a mano o fijado)
@@ -76,6 +82,14 @@ export function createRecommendationService({ client, log, keystoneTrees = () =>
     const keystone = forced ?? ranked.find((k) => k.rune === auto.rune) ?? auto
     const customKeystone = !!forced && forced.rune !== auto.rune
 
+    // Diagnóstico: filtros exactos enviados a Coachless en esta pasada + lo que devolvió para las runas clave.
+    log.info('pasada', JSON.stringify({
+      filtros: f,
+      muestra: sample,
+      topKeystones: ranked.slice(0, ALT_KEYSTONES).map((k) => ({ rune: k.rune, wpa: k.wpa, partidas: k.occurrence })),
+      auto: auto.rune, elegida: keystone.rune, keystoneOverride: ctx.keystoneOverride ?? null,
+    }))
+
     const build = bd.ok ? (bd.data.find((b) => b.keystone === keystone.rune) ?? bd.data[0]) : null
     const primaryTree = treeOfKeystone(keystone.rune, keystoneTrees()) ?? (build?.keystone === keystone.rune ? build.primaryTree : undefined)
     if (!primaryTree) return { status: 'error', reason: 'no-data', sample }
@@ -90,14 +104,24 @@ export function createRecommendationService({ client, log, keystoneTrees = () =>
       : rules.require != null ? asStat(rules.require)
       : sp.ok ? pickSpell(sp.data, rules.exclude) : null
 
+    // Ítems: la build de la runa clave elegida (ya vino en `bd`) + botas y 3.er ítem por WPA (peticiones sueltas que, si fallan, se omiten).
+    const picked = bd.ok ? pickBuild(bd.data, keystone.rune) : null
+    const itemBuild = picked?.build
     const others = TREE_IDS.filter((t) => t !== primaryTree)
-    const [prim, paired, ...secs] = await Promise.all([
+    const [prim, paired, bootsRes, nextRes, ...secs] = await Promise.all([
       client.treeRunes(f, primaryTree, primaryTree, keystone.rune),
       spell1 ? client.spells(f, spell1.spell) : null,
+      itemBuild ? client.items(f, { type: 2 }) : null,
+      itemBuild?.firstItemId && itemBuild?.secondItemId ? client.items(f, { type: 1, slots: [3], first: itemBuild.firstItemId, second: itemBuild.secondItemId }) : null,
       ...others.map((t) => client.treeRunes(f, primaryTree, t, keystone.rune)),
     ])
     if (signal?.aborted) return { status: 'aborted' }
     for (const r of [prim, ...secs]) if (!r.ok && r.reason === 'forbidden') return { status: 'forbidden' }
+
+    const rankedItems = (r, minShare) => (r?.ok ? rankBest(r.data, { minShare }) : [])
+    const items = itemBuild
+      ? buildItemPlan(itemBuild, { keystoneMatch: picked.keystoneMatch, boots: rankedItems(bootsRes, MIN_BOOTS_SHARE).slice(0, 3), next: rankedItems(nextRes, MIN_NEXT_SHARE).slice(0, 3) })
+      : null
 
     const treeRows = {}
     others.forEach((t, i) => { if (secs[i].ok) treeRows[t] = secs[i].data.rows })
@@ -138,6 +162,7 @@ export function createRecommendationService({ client, log, keystoneTrees = () =>
         secondaryTree: secondary?.tree ?? null,
         secondaryPicks: secondary?.picks ?? [],
         shards: build?.shards ?? [],
+        items,
         spells,
         alternatives: { keystones: altKeystones, autoKeystone: auto.rune, spells: altSpells },
         custom: { keystone: customKeystone, spells: customSpells },
@@ -178,6 +203,16 @@ export function createRecommendationService({ client, log, keystoneTrees = () =>
       rulesKey(spellRules(ctx)), ctx.keystoneOverride ?? 0, (ctx.spellOverride ?? []).join('+'),
     ].join('|')
     const cached = cache.get(key)
+    // Diagnóstico: todos los filtros/decisiones que determinan la recomendación (una línea JSON, fácil de copiar).
+    log.info('filtros', JSON.stringify({
+      campeon: ctx.championId, rival: ctx.opponentChampionId ?? null, rivalOrigen: opponentSource, rivalesReveladosCliente: ctx.enemies?.length ?? 0,
+      rol: ctx.role ?? ROLE_FILL, modo: ctx.mode ?? null, rangoLobby: ctx.lobbyTier ?? null,
+      premium, matchupPedido: wantsMatchup, matchupActivo: plan.matchup,
+      parche: patch.label, parcheMuestraBaja: !!patch.fallback, parchesExtra: plan.additions, parchesManual: range.manual,
+      rangos: tiers, rangosManual: tiersManual,
+      keystoneOverride: ctx.keystoneOverride ?? null, spellOverride: ctx.spellOverride ?? null,
+      avisos: notices, cache: !!cached,
+    }))
     if (cached) return { ok: true, data: { ...cached, meta: { ...cached.meta, notices: [...new Set([...cached.meta.notices, ...notices])] } } }
 
     let res = await compute(ctx, patch, tiers, plan, signal)
@@ -190,7 +225,7 @@ export function createRecommendationService({ client, log, keystoneTrees = () =>
     // Matchup sin datos suficientes (o ninguno): se muestra la build del campeón sin rival, nunca un error.
     const noMatchupData = res.status === 'error' && res.reason === 'no-data'
     if (plan.matchup && ((res.status === 'ok' && res.sample < MIN_MATCHUP_SAMPLE) || noMatchupData)) {
-      log.info('muestra del matchup pequeña (' + (res.sample ?? 0) + '); se usa el campeón sin rival')
+      log.info('muestra del matchup pequeña (' + (res.sample ?? 0) + ', mínimo ' + MIN_MATCHUP_SAMPLE + ', rival ' + ctx.opponentChampionId + '); se usa el campeón sin rival')
       notices.push('matchup-low-sample')
       plan = { ...plan, matchup: false }
       res = await compute(ctx, patch, tiers, plan, signal)
@@ -210,6 +245,10 @@ export function createRecommendationService({ client, log, keystoneTrees = () =>
         premium, sample: res.sample, mode: ctx.mode ?? null, notices: [...new Set(notices)],
       },
     }
+    log.info('resultado', JSON.stringify({
+      keystone: data.keystone.rune, matchup: plan.matchup, rival: data.meta.opponent, muestra: res.sample,
+      parche: data.meta.patchSpan, rangos: tiers, avisos: data.meta.notices,
+    }))
     cache.set(key, data)
     return { ok: true, data }
   }

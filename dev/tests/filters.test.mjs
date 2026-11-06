@@ -59,6 +59,7 @@ function mk(filters, premium = true) {
     patches: async () => ({ ok: true, data: PATCHES }), championRole: async () => ({ ok: true, data: 3 }),
     keystones: ok([e(8008, 0.2, 50000)]), spells: ok([{ spell: 4, wpa: 0, occurrence: 50000 }, { spell: 7, wpa: 0.3, occurrence: 40000 }]),
     builds: ok([{ keystone: 8008, primaryTree: 8000, secondaryTree: 8300, shards: [5005, 5008, 5011], occurrence: 50000 }]),
+    items: ok([]),
     treeRunes: ok({ rows: [[e(8009, 0, 1000)], [e(9104, 0, 1000)], [e(8017, 0, 1000)]] }),
   }
   const svc = createRecommendationService({ client, log: { info() {}, warn() {}, error() {}, debug() {} }, cache: createCache(), getFilters: () => filters })
@@ -97,7 +98,7 @@ test('servicio: cambiar los filtros no reutiliza una recomendación cacheada con
   const calls = []
   const svc = createRecommendationService({ client: { ...{ patches: async () => ({ ok: true, data: PATCHES }), championRole: async () => ({ ok: true, data: 3 }),
     keystones: async (x) => { calls.push(x.leagueTiers.join()); return { ok: true, data: [e(8008, 0.2, 50000)] } }, spells: async () => ({ ok: true, data: [] }),
-    builds: async () => ({ ok: true, data: [{ keystone: 8008, primaryTree: 8000, shards: [1, 2, 3] }] }), treeRunes: async () => ({ ok: true, data: { rows: [[], [], []] } }) } },
+    builds: async () => ({ ok: true, data: [{ keystone: 8008, primaryTree: 8000, shards: [1, 2, 3] }] }), items: async () => ({ ok: true, data: [] }), treeRunes: async () => ({ ok: true, data: { rows: [[], [], []] } }) } },
     log: { info() {}, warn() {}, error() {}, debug() {} }, cache: createCache(), getFilters: () => filters })
   await svc.getRecommendation(CTX, { premium: true }); filters = { tiers: { mode: 'range', min: 3, max: 4 } }
   await svc.getRecommendation(CTX, { premium: true })

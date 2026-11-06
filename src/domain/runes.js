@@ -17,3 +17,21 @@ export function treeOfKeystone(keystoneId, extra) {
   if (fromClient) return fromClient
   return TREE_IDS.find((t) => TREES[t].keystones.includes(keystoneId))
 }
+
+// Runas cuyo id no sigue la regla «centenas = árbol» (Precisión usa 91xx y 8299; Hail of Blades es 9923 y es de Dominación).
+const RUNE_TREE_EXCEPTIONS = { 9101: 8000, 9103: 8000, 9104: 8000, 9105: 8000, 9111: 8000, 8299: 8000, 9923: 8100 }
+
+/**
+ * Árbol de CUALQUIER runa (no solo keystones). Prioridad: lo que aporte el cliente (`extra`: runa → árbol), la tabla de keystones,
+ * las excepciones conocidas y por último «centenas». undefined si no se puede deducir.
+ * @param {Map<number,number>} [extra]
+ */
+export function treeOfRune(runeId, extra) {
+  const fromClient = extra?.get?.(runeId)
+  if (fromClient) return fromClient
+  const ks = treeOfKeystone(runeId)
+  if (ks) return ks
+  if (RUNE_TREE_EXCEPTIONS[runeId]) return RUNE_TREE_EXCEPTIONS[runeId]
+  const g = Math.floor(runeId / 100) * 100
+  return TREE_IDS.includes(g) ? g : undefined
+}

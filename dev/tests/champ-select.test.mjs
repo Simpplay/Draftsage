@@ -106,6 +106,20 @@ const session = (extra = {}) => ({
 })
 const ranked = (tier) => ({ queueMap: { RANKED_SOLO_5x5: { tier } } })
 
+test('controlador: si solo cambian aliados, bans o lado se avisa SIN reconsultar la recomendación', async () => {
+  const provider = fakeProvider(); let calls = 0
+  const c = createChampSelectController({ provider, recommend: async () => { calls++; return { ok: true, data: {} } }, isLoggedIn: () => true, hasPremium: () => false })
+  const seen = []; c.subscribe((s) => seen.push(s)); c.start()
+  provider.emit({ championId: 145, role: 3, allies: [], bans: [], side: 'Blue' }); await tick()
+  assert.equal(c.getState().status, 'ready'); assert.equal(calls, 1)
+  const n = seen.length
+  provider.emit({ championId: 145, role: 3, allies: [{ championId: 64, position: 'jungle' }], bans: [1], side: 'Blue' })
+  assert.equal(calls, 1); assert.equal(seen.length, n + 1)                       // notificó, no consultó
+  assert.equal(c.getState().status, 'ready'); assert.deepEqual(c.getState().context.bans, [1])
+  provider.emit({ championId: 145, role: 3, allies: [{ championId: 64, position: 'jungle' }], bans: [1], side: 'Blue' })
+  assert.equal(seen.length, n + 1)                                               // idéntico: nada
+})
+
 test('proveedor: rol, rival del mismo puesto y rango medio de la lobby', async () => {
   const { lcuGet } = fakeLcu({
     '/lol-gameflow/v1/gameflow-phase': 'ChampSelect',
@@ -116,8 +130,20 @@ test('proveedor: rol, rival del mismo puesto y rango medio de la lobby', async (
   })
   const p = createChampSelectProvider({ lcuGet })
   const ctx = await p.getCurrentContext()
-  assert.deepEqual({ ...ctx, allies: undefined }, { championId: 103, opponentChampionId: 238, role: 2, lobbyTier: 5, enemies: [{ championId: 238, position: 'middle' }], allies: undefined, source: 'lcu' })
+  assert.deepEqual({ ...ctx, allies: undefined }, { championId: 103, opponentChampionId: 238, role: 2, lobbyTier: 5, bans: [], enemies: [{ championId: 238, position: 'middle' }], allies: undefined, source: 'lcu' })
   assert.deepEqual(ctx.allies.map((a) => a.championId), [10, 11, 12, 13]) // compañeros, sin ti
+})
+
+test('proveedor: lado (team 1 azul / 2 rojo), bans de ambos equipos y rango antes de elegir campeón', async () => {
+  const s = session({ myTeam: [{ cellId: 2, championId: 0, assignedPosition: 'top', team: 2, puuid: 'p0' }], theirTeam: [{ cellId: 5, championId: 222, assignedPosition: '' }],
+    bans: { myTeamBans: [157, 0, 238], theirTeamBans: [64, 0] } })
+  const { lcuGet } = fakeLcu({ '/lol-gameflow/v1/gameflow-phase': 'ChampSelect', '/lol-champ-select/v1/session': s, '/lol-ranked/v1/ranked-stats/p0': ranked('DIAMOND') })
+  const ctx = await createChampSelectProvider({ lcuGet }).getCurrentContext()
+  assert.equal(ctx.championId, 0); assert.equal(ctx.side, 'Red'); assert.deepEqual(ctx.bans, [157, 238, 64]) // los 0 (sin ban todavía) se descartan
+  assert.equal(ctx.lobbyTier, 6)
+  const none = session({ myTeam: [{ cellId: 2, championId: 0, assignedPosition: 'top' }], theirTeam: [] })
+  const c2 = await createChampSelectProvider({ lcuGet: fakeLcu({ '/lol-gameflow/v1/gameflow-phase': 'ChampSelect', '/lol-champ-select/v1/session': none }).lcuGet }).getCurrentContext()
+  assert.equal('side' in c2, false); assert.deepEqual(c2.bans, [])
 })
 
 test('proveedor: sin posiciones asignadas lista los rivales revelados (no inventa un rival)', async () => {

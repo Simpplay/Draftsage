@@ -242,6 +242,73 @@ try {
   await page.waitForSelector('.ecp-apply .ecp-btn')
   ok(await page.$eval('[data-apply=spells]', (b) => b.disabled), 'en simulación el botón Hechizos está desactivado')
 
+  // ---- Ítems de la build: compactos en Champion Select, completos en partida ----
+  await page.evaluate(() => window.easyCoachless.simulate(null))
+  await page.waitForFunction(() => document.querySelector('.ecp-title')?.getAttribute('title').includes('Kai') && !document.querySelector('.ecp-stale'), null, { timeout: 8000 })
+  await page.waitForSelector('[data-items=compact]', { timeout: 8000 })
+  const rows = (mode) => page.$$eval(`[data-items=${mode}] [data-row]`, (a) => a.map((e) => e.dataset.row))
+  const cellIds = (row) => page.$$eval(`[data-row=${row}] [data-item]`, (a) => a.map((e) => e.dataset.item))
+  ok((await rows('compact')).join() === 'head,starters,boots,core', 'Champion Select: ítems compactos (cabecera, inicio, botas, núcleo): ' + (await rows('compact')).join())
+  ok((await page.textContent('[data-row=head]')).includes('S') && (await page.textContent('[data-row=head]')).includes('51.3%'), 'cabecera: categoría S y 51.3 % de victorias')
+  ok((await cellIds('starters')).join() === '1055', 'inicio: Hoja de Doran')
+  ok((await cellIds('boots')).join() === '3006,3009', 'botas ordenadas por WPA (las de la API): ' + (await cellIds('boots')).join())
+  ok((await cellIds('core')).join() === '3087,3124,3031,3036,3026', 'núcleo: 1.º y 2.º y los siguientes por WPA: ' + (await cellIds('core')).join())
+  ok((await page.$$eval('[data-items] .ecp-itm', (a) => a.length)) > 0 && (await page.$$eval('[data-row=core] .ecp-core', (a) => a.length)) === 2, 'los dos ítems del núcleo van resaltados')
+  ok((await page.$eval('[data-row=core] [data-item="3031"] img', (i) => i.title)).includes('Filo del Infinito'), 'tooltip con el nombre del ítem (catálogo del cliente)')
+  ok((await page.$$('[data-items=compact] .ecp-ifb')).length === 0, 'la build tiene la runa clave elegida: sin aviso')
+  await page.screenshot({ path: shots + '/panel-items.png' })
+
+  await page.evaluate(() => { window.__lcu.phase = 'InProgress' })
+  await page.waitForSelector('.ecp.ecp-game [data-items=game]', { timeout: 8000 })
+  ok((await rows('game')).join() === 'head,starters,boots,core,options,situational', 'En partida: todas las filas con ítems (la primera vuelta queda vacía y no se pinta): ' + (await rows('game')).join())
+  ok((await page.$('[data-row=early]')) === null, 'primera vuelta sin repetir botas ni inicio: no se pinta una fila vacía') // 3006 va a botas y 1055 al inicio
+  ok((await cellIds('options')).join() === '3085', 'alternativas sin repetir el 2.º ítem del núcleo: ' + (await cellIds('options')).join())
+  ok((await cellIds('situational')).join() === '3139', 'situacionales sin repetir los ya mostrados (el destacado ya salió en «siguientes»)')
+  ok((await page.$('[data-apply=all]')) === null && (await page.$('.ecp-rivals')) === null && (await page.$('[data-alts=keystone]')) === null, 'en partida no hay botones de aplicar, rivales ni alternativas')
+  ok((await page.$('.ecp-tag-game')) !== null, 'etiqueta de modo partida')
+  const writesBefore = await page.evaluate(() => window.__writes.length)
+  await page.keyboard.press('Control+Shift+A'); await page.waitForTimeout(300)
+  ok((await page.evaluate(() => window.__writes.length)) === writesBefore, 'Ctrl+Shift+A no escribe nada en partida')
+  const netBefore = await page.evaluate(() => window.__net.length)
+  await page.waitForTimeout(1500)
+  ok((await page.evaluate(() => window.__net.length)) === netBefore, 'en partida no se vuelve a consultar Coachless')
+  ok((await page.evaluate(() => { const r = document.querySelector('.ecp').getBoundingClientRect(); return r.width > 320 && r.right <= innerWidth && r.bottom <= innerHeight })), 'el panel de partida cabe en 1280×720')
+  await page.screenshot({ path: shots + '/panel-game.png' })
+  // ---- Seguimiento en vivo (Live Client Data API): ítems que ya tienes, siguiente por comprar y oro ----
+  const GAME = (gold, items) => ({ activePlayer: { riotId: 'Yo#EUW', summonerName: 'Yo#EUW', currentGold: gold, level: 9 },
+    allPlayers: [{ championName: "Kai'Sa", rawChampionName: 'game_character_displayname_Kaisa', position: 'BOTTOM', team: 'ORDER', riotId: 'Yo#EUW', summonerName: 'Yo#EUW', items: items.map((itemID, slot) => ({ itemID, count: 1, slot })) },
+      { championName: 'Jinx', rawChampionName: 'game_character_displayname_Jinx', position: 'BOTTOM', team: 'CHAOS', riotId: 'Rival#1', summonerName: 'Rival#1', items: [] }],
+    gameData: { gameMode: 'CLASSIC', gameTime: 600 } })
+  ok((await page.$('[data-gold]')) === null && (await page.$('[data-own]')) === null, 'sin partida en el juego: ni oro ni marcas (solo la build)')
+  await page.evaluate((g) => { window.__live = g }, GAME(1000, [1055, 1037]))
+  await page.waitForSelector('[data-gold]', { timeout: 8000 })
+  ok((await page.$eval('[data-gold]', (e) => e.dataset.gold)) === '1000', 'cabecera con el oro actual')
+  ok((await page.$$eval('[data-row=starters] [data-own]', (a) => a.length)) === 1, 'el ítem inicial que ya tienes sale marcado')
+  ok((await page.$$eval('.ecp-next', (a) => a.length)) === 1 && (await page.$eval('.ecp-next', (e) => e.dataset.item)) === '3087', 'el siguiente por comprar es el 1.º del núcleo')
+  ok((await page.$eval('.ecp-next .ecp-miss', (e) => e.dataset.missing)) === '725', 'faltan 725 de oro (2600 − Pico 875 − 1000)')
+  ok((await page.$('.ecp-next .ecp-prog')) !== null && (await page.$('[data-ready]')) === null, 'barra de progreso y sin brillo hasta poder comprarlo')
+  await page.screenshot({ path: shots + '/panel-live.png' })
+  await page.evaluate((g) => { window.__live = g }, GAME(2400, [1055, 1037]))
+  await page.waitForSelector('.ecp-next.ecp-afford [data-ready]', { timeout: 8000 })
+  ok(true, 'con oro suficiente el siguiente ítem brilla (se puede comprar)')
+  await page.evaluate((g) => { window.__live = g }, GAME(50, [1055, 3087]))
+  await page.waitForFunction(() => document.querySelector('.ecp-next')?.dataset.item === '3124', null, { timeout: 8000 })
+  ok((await page.$$eval('[data-row=core] [data-own]', (a) => a.map((e) => e.dataset.item)).catch(() => [])).join() !== '' || (await page.$$('[data-own]')).length >= 2, 'el núcleo ya comprado se marca y pasa al siguiente')
+  await page.evaluate(() => { window.__live = null })
+  await page.waitForFunction(() => document.querySelector('.ecp-next'), null, { timeout: 8000 })
+  ok(true, 'si el juego deja de responder se conserva lo último (el panel no se vacía)')
+
+  await page.evaluate(() => { window.__lcu.phase = 'ChampSelect' })
+
+  // ---- Recuperación: el cliente se reinicia en plena partida y no recuerda la selección ----
+  await page.evaluate(() => { window.easyCoachless.simulate(null); window.__lcu.phase = 'None' })
+  await page.waitForFunction(() => document.querySelector('.ecp')?.style.display === 'none', null, { timeout: 8000 })
+  await page.evaluate((g) => { window.__live = g; window.__lcu.session = null; window.__lcu.phase = 'InProgress' }, GAME(300, [1055]))
+  await page.waitForFunction(() => document.querySelector('.ecp-title')?.getAttribute('title').includes('Kai') && document.querySelector('[data-items=game]'), null, { timeout: 10000 })
+  ok(true, 'en partida sin selección previa: el campeón (Kai\'Sa) se recupera de allgamedata y se muestra su build')
+  await page.screenshot({ path: shots + '/panel-recover.png' })
+  await page.evaluate(() => { window.__live = null; window.__lcu.phase = 'None' })
+
   // fin de Champion Select
   await page.evaluate(() => { window.easyCoachless.simulate(null); window.__lcu.phase = 'None' })
   await page.waitForFunction(() => document.querySelector('.ecp')?.style.display === 'none', null, { timeout: 8000 })

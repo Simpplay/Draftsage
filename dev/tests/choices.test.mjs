@@ -24,6 +24,7 @@ function fakeClient(over = {}) {
     keystones: async () => ({ ok: true, data: [e(8005, -2.6, 25723), e(8008, 0.16, 538163), e(8021, -1, 60000), e(8010, 9, 119)] }),
     spells: async (f, paired) => ({ ok: true, data: paired ? SPELLS.filter((s) => s.spell !== paired) : SPELLS }),
     builds: async () => ({ ok: true, data: [{ keystone: 8008, primaryTree: 8000, secondaryTree: 8300, shards: [5005, 5008, 5011], occurrence: 98136 }] }),
+    items: async () => ({ ok: true, data: [] }),
     treeRunes: async (f, main, tree) => ({ ok: true, data: { rows: tree === main
       ? [[e(8009, -0.4, 404746), e(9111, 1.1, 157765)], [e(9104, 0.77, 65115), e(9103, -0.1, 497560)], [e(8017, 0.6, 197962), e(8014, -0.3, 364425)]]
       : tree === 8300 ? [[e(8321, 1, 3000)], [e(8313, 1, 3000)], []] : [[], [], []] } }),

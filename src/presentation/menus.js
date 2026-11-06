@@ -127,6 +127,14 @@ export async function enableApplyFlow() {
   return ok
 }
 
+// Aviso previo a activar el consejero de picks (la composición del draft se envía a iTero). Devuelve Promise<boolean>.
+export async function enableAdvisorFlow() {
+  if (app.advisor.isEnabled()) return true
+  const ok = await confirm({ id: 'advisor-consent', title: t('advisor.title'), message: t('advisor.msg'), confirmLabel: t('advisor.btn') })
+  if (ok) await app.advisor.setEnabled(true)
+  return ok
+}
+
 // Menú principal del plugin: la pantalla gráfica de ajustes (presentation/settings.js).
 function togglePanel(enabled) {
   setPanelPrefs({ enabled })
@@ -145,6 +153,9 @@ export function mainMenu() {
     applier: app.applier,
     catalog: app.catalog,
     filters: app.filters,
+    source: app.source,
+    overlay: app.overlay,
+    advisor: app.advisor,
     getSession: sessionInfo,
     isSimulating: () => app.controller.getState().context?.source === 'manual',
     panelEnabled: () => getPanelPrefs().enabled,
@@ -154,6 +165,7 @@ export function mainMenu() {
       simulate: simulateMenu,
       cors: corsSetupMenu,
       enableApply: enableApplyFlow,
+      enableAdvisor: enableAdvisorFlow,
       reopen: mainMenu,
       unsimulate: () => app.controller.simulate(null),
       togglePanel: () => togglePanel(!getPanelPrefs().enabled),

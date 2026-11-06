@@ -24,6 +24,8 @@ Requiere `DisableWebSecurity=1` en el archivo `config` de Pengu (el plugin guía
 - **Enlace** (icono de la cabecera): abre la misma build en coachless.gg (`/builds/caitlyn?role=adc&matchup=jinx`).
 - Los hechizos se ajustan al modo y al rol (Aplastar en jungla, ninguno en Arena, sin Aplastar en ARAM…).
 - **Idioma**: español o inglés (automático según el cliente; cambiable en Ajustes → Más → ES/EN).
+- **Fuente de datos** (Ajustes): Coachless (por defecto), **LoLalytics** (gratis, sin cuenta, parche actual) o Auto. Con LoLalytics no hace falta iniciar sesión.
+- **Estadísticas en la selección** (Ajustes → Más → Estadísticas): etiqueta sobre cada campeón con su win rate en tu línea o, con rival, contra él; los mejores counters, resaltados (datos de LoLalytics, sin cuenta). `easyCoachless.overlayProbe()` / `.overlaySelector('css')` si no aparecen.
 - Cuenta gratuita: datos del campeón y rango, sin matchup ni rango de parches. Premium: matchup y dos parches.
 - Desde DevTools: `easyCoachless.state()`, `easyCoachless.simulate({championId:145, opponentChampionId:222, role:3, lobbyTier:5})`, `easyCoachless.debug(true)`.
 

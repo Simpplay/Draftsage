@@ -162,7 +162,7 @@ type ItemBlock = {
 type SpellDuo = { spellIds: number[2], wpa: number, occurrence: number }
 ```
 
-**`itemBlocks[].type`** (🔶 deducido del contenido observado):
+**`itemBlocks[].type`** (🔶 deducido del contenido observado; el plugin lo usa para clasificar filas — `domain/items.js`; verificar con `dev/api-probes/test-coachless-items.mjs`):
 
 | type | Contenido observado | Sección de la UI |
 |---|---|---|
@@ -186,6 +186,8 @@ type SpellDuo = { spellIds: number[2], wpa: number, occurrence: number }
 }
 ```
 > Los IDs concretos del ejemplo son ilustrativos de la forma; los valores reales cambian con parche y filtros.
+
+**Cómo lo usa el plugin** (2026-11-05): se elige la build con `keystone` igual a la runa clave mostrada (mejor `tier`, luego más `occurrence`); `starterIds`/`firstItemId`/`secondItemId` son los datos ciertos (inicio y núcleo); los bloques 1, 3 y 4 alimentan «primera vuelta», «alternativas» y «situacionales» (ordenados por partidas; los `highlighted` primero); el bloque 2 solo sirve para localizar botas si faltan las de `GetGlobalItemStatistics`. ⚠ Un ítem con `occurrence: 0` trae `wpa: 0` de relleno (se trata como «sin dato»). 🔶 `tier` 0/1/2 = S/A/B (por la UI). Los ítems de la build **no** dependen del matchup (§4.1: lo ignora).
 
 ---
 
@@ -250,6 +252,8 @@ Los 6 patrones observados para Kai'Sa:
   "winrateExpected": 50.35, "winrateObserved": 49.65 }
 ```
 El orden del array **no está ordenado por WPA** (se vio orden por `itemId`) ✅; ordena en cliente.
+
+**Uso en el plugin** (`client.items`, 2.ª tanda de cada recomendación; ❓ sin verificar contra la API real): botas = `itemType 2`, `itemSlots null`; 3.er ítem = `itemType 1`, `itemSlots [3]`, `firstLegendaryId` = `firstItemId` de la build y `secondLegendaryId` = `secondItemId`. Se ordenan por WPA con muestra mínima (botas ≥ 10 %, 3.er ítem ≥ 5 % de las partidas del grupo). Se envían los mismos `commonFilters` que el resto (incluye el matchup en premium); si la petición falla se omite la fila. Pendiente de comprobar con `dev/api-probes/test-coachless-items.mjs`: que el encadenado condicione de verdad el resultado y si el matchup se respeta aquí.
 
 ---
 
@@ -459,9 +463,17 @@ def items(champion_id, item_type=1, slots=None, **kw):
 2b. ✅ Medido (cuenta gratuita, 2026-11-05): una recomendación completa del plugin son ≈ 10 peticiones (GetPatches + 3 + 6) y tarda 0,4–0,6 s con la caché de parches caliente (hasta ~3 s en frío). ❓ Límites de tasa: sin señales de 429 con ~100 peticiones, pero solo se ha probado con la gratuita (ver `dev/api-probes/test-coachless-premium.mjs`).
 3. ❓ IDs de todas las regiones (solo Korea = 4 verificado) y el ID de Gold.
 4. ❓ Significado de `runeType` (siempre 0), `runeEffects.type` (observados: 0, 3, 7, 12, 14, 15, 20) y `loadFirstEpicPurchase`.
-5. ❓ Valores de `itemType` distintos de 1, 2 y 6 en `GetGlobalItemStatistics`, y de `keystone`/`starterId`/`firstPurchaseId` encadenados (la UI los usa al elegir una build concreta).
+5. ❓ Valores de `itemType` distintos de 1, 2 y 6 en `GetGlobalItemStatistics` (probe de ítems: `dev/api-probes/test-coachless-items.mjs`), y de `keystone`/`starterId`/`firstPurchaseId` encadenados (la UI los usa al elegir una build concreta).
 6. ✅ `matchupChampionIds` es solo premium y solo filtra runas y hechizos; `role: 5` = rol principal. ❓ `role` con campeones multi-rol y significado de `leagueTiers: 8`.
 7. ❓ Límites de tasa (rate limit) y política de caché.
 8. ❓ Otras secciones del sitio (Items, Runes, Abilities, Spells, Review, Worlds) con endpoints propios.
 
 > Cómo completarlo: en Chrome, abrir DevTools → pestaña Network → filtrar por `api.coachless.gg`, aplicar el filtro correspondiente en la UI y revisar *Payload*/*Response* de cada petición.
+
+
+## Live Client Data API de Riot (no es Coachless) — verificado con capturas reales (2026-11-05)
+`https://127.0.0.1:2999/liveclientdata/…` · solo lectura · solo responde durante una partida (si no, el `fetch` falla) · certificado autofirmado (funciona desde la consola del cliente) · sin credenciales.
+- `activeplayer`: `riotId`, `summonerName`, `currentGold` (decimal), `level`, `championStats`, `abilities`, `fullRunes` (`keystone`, árboles, `generalRunes`, `statRunes`).
+- `playeritems?riotId=Nombre#TAG`: lista de `{itemID, count, slot, price, …}`.
+- `allgamedata` (la que usa el plugin, una sola petición): `activePlayer` (como arriba) · `allPlayers[]` con `championName` (localizado), `rawChampionName` (`game_character_displayname_<Alias>`), `position` (`TOP/JUNGLE/MIDDLE/BOTTOM/UTILITY`, vacío en modos sin puestos), `team` (`ORDER/CHAOS`), `riotId`, `summonerName`, `items[]` · `gameData` (`gameMode`, `gameTime`) · `events.Events[]`.
+- El jugador activo se identifica por `riotId` o `summonerName` en `allPlayers`. 🔶 No expone el rango de la lobby.

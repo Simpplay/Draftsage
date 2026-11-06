@@ -82,11 +82,13 @@ const TARGETS = [
 
 /**
  * @param {{applier, catalog, filters:{get:()=>object, set:(patch:object)=>object}, getSession:()=>{loggedIn:boolean,email?:string,premium?:boolean}, isSimulating:()=>boolean,
+ *          source:{get:()=>string, set:(mode:string)=>string}, overlay:{isEnabled:()=>boolean, setEnabled:(on:boolean)=>void},
+ *          advisor:{isEnabled:()=>boolean, setEnabled:(on:boolean)=>void},
  *          panelEnabled:()=>boolean,
- *          actions:{login:Function, logout:Function, simulate:Function, cors:Function, enableApply:()=>Promise<boolean>,
+ *          actions:{login:Function, logout:Function, simulate:Function, cors:Function, enableApply:()=>Promise<boolean>, enableAdvisor:()=>Promise<boolean>,
  *                   reopen:Function, unsimulate:Function, togglePanel:Function}}} deps
  */
-export function openSettings({ applier, catalog, filters, getSession, isSimulating, panelEnabled, actions }) {
+export function openSettings({ applier, catalog, filters, source, overlay, advisor, getSession, isSimulating, panelEnabled, actions }) {
   ensureStyle()
   const box = h('div', { class: 'ecs' })
   let more = false
@@ -156,17 +158,31 @@ export function openSettings({ applier, catalog, filters, getSession, isSimulati
         Array.from({ length: MAX_PATCH_RANGE }, (_, i) => i + 1).map((n) => patchChip(String(n), '+' + n, t('set.patchPlusTip', n),
           !auto && fl.patches.additions === n, !premium, () => { filters.set({ patches: { mode: 'manual', additions: n } }); render() }))))
 
+    // Fuente de las recomendaciones: Coachless (cuenta), LoLalytics (gratis) o Auto.
+    const srcMode = source.get()
+    const srcChip = (id, label, tip) => h('button', { type: 'button', class: 'ecs-chip', 'data-source': id, 'aria-pressed': String(srcMode === id), title: tip, onclick: () => { source.set(id); render() } }, label)
+    const src = h('div', null,
+      h('div', { class: 'ecs-cap' }, icon('swap', 13), t('set.source')),
+      h('div', { class: 'ecs-chips', role: 'group' },
+        srcChip('coachless', t('set.srcCoachless'), t('set.srcCoachlessTip')),
+        srcChip('lolalytics', t('set.srcLola'), t('set.srcLolaTip')),
+        srcChip('auto', t('set.srcAuto'), t('set.srcAutoTip'))))
+
     const sim = isSimulating()
     const mini = (act, ico, label, tip, onclick, pressed) => h('button', { type: 'button', class: 'ecs-mini', 'data-act': act, title: tip, 'aria-pressed': pressed == null ? null : String(pressed), onclick }, icon(ico, 20), h('small', null, label))
     const grid = more && h('div', { class: 'ecs-grid ecs-pop' },
       mini('simulate', 'target', t('set.simulate'), t('set.simulateTip'), () => go(actions.simulate)),
       sim && mini('unsimulate', 'close', t('set.exit'), t('set.exitTip'), () => { actions.unsimulate(); render() }),
+      mini('overlay', 'swords', t('set.overlay'), overlay.isEnabled() ? t('set.overlayOn') : t('set.overlayOff'), () => { overlay.setEnabled(!overlay.isEnabled()); window.dispatchEvent(new Event('easy-coachless:prefs')); render() }, overlay.isEnabled()),
+      // Consejero de picks: apagarlo es inmediato; encenderlo pasa por el aviso (los datos del draft viajan a iTero).
+      mini('advisor', 'spark', t('set.advisor'), advisor.isEnabled() ? t('set.advisorOn') : t('set.advisorOff'),
+        () => { if (advisor.isEnabled()) { advisor.setEnabled(false); render() } else go(async () => { await actions.enableAdvisor(); actions.reopen() }) }, advisor.isEnabled()),
       mini('panel', panelEnabled() ? 'eye' : 'eyeOff', t('set.panel'), panelEnabled() ? t('set.panelHide') : t('set.panelShow'), () => { actions.togglePanel(); render() }, panelEnabled()),
       mini('lang', 'globe', getLang().toUpperCase(), t('set.langTip'), () => { actions.toggleLanguage(); relabel() }),
       mini('cors', 'plug', t('set.conn'), t('set.connTip'), () => go(actions.cors)))
 
     return [
-      top, power,
+      top, power, src,
       h('div', { class: cfg.enabled ? '' : 'ecs-off' }, h('div', { class: 'ecs', style: 'gap:16px' }, target, keys)),
       elo, patches,
       h('button', { type: 'button', class: 'ecs-more', 'aria-expanded': String(more), 'data-act': 'more', title: t('set.moreTip'), onclick: () => { more = !more; render() } }, icon('chevron', 14), t('set.more')),

@@ -25,3 +25,11 @@ export function buildsUrl({ champion, role, opponent } = {}) {
   if (opponent) params.push('matchup=' + encodeURIComponent(opponent))
   return `${SITE}/builds/${encodeURIComponent(champion)}` + (params.length ? '?' + params.join('&') : '')
 }
+
+export const LOLA_SITE = 'https://lolalytics.com'
+
+/** URL de la build en lolalytics.com (con rival → página del matchup), o null si falta el campeón. `lane`: top|jungle|middle|bottom|support. */
+export function lolalyticsUrl({ champion, lane, opponent } = {}) {
+  if (!champion) return null
+  return `${LOLA_SITE}/lol/${encodeURIComponent(champion)}/${opponent ? `vs/${encodeURIComponent(opponent)}/` : ''}build/` + (lane ? `?lane=${encodeURIComponent(lane)}` : '')
+}
