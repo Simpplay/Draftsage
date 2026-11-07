@@ -1,4 +1,4 @@
-/* draftsage v1.0.1 — generado por dev/tools/release.mjs; no editar */
+/* draftsage v1.0.3 — generado por dev/tools/release.mjs; no editar */
 
 // src/shared/strings.js
 var es = {
