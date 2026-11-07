@@ -33,7 +33,7 @@ JavaScript plano con módulos ES, **sin build en runtime**. Pengu solo ejecuta `
 
 ## Actualizaciones firmadas (riesgo crítico: ejecutan código en el cliente de cada usuario)
 - **Loader** = `index.js`, `src/application/{loader,updater,update-prefs}.js`, `src/infrastructure/update/*`, `src/domain/update.js`, `src/shared/{version,logger}.js`. No se actualiza solo: cualquier cambio exige reinstalar; si cambia su contrato, sube `LOADER_API`. Cámbialo lo mínimo y con pruebas (`dev/tests/update.test.mjs`).
-- La clave **privada** de firma nunca va en el repositorio, ni en logs, ni se pega en una conversación; `keygen.mjs`/`release.mjs` se niegan a usar una ruta dentro del repo. No ejecutes `release.mjs` ni `git push` sin que el usuario lo pida: él firma y publica.
+- La clave **privada** de firma nunca va en el repositorio, ni en logs, ni se pega en una conversación; `keygen.mjs`/`release.mjs` se niegan a usar una ruta dentro del repo. No ejecutes `release.mjs`, `publish.ps1` ni `git push` sin que el usuario lo pida: él firma y publica.
 - No debilites la verificación (firma + hash + tamaño + anti-rollback + re-verificación al leer) ni ejecutes nada remoto sin ella. `dist/` solo lo genera `release.mjs`; no se edita a mano.
 - Procedimiento y modelo de amenazas: `docs/RELEASING.md`.
 

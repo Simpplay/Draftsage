@@ -75,6 +75,7 @@ draftsage/
 │   ├── tools/check.mjs              node --check + imports relativos + reglas del proyecto
 │   ├── tools/keygen.mjs             Crea el par de claves de firma (privada fuera del repo) y registra la pública en el loader
 │   ├── tools/release.mjs            Empaqueta con esbuild, firma y se autoverifica → dist/ (ver docs/RELEASING.md)
+│   ├── tools/publish.ps1            Release de principio a fin en PowerShell: release.mjs + add/commit/tag + comprobación del zip + push atómico
 │   ├── tools/package.mjs            Crea el .zip de distribución (git archive) tras verificar etiqueta, firma, hash y que no haya claves
 │   └── package.json                 Única dependencia: esbuild (solo desarrollo)
 └── docs/                            HANDOFF, coachless-api, coachless-auth, lolalytics (análisis y estado de la 2.ª fuente), champ-select-dom (anclas del DOM del cliente), este archivo

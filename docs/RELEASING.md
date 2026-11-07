@@ -13,6 +13,18 @@ Las versiones se publican en GitHub (`Simpplay/Draftsage`), las sirve jsDelivr y
 
 ## Cada versión
 
+**Con un solo comando** (PowerShell, desde la raíz del plugin):
+
+```
+powershell -ExecutionPolicy Bypass -File .\dev\tools\publish.ps1            # siguiente versión patch (1.0.0 -> 1.0.1)
+powershell -ExecutionPolicy Bypass -File .\dev\tools\publish.ps1 -Bump minor   # 1.0.1 -> 1.1.0
+powershell -ExecutionPolicy Bypass -File .\dev\tools\publish.ps1 -Version 2.0.0 -NoPush
+```
+
+`publish.ps1` comprueba el entorno (rama `main`, árbol limpio, nada pendiente de bajar de origin, etiqueta libre), instala esbuild si falta, ejecuta `release.mjs`, te enseña los cambios y pide confirmación, hace `git add -A`, commit `release vX.Y.Z` y etiqueta anotada, comprueba el zip con `package.mjs` (si falla deshace commit y etiqueta) y hace `git push --atomic origin main vX.Y.Z`. Opciones: `-Key <ruta.pem>`, `-RequireTests`, `-NoPush` (todo menos el push), `-Yes` (sin confirmación). No pide ni imprime la clave privada.
+
+**A mano** (lo que hace el script):
+
 ```
 node dev/tools/release.mjs 1.0.1            # añade --require-tests para bloquear si fallan las pruebas
 git add -A
