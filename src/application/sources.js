@@ -1,4 +1,4 @@
-// easy-coachless/src/application/sources.js — elige de qué fuente sale la recomendación (Coachless, LoLalytics o automático)
+// draftsage/src/application/sources.js — elige de qué fuente sale la recomendación (Coachless, LoLalytics o automático)
 //
 // Cada fuente tiene la misma firma: getRecommendation(ctx, {premium, signal}) → { ok:true, data } | { ok:false, reason }.
 // El orden y los recursos los decide domain/sources.js. El resultado lleva `meta.source` ('coachless' | 'lolalytics') y, si la primera

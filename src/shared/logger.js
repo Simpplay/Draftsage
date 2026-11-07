@@ -1,9 +1,9 @@
-// easy-coachless/src/shared/logger.js
-// Todos los mensajes del plugin llevan el prefijo [easy-coachless] para filtrarlos en DevTools.
+// draftsage/src/shared/logger.js
+// Todos los mensajes del plugin llevan el prefijo [draftsage] para filtrarlos en DevTools.
 // Los de depuración usan console.log (no console.debug, que DevTools oculta en el nivel "Verbose").
 
-const TAG = '[easy-coachless]'
-const DEBUG_KEY = 'easy-coachless/debug'
+const TAG = '[draftsage]'
+const DEBUG_KEY = 'draftsage/debug'
 
 const debugOn = () => {
   try { return !!DataStore.get(DEBUG_KEY, false) } catch { return false }
@@ -16,7 +16,7 @@ export const log = {
   debug: (...a) => { if (debugOn()) console.log(TAG, '[debug]', ...a) },
 }
 
-// Desde la consola de DevTools:  easyCoachless.debug(true)  /  easyCoachless.debug(false)
-window.easyCoachless = Object.assign(window.easyCoachless ?? {}, {
+// Desde la consola de DevTools:  draftsage.debug(true)  /  draftsage.debug(false)
+window.draftsage = Object.assign(window.draftsage ?? {}, {
   debug: (on = true) => DataStore.set(DEBUG_KEY, !!on),
 })

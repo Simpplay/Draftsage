@@ -1,4 +1,4 @@
-// easy-coachless/src/infrastructure/lcu/lcu-client.js — lectura del LCU desde el propio cliente (solo GET)
+// draftsage/src/infrastructure/lcu/lcu-client.js — lectura del LCU desde el propio cliente (solo GET)
 //
 // Dentro del cliente de League, `fetch('/lol-...')` con ruta relativa llega al LCU sin credenciales (así lo hacen los
 // plugins de Pengu). La API del LCU no es oficial y puede cambiar: cualquier fallo devuelve null, nunca lanza.

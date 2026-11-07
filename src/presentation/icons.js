@@ -1,4 +1,4 @@
-// easy-coachless/src/presentation/icons.js — iconos SVG de trazo (sin innerHTML: nodos creados con createElementNS)
+// draftsage/src/presentation/icons.js — iconos SVG de trazo (sin innerHTML: nodos creados con createElementNS)
 // Uso: icon('bolt', 16)  → <svg> que hereda el color del texto (currentColor).
 
 const NS = 'http://www.w3.org/2000/svg'

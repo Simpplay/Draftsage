@@ -1,4 +1,4 @@
-// easy-coachless/src/application/recommendation.js — caso de uso: página de runas + hechizos para un matchup
+// draftsage/src/application/recommendation.js — caso de uso: página de runas + hechizos para un matchup
 //
 // Entrada:  MatchContext { championId, opponentChampionId?, role?, lobbyTier?, mode?, keystoneOverride?, spellOverride? }  (ver domain/match-context.js)
 // Salida:   { ok:true, data: Recommendation } | { ok:false, reason }
@@ -49,7 +49,7 @@ export const MIN_NEXT_SHARE = 0.05     // 3.er ítem: al menos el 5 % (está má
  * @property {{keystones:{rune:number,wpa:number,occurrence:number,share:number}[], autoKeystone:number,
  *             spells:{spell:number,wpa:number,occurrence:number,share:number,pair:number[]}[]}} alternatives
  * @property {{keystone:boolean, spells:boolean}} custom   true = lo eligió el usuario (a mano o fijado)
- * @property {{patch:string, patchSpan:string, patchRange:number, patchSource:'auto'|'manual', patchFallback:boolean, tiers:number[], tierSource:'lobby'|'manual', matchup:boolean, opponent:number|null, opponentSource:'position'|'role'|'manual'|null, premium:boolean, sample:number, mode:string|null, notices:string[]}} meta
+ * @property {{patch:string, patchSpan:string, patchRange:number, patchSource:'auto'|'manual', patchFallback:boolean, tiers:number[], tierSource:'lobby'|'manual', matchup:boolean, opponent:number|null, opponentSource:'position'|'role'|'manual'|'assigned'|null, premium:boolean, sample:number, mode:string|null, notices:string[]}} meta
  */
 
 const aborted = () => ({ ok: false, reason: 'aborted' })

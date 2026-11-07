@@ -1,4 +1,4 @@
-// easy-coachless/src/presentation/menus.js — todas las pantallas del plugin, construidas con ui.js.
+// draftsage/src/presentation/menus.js — todas las pantallas del plugin, construidas con ui.js.
 // Para añadir una pantalla nueva: crea aquí una función que use openDialog/openForm/openMenu
 // y devuelve su handle (así quien la llame puede esperar `.result` o cerrarla).
 // Los textos salen de shared/strings.js (español e inglés).
@@ -7,7 +7,8 @@ import { openDialog, openForm, confirm, notify, copyText, h, richText } from './
 import { openSettings } from './settings.js'
 import { login, logout, sessionInfo } from '../application/session.js'
 import { app } from '../application/app.js'
-import { getPanelPrefs, setPanelPrefs, setLanguagePref } from '../application/preferences.js'
+import { getUpdatePrefs, setUpdatePrefs } from '../application/update-prefs.js'
+import { getAdvisorPrefs, getPanelPrefs, setPanelPrefs, setLanguagePref } from '../application/preferences.js'
 import { ROLE_FILL, parseRole, parseTier } from '../domain/lobby.js'
 import { getLang, t } from '../shared/i18n.js'
 import { log } from '../shared/logger.js'
@@ -22,7 +23,7 @@ export function corsSetupMenu() {
   )
   return openDialog({
     id: 'cors-setup',
-    title: 'Easy Coachless',
+    title: 'Draftsage',
     body: [h('p', null, richText(t('cors.intro'))), steps],
     actions: [
       { id: 'steps', label: t('cors.btnSteps'), keepOpen: true, onClick: () => { steps.style.display = steps.style.display === 'none' ? 'block' : 'none'; return false } },
@@ -135,17 +136,32 @@ export async function enableAdvisorFlow() {
   return ok
 }
 
+// Aviso previo a activar la maestría (tu Riot ID viaja a iTero para recibir tus puntos por campeón). Devuelve Promise<boolean>.
+export async function enableMasteryFlow() {
+  if (getAdvisorPrefs().useMastery) return true
+  const ok = await confirm({ id: 'mastery-consent', title: t('mastery.title'), message: t('mastery.msg'), confirmLabel: t('mastery.btn') })
+  if (ok) { app.advisor.configure({ useMastery: true }); await app.mastery.refresh() }
+  return ok
+}
+
 // Menú principal del plugin: la pantalla gráfica de ajustes (presentation/settings.js).
 function togglePanel(enabled) {
   setPanelPrefs({ enabled })
-  window.dispatchEvent(new Event('easy-coachless:prefs'))
-  if (enabled) window.dispatchEvent(new Event('easy-coachless:show-panel'))
+  window.dispatchEvent(new Event('draftsage:prefs'))
+  if (enabled) window.dispatchEvent(new Event('draftsage:show-panel'))
+}
+
+// Devuelve el panel a su sitio de origen (arriba a la derecha) por si quedó fuera de alcance.
+export function resetPanelPosition() {
+  setPanelPrefs({ x: null, y: null })
+  window.dispatchEvent(new Event('draftsage:prefs'))
+  window.dispatchEvent(new Event('draftsage:show-panel'))
 }
 
 // Alterna el idioma (es ⇄ en) y avisa al panel para que se repinte.
 function toggleLanguage() {
   setLanguagePref(getLang() === 'es' ? 'en' : 'es')
-  window.dispatchEvent(new Event('easy-coachless:prefs'))
+  window.dispatchEvent(new Event('draftsage:prefs'))
 }
 
 export function mainMenu() {
@@ -156,9 +172,20 @@ export function mainMenu() {
     source: app.source,
     overlay: app.overlay,
     advisor: app.advisor,
+    mastery: {
+      isEnabled: () => getAdvisorPrefs().useMastery,
+      weight: () => getAdvisorPrefs().masteryWeight,
+      setWeight: (w) => { app.advisor.configure({ masteryWeight: w }) },
+      off: () => { app.advisor.configure({ useMastery: false }); app.mastery.refresh() },
+    },
     getSession: sessionInfo,
     isSimulating: () => app.controller.getState().context?.source === 'manual',
     panelEnabled: () => getPanelPrefs().enabled,
+    updates: {
+      mode: () => getUpdatePrefs().mode,
+      setMode: (m) => { setUpdatePrefs({ mode: m }) },
+      build: () => window.draftsage?.build?.() ?? { version: '?', source: 'packaged' },
+    },
     actions: {
       login: loginMenu,
       logout: logoutFlow,
@@ -166,9 +193,11 @@ export function mainMenu() {
       cors: corsSetupMenu,
       enableApply: enableApplyFlow,
       enableAdvisor: enableAdvisorFlow,
+      enableMastery: enableMasteryFlow,
       reopen: mainMenu,
       unsimulate: () => app.controller.simulate(null),
       togglePanel: () => togglePanel(!getPanelPrefs().enabled),
+      resetPanel: resetPanelPosition,
       toggleLanguage,
     },
   })

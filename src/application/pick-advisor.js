@@ -1,26 +1,31 @@
-// easy-coachless/src/application/pick-advisor.js — consejero de picks: iTero (composición) + LoLalytics (matchup) → top de campeones
+// draftsage/src/application/pick-advisor.js — consejero de picks de DRAFT: iTero (composición completa) → top de campeones
 //
 // Dos piezas (misma forma que application/overlay.js):
 //  · createPickAdvisor: contexto → picks. Coloca a los campeones revelados en su línea (domain/pick-advice.js assignLanes; los rivales casi
-//    nunca traen posición y se deducen con la cuota de línea de las listas de tier de LoLalytics), pide UNA respuesta a iTero y la mezcla
-//    con la ventaja de matchup contra el rival de tu línea.
+//    nunca traen posición y se deducen con la cuota de línea de las listas de tier de LoLalytics, o llevan la línea que eligió el jugador),
+//    pide UNA respuesta a iTero (con tu maestría si la activaste, application/mastery.js) y devuelve los mejores. La lista de MATCHUP contra el
+//    rival (LoLalytics) es otra y va aparte (application/pick-filters.js); aquí LoLalytics solo marca acuerdo/discrepancia (✓/⚠), no cambia el orden.
 //  · createPickAdvisorController: vigila el controlador de Champion Select y mantiene { status, data } para la interfaz.
 //
 // Reglas: solo MUESTRA (nada se aplica ni se elige solo); si iTero falla o se bloquea, el panel y el resto del plugin siguen igual (estado
 // 'error' con la razón); LoLalytics es opcional (sin él, solo iTero); ningún nombre sin mapear llega a iTero (se omite y se avisa); una
 // consulta solo cuando cambia la composición, con tope por Champion Select.
 
-import { rankClassFor, buildRequest, laneOfRole, supportsMode, nameKey, LANES } from '../domain/itero.js'
+import { rankClassFor, buildRequest, laneOfRole, supportsMode, nameKey } from '../domain/itero.js'
 import { assignLanes, rankPicks } from '../domain/pick-advice.js'
+import { needsShares } from '../domain/enemy-roles.js'
 import { resolveTiers } from '../domain/filters.js'
-import { LANES as LOLA_LANES, tierParam } from '../domain/lolalytics.js'
+import { tierParam } from '../domain/lolalytics.js'
+import { loadLaneShares } from './enemy-roles.js'
 
 /**
  * @param {{itero:{draftPicks:Function}, names:{load:Function, name:(id:number)=>string|null, idOf:(n:string)=>number|null},
  *          catalog:{load:Function, champion:(id:number)=>{name:string}, findChampion:(q:string)=>({id:number,name:string}|null)},
- *          lola?:{tierlist:Function}|null, stats?:{load:Function}|null, getFilters?:()=>object, getPrefs?:()=>{weight:number, minPick:number}, log?:object}} deps
+ *          lola?:{tierlist:Function}|null, stats?:{load:Function}|null, mastery?:{load:Function, isEnabled:()=>boolean}|null,
+ *          getFilters?:()=>object, getPrefs?:()=>{minPick:number, useMastery:boolean, masteryWeight:number}, log?:object}} deps
+ *   mastery = application/mastery.js (opcional): si está activada se pide (o reutiliza) antes de consultar a iTero.
  */
-export function createPickAdvisor({ itero, names, catalog, lola = null, stats = null, getFilters = () => undefined, getPrefs = () => ({}), log = null }) {
+export function createPickAdvisor({ itero, names, catalog, lola = null, stats = null, mastery = null, getFilters = () => undefined, getPrefs = () => ({}), log = null }) {
   // Nombre inglés para iTero: Data Dragon; si no está, el del cliente (se valida tras la respuesta con findUnrecognized).
   const nameOf = (id) => names.name(id) ?? (catalog.champion(id)?.name?.startsWith('#') ? null : catalog.champion(id).name)
   const idOf = (name) => {
@@ -28,17 +33,6 @@ export function createPickAdvisor({ itero, names, catalog, lola = null, stats = 
     if (id != null) return id
     const c = catalog.findChampion(name)
     return c && nameKey(c.name) === nameKey(name) ? c.id : null
-  }
-
-  // Cuota de línea (% de partidas de cada campeón en cada línea) de las listas de tier de LoLalytics (5 peticiones, cacheadas 2 h).
-  async function laneShares(lanes, tierP) {
-    const rows = {}
-    if (!lola) return () => null
-    await Promise.all(lanes.map(async (lane) => {
-      const r = await lola.tierlist({ lane: LOLA_LANES[LANES.indexOf(lane)], tier: tierP }).catch(() => null)
-      if (r?.ok) rows[lane] = r.data.rows
-    }))
-    return (cid, lane) => rows[lane]?.get(cid)?.pctLane ?? null
   }
 
   /**
@@ -59,8 +53,8 @@ export function createPickAdvisor({ itero, names, catalog, lola = null, stats = 
 
     // Líneas de los revelados: solo se piden las listas de tier si algún campeón revelado no trae posición.
     const allies = ctx.allies ?? [], enemies = ctx.enemies ?? []
-    const needsShares = [...allies, ...enemies].some((m) => !m.position)
-    const shares = needsShares ? await laneShares(LANES, tp.param) : () => null
+    const lacksLane = needsShares(allies, {}) || needsShares(enemies, {}) // los rivales con línea elegida a mano ya traen `position`
+    const shares = lacksLane ? await loadLaneShares(lola, tp.param) : () => null
     const allyLanes = assignLanes(allies, shares)
     const enemyLanes = assignLanes(enemies, shares)
     delete allyLanes[lane] // tu línea la ocupas tú (o nadie): iTero la deja vacía
@@ -78,7 +72,14 @@ export function createPickAdvisor({ itero, names, catalog, lola = null, stats = 
       return out
     }
     const bans = (ctx.bans ?? []).map(nameOf).filter(Boolean)
-    const req = buildRequest({ lane, rankClass, side: ctx.side ?? 'Blue', allies: toNames(allyLanes), enemies: toNames(enemyLanes), bans })
+    // Maestría (solo si el jugador la activó): se espera a que cargue; si no hay datos se sigue sin ella, sin molestar.
+    const prefs = getPrefs()
+    let masteryInfo = null
+    if (mastery?.isEnabled()) {
+      const m = await mastery.load().catch(() => null)
+      if (m?.status === 'ready') masteryInfo = { data: { ...m.points, avg: m.avg }, weight: prefs.masteryWeight }
+    }
+    const req = buildRequest({ lane, rankClass, side: ctx.side ?? 'Blue', allies: toNames(allyLanes), enemies: toNames(enemyLanes), bans, mastery: masteryInfo })
 
     const [it, st] = await Promise.all([
       itero.draftPicks(req),
@@ -86,17 +87,17 @@ export function createPickAdvisor({ itero, names, catalog, lola = null, stats = 
     ])
     if (!it.ok) return { ok: false, reason: it.reason }
 
-    const prefs = getPrefs()
     const reveal = { allyLanes: Object.keys(allyLanes), enemyLanes: Object.keys(enemyLanes) }
     const lanes = { allies: { ...allyLanes }, enemies: { ...enemyLanes } } // { LINEA: campeón }: la interfaz explica con sus retratos
     const r = rankPicks({
       candidates: it.data.candidates, idOf, stats: st?.ok ? st.data : null, reveal, banned: bans,
-      options: { ...(prefs.weight != null && { weight: prefs.weight }), ...(prefs.minPick != null && { minPick: prefs.minPick }) },
+      options: { ...(prefs.minPick != null && { minPick: prefs.minPick }) },
     })
-    log?.info('consejero', JSON.stringify({ linea: lane, rango: rankClass, lado: req.side, aliados: reveal.allyLanes, rivales: reveal.enemyLanes, bans: bans.length, pool: r.pool, mezcla: r.blended, top: r.picks.map((p) => p.name) }))
+    const withMastery = req.userModelWeightings[`t1_${lane}_mastery`] > 0
+    log?.info('consejero', JSON.stringify({ linea: lane, rango: rankClass, lado: req.side, aliados: reveal.allyLanes, rivales: reveal.enemyLanes, bans: bans.length, pool: r.pool, contraste: r.contrasted, maestria: withMastery, top: r.picks.map((p) => p.name) }))
     return {
       ok: true,
-      data: { picks: r.picks, meta: { lane, rankClass, side: req.side, sideKnown: !!ctx.side, blended: r.blended, pool: r.pool, rival, unrecognized: it.data.unrecognized, ...lanes } },
+      data: { picks: r.picks, rows: r.rows, meta: { lane, rankClass, side: req.side, sideKnown: !!ctx.side, blended: r.blended, contrasted: r.contrasted, mastery: withMastery, pool: r.pool, rival, unrecognized: it.data.unrecognized, ...lanes } },
     }
   }
   return { advise }
@@ -125,7 +126,7 @@ export function createPickAdvisorController({ advisor, source, prefs, getFilters
   }
   const ids = (l) => (l ?? []).map((m) => m.championId + ':' + (m.position ?? '')).join(',')
   const keyOf = (c) => [c.role, c.lobbyTier ?? 0, c.side ?? '', (c.bans ?? []).join(','), ids(c.allies), ids(c.enemies), c.opponentChampionId ?? 0,
-    JSON.stringify(getFilters()?.tiers ?? null), prefs.get().weight, prefs.get().minPick].join('|')
+    JSON.stringify(getFilters()?.tiers ?? null), prefs.get().minPick, prefs.get().useMastery ? prefs.get().masteryWeight : 0].join('|')
 
   async function evaluate({ force = false } = {}) {
     const ctx = contextOf(source.getState())
@@ -152,7 +153,7 @@ export function createPickAdvisorController({ advisor, source, prefs, getFilters
     refresh: () => { queries = 0; return evaluate({ force: true }) },
     isEnabled: () => prefs.get().enabled,
     setEnabled(on) { prefs.set({ enabled: !!on }); return evaluate({ force: true }) },
-    /** Cambia los ajustes de mezcla (weight, minPick) y recalcula. */
+    /** Cambia los ajustes (minPick, useMastery, masteryWeight) y recalcula. */
     configure(patch) { prefs.set(patch); return evaluate({ force: true }) },
   }
 }

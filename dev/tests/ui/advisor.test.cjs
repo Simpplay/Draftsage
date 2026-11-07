@@ -17,7 +17,7 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 760 }, loc
 const errors = [], iteroReqs = [], lolaCalls = []
 let iteroMode = 'ok'
 page.on('pageerror', (e) => errors.push(String(e)))
-if (process.env.EC_DEBUG) page.on('console', (m) => { if (/easy-coachless/.test(m.text())) console.log('  ·', m.text().slice(0, 300)) })
+if (process.env.EC_DEBUG) page.on('console', (m) => { if (/draftsage/.test(m.text())) console.log('  ·', m.text().slice(0, 300)) })
 
 // Data Dragon: los campeones de la fixture (ids 3000+) + los del arnés + relleno hasta 100+
 const names = {}
@@ -64,7 +64,7 @@ const lcu = (enemies) => page.evaluate((en) => {
 }, enemies)
 try {
   await page.goto('http://127.0.0.1:8767/dev/tests/ui/harness.html')
-  await page.evaluate(() => window.DataStore.set('easy-coachless/source', { mode: 'lolalytics' }))
+  await page.evaluate(() => window.DataStore.set('draftsage/source', { mode: 'lolalytics' }))
   await page.evaluate(() => window.__start())
   await page.waitForSelector('.ecp-fab', { timeout: 15000 })
   await lcu([238, 222])
@@ -72,9 +72,9 @@ try {
 
   // 1) apagado por defecto: ni bloque ni peticiones a iTero
   await page.waitForTimeout(1500)
-  ok(await page.$('.ecp-adv') === null, 'apagado por defecto: el panel no muestra el consejero')
+  ok(await page.$('.ecp-adv[data-advisor]') === null, 'apagado por defecto: el panel no muestra el consejero')
   ok(iteroReqs.length === 0, 'apagado: ninguna petición a iTero')
-  ok(await page.evaluate(() => window.DataStore.get('easy-coachless/advisor')) === undefined, 'apagado: nada guardado')
+  ok(await page.evaluate(() => window.DataStore.get('draftsage/advisor')) === undefined, 'apagado: nada guardado')
 
   // 2) activarlo pasa por el aviso; cancelar no activa
   await page.click('.ecp-fab'); await page.waitForSelector('.ecs')
@@ -85,26 +85,33 @@ try {
   ok(/iTero/.test(msg) && /tercero/.test(msg) && /Riot ID/.test(msg) && /bajo tu responsabilidad/.test(msg), 'el aviso explica qué se envía, a quién y el riesgo')
   await page.click('.ec-modal .ec-btn:not(.ec-primary)')
   await page.waitForTimeout(400)
-  ok(iteroReqs.length === 0 && !(await page.evaluate(() => window.DataStore.get('easy-coachless/advisor')?.enabled)), 'cancelar el aviso no activa nada')
+  ok(iteroReqs.length === 0 && !(await page.evaluate(() => window.DataStore.get('draftsage/advisor')?.enabled)), 'cancelar el aviso no activa nada')
   // aceptar
   await page.keyboard.press('Control+Shift+E'); await page.waitForSelector('.ecs')
-  await page.click('.ecs-more'); await page.click('.ecs-mini[data-act=advisor]')
+  await page.click('.ecs-more')
+  // actualizaciones (loader): «Auto» por defecto; «Solo incluida» se guarda y se puede volver a «Auto»
+  ok((await page.getAttribute('[data-updates=auto]', 'aria-pressed')) === 'true' && (await page.getAttribute('[data-updates=packaged]', 'aria-pressed')) === 'false', 'actualizaciones: «Auto» por defecto')
+  await page.click('[data-updates=packaged]')
+  ok((await page.evaluate(() => window.DataStore.get('draftsage/updates').mode)) === 'packaged' && (await page.getAttribute('[data-updates=packaged]', 'aria-pressed')) === 'true', 'actualizaciones: «Solo incluida» se guarda')
+  await page.click('[data-updates=auto]')
+  ok((await page.evaluate(() => window.DataStore.get('draftsage/updates').mode)) === 'auto', 'actualizaciones: vuelve a «Auto»')
+  await page.click('.ecs-mini[data-act=advisor]')
   await page.waitForSelector('.ec-modal .ec-btn.ec-primary'); await page.click('.ec-modal .ec-btn.ec-primary')
   await page.waitForSelector('.ecp-adv[data-advisor=ready]', { timeout: 20000 })
-  ok(await page.evaluate(() => window.DataStore.get('easy-coachless/advisor').enabled) === true, 'aceptar activa y guarda solo el interruptor y los pesos')
+  ok(await page.evaluate(() => window.DataStore.get('draftsage/advisor').enabled) === true, 'aceptar activa y guarda solo el interruptor y los pesos')
   await page.keyboard.press('Escape').catch(() => {})
-  const stored = JSON.stringify(await page.evaluate(() => window.DataStore.get('easy-coachless/advisor')))
+  const stored = JSON.stringify(await page.evaluate(() => window.DataStore.get('draftsage/advisor')))
   ok(!/token|password|email/i.test(stored), 'lo guardado no contiene datos sensibles: ' + stored)
 
   // 3) el bloque: 5 picks con puntuación relativa, sin porcentajes absolutos, motivos del primero
-  const picks = await page.$$eval('.ecp-pk', (a) => a.map((e) => ({ id: e.dataset.pick, text: e.textContent.trim(), cls: e.className })))
+  const picks = await page.$$eval('.ecp-adv[data-advisor] .ecp-pk', (a) => a.map((e) => ({ id: e.dataset.pick, text: e.textContent.trim(), cls: e.className })))
   ok(picks.length === 5, '5 picks sugeridos: ' + picks.length)
   ok(picks.every((p) => /[+-]\d+\.\d$/.test(p.text)), 'cada pick lleva su puntuación relativa con signo: ' + picks.map((p) => p.text).join(' '))
   ok(picks[0].cls.includes('ecp-on'), 'el primero está seleccionado')
-  const block = await page.textContent('.ecp-adv')
+  const block = await page.textContent('.ecp-adv[data-advisor]')
   ok(!/\d\s?%/.test(block), 'nunca se enseña un porcentaje absoluto en el bloque')
   ok(await page.$('.ecp-reasons[data-reasons]') !== null, 'hay motivos del pick seleccionado')
-  ok(await page.$('.ecp-adv .ecp-tag[data-source=itero]') !== null, 'etiqueta de fuente: iTero')
+  ok(await page.$('.ecp-adv[data-advisor] .ecp-tag[data-source=itero]') !== null, 'etiqueta de fuente: iTero')
   ok(await page.$('.ecp-adv [data-warn=names]') === null, 'sin aviso de nombres no reconocidos')
   ok(await page.$('.ecp-tag[data-source=lolalytics]') !== null && await page.$('.ecp-body .ecp-line') !== null, 'la recomendación principal sigue ahí')
   await page.screenshot({ path: shots + '/advisor-ready.png' })
@@ -120,8 +127,8 @@ try {
   const n1 = iteroReqs.length
 
   // 5) hacer clic en otro pick cambia los motivos sin red
-  await page.click('.ecp-pk:nth-child(3)')
-  ok(await page.$eval('.ecp-pk:nth-child(3)', (e) => e.classList.contains('ecp-on')), 'clic: el tercero queda seleccionado')
+  await page.click('.ecp-adv[data-advisor] .ecp-pk:nth-child(3)')
+  ok(await page.$eval('.ecp-adv[data-advisor] .ecp-pk:nth-child(3)', (e) => e.classList.contains('ecp-on')), 'clic: el tercero queda seleccionado')
   await page.waitForTimeout(800)
   ok(iteroReqs.length === n1, 'clic en un pick: ninguna petición nueva')
 
@@ -139,16 +146,16 @@ try {
   iteroMode = '503'
   await page.evaluate(() => { const s = window.__lcu.session; s.bans = { myTeamBans: [266, 3001], theirTeamBans: [] } })
   await page.waitForSelector('.ecp-adv[data-advisor=error]', { timeout: 15000 })
-  ok(await page.$eval('.ecp-adv', (e) => e.dataset.reason) === 'blocked', 'HTTP 503 → «bloqueo temporal»')
-  ok(await page.$('.ecp-tag[data-source=lolalytics]') !== null && await page.$('.ecp-counters') !== null, 'con iTero caído la recomendación y los counters siguen')
+  ok(await page.$eval('.ecp-adv[data-advisor]', (e) => e.dataset.reason) === 'blocked', 'HTTP 503 → «bloqueo temporal»')
+  ok(await page.$('.ecp-tag[data-source=lolalytics]') !== null && await page.$('.ecp-mu[data-matchup]') !== null, 'con iTero caído la recomendación y la lista de matchup siguen')
   ok(await page.$('.ecp-adv [data-act=adv-retry]') !== null, 'hay botón de reintentar')
   await page.screenshot({ path: shots + '/advisor-error.png' })
 
   // 8) apagarlo desde Ajustes: desaparece y no vuelve a pedir
   await page.keyboard.press('Control+Shift+E'); await page.waitForSelector('.ecs')
   await page.click('.ecs-more'); await page.click('.ecs-mini[data-act=advisor]')
-  await page.waitForFunction(() => !document.querySelector('.ecp-adv'), null, { timeout: 5000 })
-  ok(await page.evaluate(() => window.DataStore.get('easy-coachless/advisor').enabled) === false, 'apagar es inmediato y se guarda')
+  await page.waitForFunction(() => !document.querySelector('.ecp-adv[data-advisor]'), null, { timeout: 5000 })
+  ok(await page.evaluate(() => window.DataStore.get('draftsage/advisor').enabled) === false, 'apagar es inmediato y se guarda')
 } catch (e) { fail++; console.log('EXCEPCIÓN:', e.message); await page.screenshot({ path: shots + '/advisor-fail.png' }).catch(() => {}) }
 console.log('peticiones a iTero:', iteroReqs.length, '· a LoLalytics:', lolaCalls.length)
 console.log('errores de página:', errors.length ? errors.join(' | ') : 'ninguno')

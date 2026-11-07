@@ -1,4 +1,4 @@
-// easy-coachless/src/presentation/panel.js — panel flotante con las runas y hechizos recomendados
+// draftsage/src/presentation/panel.js — panel flotante con las runas y hechizos recomendados
 //
 // Diseño: casi sin texto. La cabecera son los retratos (tú ⚔ rival) y el rol; cada bloque lo identifica el icono de su árbol
 // de runas; los hechizos llevan la tecla (D/F) donde se colocarán; los avisos son iconos con tooltip; los estados
@@ -13,9 +13,18 @@
 // S/A/B con el % de victorias. En partida (state.context.phase === 'game') el panel pasa a «modo partida»: más ancho, ítems grandes y completos
 // (primera vuelta, alternativas, situacionales), runas de solo lectura y sin botones de aplicar; se queda así para consultarlo con Alt+Tab.
 // Seguimiento en partida (application/live-game.js, Live Client Data API): ✓ en los ítems que ya llevas, barra de oro en el siguiente por comprar y tu oro en la cabecera.
-// Picks sugeridos (application/pick-advisor.js, desactivado hasta que el usuario lo acepta; van ARRIBA, es lo primero que se decide): hasta 5 retratos con su puntuación RELATIVA bajo cada uno
-// (nunca un % absoluto), una marca ✓/⚠ si iTero y LoLalytics coinciden o discrepan y, al elegir uno, los motivos como chips con icono (sinergia,
-// counter, punto débil, escalado, daño). Funciona también antes de elegir campeón; el detalle sale de la respuesta ya recibida (sin red al hacer clic).
+// Picks sugeridos (ARRIBA, es lo primero que se decide), en DOS listas independientes de hasta 5 retratos:
+//   · MATCHUP (LoLalytics, sin cuenta): los campeones con mejor win rate contra el rival de tu línea, con ese % debajo;
+//   · DRAFT (iTero, application/pick-advisor.js, desactivado hasta que el usuario lo acepta): los que mejor encajan en la composición, con su puntuación
+//     RELATIVA (nunca un % absoluto), una marca ✓/⚠ si el matchup de LoLalytics coincide o discrepa y, al elegir uno, los motivos como chips con icono
+//     (sinergia, counter, punto débil, escalado, daño). Con la maestría activada (opcional) iTero pesa tus campeones. Funciona también antes de elegir campeón.
+// Encima va la barra de FILTROS (clase, dominio, matchup, meta, fase, daño; application/pick-filters.js): recortan las dos listas y atenúan la cuadrícula.
+// Rivales: junto al retrato de cada rival, un botón con su línea (la que eligió el jugador, la del cliente o la deducida por el plugin) y un selector de línea.
+// El detalle sale de las respuestas ya recibidas (sin red al hacer clic).
+// MODO ANCLADO (presentation/native.js): dentro de un Champion Select cuyo DOM se reconoce, el panel deja de ser una ventana flotante y se
+// convierte en un popover pegado al elemento nativo que lo abre (sin arrastre ni plegado): vista «build» (runas, aplicar, ítems; sube desde el
+// botón de la barra de runas/hechizos) o vista «picks» (filtros, picks de matchup y de draft, rivales; baja desde la cabecera de la cuadrícula).
+// Sin anclas reconocibles (otra versión del cliente, simulación, partida) sigue siendo el panel flotante de siempre.
 // No hace fetch: lee el estado del controlador (application/champ-select.js) y el catálogo de nombres/iconos.
 
 import { h, whenReady, openExternal } from './ui.js'
@@ -28,13 +37,16 @@ import { trackBuild } from '../domain/live.js'
 import { confidenceLevel, isLowData } from '../domain/confidence.js'
 import { buildsUrl, lolalyticsUrl, championSlug } from '../domain/web.js'
 import { laneOfRole } from '../domain/lolalytics.js'
+import { LANES } from '../domain/itero.js'
+import { CLASSES, DAMAGE_STEPS, MASTERY_POINTS, MASTERY_STEPS, MATCHUP_STEPS, META_STEPS, PHASE_STEPS, evaluable } from '../domain/pick-filters.js'
 import { getPanelPrefs, setPanelPrefs } from '../application/preferences.js'
 import { getLang, t } from '../shared/i18n.js'
 import { log } from '../shared/logger.js'
 
-const STYLE_ID = 'easy-coachless-panel-style'
+const STYLE_ID = 'draftsage-panel-style'
 const CSS = `
-.ecp{position:fixed;z-index:2147483000;width:292px;box-sizing:border-box;background:linear-gradient(#0a1428,#010a13 60px);color:#cdbe91;border:1px solid #785a28;box-shadow:0 0 18px #000;font:13px/1.4 sans-serif;user-select:none;animation:ecp-in .2s ease-out}
+.ecp{position:fixed;z-index:2147483000;width:292px;box-sizing:border-box;background:linear-gradient(#0a1428,#010a13 60px);color:#cdbe91;border:1px solid #785a28;box-shadow:0 0 18px #000;font:13px/1.4 sans-serif;user-select:none;animation:ecp-in .2s ease-out;-webkit-app-region:no-drag}
+.ecp *{-webkit-app-region:no-drag}
 .ecp-head{display:flex;align-items:center;gap:4px;padding:6px 8px;cursor:move;border-bottom:1px solid #3c3c41}
 .ecp-title{flex:1;display:flex;align-items:center;gap:7px;min-width:0}
 .ecp-por{width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid #c8aa6e;background:#1e2328;flex:none;box-sizing:border-box}
@@ -132,7 +144,7 @@ const CSS = `
 .ecp-pulse{color:#c8aa6e;animation:ecp-pulse 1.4s ease-in-out infinite}
 .ecp-sk{width:34px;height:34px;border-radius:50%;background:linear-gradient(90deg,#1e2328,#2b3036,#1e2328);background-size:200% 100%;animation:ecp-shimmer 1.2s linear infinite}
 .ecp-sk.ecp-still{animation:none;opacity:.5}
-.ecp-fab{position:fixed;z-index:2147483000;left:10px;bottom:10px;width:30px;height:30px;border-radius:50%;border:1px solid #785a28;background:#010a13;color:#c8aa6e;font:bold 11px sans-serif;cursor:pointer;opacity:.55;transition:.15s}
+.ecp-fab{position:fixed;z-index:2147483000;left:10px;bottom:10px;width:30px;height:30px;border-radius:50%;border:1px solid #785a28;background:#010a13;color:#c8aa6e;font:bold 11px sans-serif;cursor:pointer;opacity:.55;transition:.15s;-webkit-app-region:no-drag}
 .ecp-fab:hover{opacity:1;box-shadow:0 0 10px rgba(200,170,110,.5)}
 .ecp-adv{display:flex;flex-direction:column;gap:6px;padding-bottom:9px;border-bottom:1px solid #2a2a30}
 .ecp-dim{opacity:.4;pointer-events:none;transition:opacity .15s}
@@ -146,6 +158,33 @@ const CSS = `
 .ecp-ch img{width:16px;height:16px;border-radius:50%;object-fit:cover}
 .ecp-ch.ecp-pos{color:#0ac8b9;border-color:#0b4a46}
 .ecp-ch.ecp-neg{color:#e84057;border-color:#6b2a35}
+.ecp-foes{display:flex;flex-direction:column;gap:5px}
+.ecp-foe{display:flex;flex-direction:column;align-items:center;gap:2px}
+.ecp-rb{min-width:22px;height:15px;padding:0 3px;box-sizing:border-box;background:#0a1428;border:1px solid #3c3c41;border-radius:8px;color:#5b5a56;font:bold 9px/13px sans-serif;cursor:pointer;transition:.12s}
+.ecp-rb:hover{border-color:#785a28;color:#cdbe91}
+.ecp-rb.ecp-src-manual{border-color:#c8aa6e;color:#f0c870;background:#2a2314}
+.ecp-rb.ecp-src-position{border-color:#5b5a56;color:#cdbe91}
+.ecp-rb.ecp-src-auto{border-style:dashed;color:#a09b8c}
+.ecp-rolepick{gap:4px;padding:3px 4px;background:#0a1428;border:1px solid #2a2a30;border-radius:6px}
+.ecp-rp{min-width:26px;height:20px;padding:0 4px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;background:#1e2328;border:1px solid #3c3c41;border-radius:4px;color:#a09b8c;font:bold 10px/1 sans-serif;cursor:pointer}
+.ecp-rp:hover{border-color:#c8aa6e;color:#f0e6d2}
+.ecp-rp.ecp-on{border-color:#c8aa6e;color:#f0c870;background:#2a2314}
+.ecp-flt{display:flex;flex-direction:column;gap:5px}
+.ecp-fbtn{position:relative;display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:#1e2328;border:1px solid #3c3c41;border-radius:10px;color:#a09b8c;font:inherit;font-size:11px;cursor:pointer;transition:.12s}
+.ecp-fbtn:hover{border-color:#785a28;color:#cdbe91}
+.ecp-fbtn[aria-pressed=true]{border-color:#c8aa6e;color:#f0c870;background:#2a2314}
+.ecp-fbtn[aria-disabled=true]{opacity:.4;cursor:not-allowed}
+.ecp-fbtn[data-inactive]{border-style:dashed}
+.ecp-fgroup{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.ecp-fcap{width:54px;flex:none;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#7b7a76}
+.ecp-fcount{display:inline-flex;align-items:center;justify-content:center;min-width:14px;height:14px;padding:0 3px;box-sizing:border-box;border-radius:7px;background:#c8aa6e;color:#1a1408;font:bold 10px/14px sans-serif}
+.ecp-sec-t{display:flex;align-items:center;gap:6px}
+.ecp-sec-t .ecp-tag{margin-left:0}
+.ecp.ecp-docked{z-index:2147483200;width:340px;animation:ecp-dock .16s ease-out;box-shadow:0 10px 30px rgba(0,0,0,.85),0 0 0 1px #010a13}
+.ecp.ecp-docked .ecp-head{cursor:default}
+.ecp.ecp-docked .ecp-body{max-height:var(--ecp-maxh,70vh)}
+.ecp.ecp-docked.ecp-v-picks{border-top-color:#c8aa6e}.ecp.ecp-docked.ecp-v-build{border-bottom-color:#c8aa6e}
+@keyframes ecp-dock{from{opacity:0;transform:translateY(var(--ecp-dy,6px)) scale(.98)}to{opacity:1;transform:none}}
 @keyframes ecp-in{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:none}}
 @keyframes ecp-rot{to{transform:rotate(360deg)}}
 @keyframes ecp-pop{0%{transform:scale(.4)}70%{transform:scale(1.25)}100%{transform:scale(1)}}
@@ -199,17 +238,6 @@ function item(info, stat, cls = '', key = null) {
     key && h('span', { class: 'ecp-keycap' }, key),
     hasWpa && h('div', { class: 'ecp-w ' + (stat.wpa >= 0 ? 'ecp-pos' : 'ecp-neg') }, fmtWpa(stat.wpa)),
     !hasWpa && stat && Number.isFinite(stat.wr) && h('div', { class: 'ecp-w ecp-wr' }, Math.round(stat.wr) + '%')) // fuentes sin WPA (LoLalytics): win rate
-}
-
-// Mejores counters contra el rival de tu línea (application/overlay.js): icono + win rate contra él. null si no hay datos.
-function countersBlock(ov, cat) {
-  const d = ov?.data
-  if (!d || !d.rival || !d.counters.length) return null
-  return h('div', { class: 'ecp-line ecp-counters', 'data-counters': String(d.rival), title: t('ov.countersTip', cat.champion(d.rival).name) },
-    h('span', { class: 'ecp-lead' }, icon('swords', 16)),
-    d.counters.map((c) => h('div', { class: 'ecp-it' },
-      pic(cat.champion(c.cid), 'ecp-ico', cat.champion(c.cid).name + ' · ' + t('ov.vsShort', c.wr.toFixed(1), c.edge != null ? (c.edge >= 0 ? '+' : '') + c.edge.toFixed(1) : '–', c.n)),
-      h('div', { class: 'ecp-w ecp-pos' }, c.wr.toFixed(0) + '%'))))
 }
 
 const line = (...children) => h('div', { class: 'ecp-line' }, children)
@@ -332,7 +360,7 @@ function itemsBlock(d, cat, { game = false, live = null } = {}) {
 
 function titleOf(state, cat) {
   const c = state.context
-  if (!c?.championId) return 'Easy Coachless'
+  if (!c?.championId) return 'Draftsage'
   const me = cat.champion(c.championId).name
   const rival = state.status === 'ready' ? state.data.meta.opponent : c.opponentChampionId
   const vs = rival ? ` vs ${cat.champion(rival).name}` : ''
@@ -342,7 +370,7 @@ function titleOf(state, cat) {
 // Cabecera: tu retrato ⚔ retrato del rival + rol (el texto completo queda en el tooltip).
 function titleNode(state, cat) {
   const c = state.context
-  if (!c?.championId) return h('div', { class: 'ecp-title', title: 'Easy Coachless' }, h('div', { class: 'ecp-por ecp-ph' }, '?'))
+  if (!c?.championId) return h('div', { class: 'ecp-title', title: 'Draftsage' }, h('div', { class: 'ecp-por ecp-ph' }, '?'))
   const rival = state.status === 'ready' ? state.data.meta.opponent : c.opponentChampionId
   const roleName = t('role.' + c.role)
   return h('div', { class: 'ecp-title', title: titleOf(state, cat) },
@@ -352,21 +380,41 @@ function titleNode(state, cat) {
     roleName !== 'role.' + c.role && h('span', { class: 'ecp-role' }, roleName))
 }
 
-// Rivales ya revelados: clic para elegir con cuál se calcula el matchup; clic en el elegido a mano vuelve al automático.
-function rivalsBlock(state, cat, actions) {
+// Rivales ya revelados. Clic en el retrato: elige con cuál se calcula el matchup (clic en el elegido a mano vuelve al automático).
+// Debajo de cada retrato, su LÍNEA: dorada si la eligió el jugador, gris si la informa el cliente, discontinua si la dedujo el plugin («·» = aún
+// sin línea). Un clic abre el selector de línea (Top/Jungla/Mid/ADC/Support); poner a un rival en TU línea lo convierte en tu rival del matchup.
+function rivalsBlock(state, cat, actions, ui, roles) {
   const c = state.context
   const enemies = c?.enemies ?? []
   if (!enemies.length) return null
   const used = c.opponentChampionId ?? null // el pedido (aunque el matchup no tenga datos y se muestre la build general)
-  return h('div', { class: 'ecp-line ecp-rivals', title: t('panel.rival') }, h('span', { class: 'ecp-lead' }, icon('swords', 16)),
-    enemies.map((e) => {
-      const info = cat.champion(e.championId)
-      const on = e.championId === used
-      return h('button', {
+  const manual = c.enemyRoles ?? {}
+  const byChampion = roles?.byChampion ?? {}
+  const laneIndex = (lane) => LANES.indexOf(lane)
+  const open = ui.roleOpen != null && enemies.some((e) => e.championId === ui.roleOpen) ? ui.roleOpen : null
+  const cells = enemies.map((e) => {
+    const info = cat.champion(e.championId)
+    const on = e.championId === used
+    const r = byChampion[e.championId] ?? null
+    const tip = r ? t('er.tip.' + r.source, info.name, t('role.' + laneIndex(r.lane))) : t('er.tip.none', info.name)
+    return h('div', { class: 'ecp-foe', 'data-foe': e.championId },
+      h('button', {
         type: 'button', class: 'ecp-chip' + (on ? ' ecp-on' : ''), title: info.name + (on ? ' ' + t('panel.inUse') : ''),
         onclick: () => actions.pick(on && c.opponentSource === 'manual' ? null : e.championId),
-      }, pic(info, 'ecp-ico'))
-    }))
+      }, pic(info, 'ecp-ico')),
+      h('button', {
+        type: 'button', class: 'ecp-rb ecp-src-' + (r?.source ?? 'none'), 'data-role-of': e.championId, 'data-lane': r?.lane ?? '', 'data-source': r?.source ?? '',
+        title: tip, onclick: () => actions.roleMenu(e.championId),
+      }, r ? t('role.s.' + laneIndex(r.lane)) : '·'))
+  })
+  const picker = open == null ? null : h('div', { class: 'ecp-line ecp-rolepick', 'data-rolepick': open, title: t('er.pickFor', cat.champion(open).name) },
+    LANES.map((lane, i) => h('button', {
+      type: 'button', class: 'ecp-rp' + (byChampion[open]?.lane === lane ? ' ecp-on' : ''), 'data-lane': lane, title: t('role.' + i), onclick: () => actions.setRole(open, lane),
+    }, t('role.s.' + i))),
+    manual[open] ? h('button', { type: 'button', class: 'ecp-rp', 'data-act': 'role-reset', title: t('er.reset'), onclick: () => actions.setRole(open, null) }, icon('refresh', 11)) : null)
+  return h('div', { class: 'ecp-foes', 'data-foes': '' },
+    h('div', { class: 'ecp-line ecp-rivals', title: t('panel.rival') + ' · ' + t('er.title') }, h('span', { class: 'ecp-lead' }, icon('swords', 16)), cells),
+    picker)
 }
 
 const runesKey = (d) => JSON.stringify([d.keystone.rune, d.primaryPicks.map((p) => p?.rune), d.secondaryPicks.map((p) => p.rune), d.shards])
@@ -425,38 +473,39 @@ const skeleton = (still = false) => [
   line(...Array.from({ length: 2 }, () => h('div', { class: 'ecp-sk' + (still ? ' ecp-still' : '') }))),
 ]
 
-function readyBody(state, cat, actions, ui, flashKey) {
+function readyBody(state, cat, actions, ui, flashKey, roles) {
   // En partida: ítems completos arriba, runas de solo lectura (sin alternativas) y nada de aplicar ni rivales.
   if (state.context?.phase === 'game') return [itemsBlock(state.data, cat, { game: true, live: ui.live }), ...runesBlock(state.data, cat, flashKey, null), tagsBlock(state)]
   return [
     ...runesBlock(state.data, cat, flashKey, actions),
     applyBlock(state, actions, ui),
     itemsBlock(state.data, cat),
-    rivalsBlock(state, cat, actions),
+    rivalsBlock(state, cat, actions, ui, roles),
     tagsBlock(state),
   ]
 }
 
-function bodyOf(state, cat, actions, ui, flashKey) {
+function bodyOf(state, cat, actions, ui, flashKey, roles) {
   switch (state.status) {
-    case 'waiting': return [h('div', { class: 'ecp-center', title: t('panel.pick') }, h('span', { class: 'ecp-pulse' }, icon('target', 28))), ...skeleton(true)]
+    // Antes de elegir campeón ya se pueden asignar las líneas de los rivales (alimentan al consejero de draft).
+    case 'waiting': return [h('div', { class: 'ecp-center', title: t('panel.pick') }, h('span', { class: 'ecp-pulse' }, icon('target', 28))), ...skeleton(true), rivalsBlock(state, cat, actions, ui, roles)]
     // Mientras llega la nueva recomendación del mismo campeón se sigue viendo la anterior, atenuada y sin botones activos.
-    case 'loading': return state.stale ? [h('div', { class: 'ecp-stale' }, readyBody({ ...state, status: 'ready', data: state.stale }, cat, actions, ui, flashKey))] : skeleton()
+    case 'loading': return state.stale ? [h('div', { class: 'ecp-stale' }, readyBody({ ...state, status: 'ready', data: state.stale }, cat, actions, ui, flashKey, roles))] : [...skeleton(), rivalsBlock(state, cat, actions, ui, roles)]
     case 'needs-login': return [h('div', { class: 'ecp-center' }, icon('user', 26), h('button', { class: 'ecp-btn', type: 'button', title: t('panel.login'), onclick: actions.login }, icon('user', 14), t('panel.enter')))]
     case 'error': {
       const auth = state.reason === 'auth'
       return [
         h('div', { class: 'ecp-center' }, h('span', { style: 'color:#e0a93a' }, icon('warn', 26)), known('err.', state.reason),
           h('button', { class: 'ecp-btn', type: 'button', title: auth ? t('panel.login') : t('panel.retry'), onclick: auth ? actions.login : actions.retry }, icon(auth ? 'user' : 'refresh', 15))),
-        rivalsBlock(state, cat, actions),
+        rivalsBlock(state, cat, actions, ui, roles),
       ]
     }
-    case 'ready': return readyBody(state, cat, actions, ui, flashKey)
+    case 'ready': return readyBody(state, cat, actions, ui, flashKey, roles)
     default: return []
   }
 }
 
-// ---- Picks sugeridos (application/pick-advisor.js) ----
+// ---- Picks sugeridos: lista de MATCHUP (LoLalytics) + lista de DRAFT (iTero) + filtros ----
 const LANE_ROLE = { TOP: 0, JUNGLE: 1, MIDDLE: 2, BOTTOM: 3, UTILITY: 4 }
 const laneName = (l) => t('role.' + LANE_ROLE[l])
 const signed = (n) => (n >= 0 ? '+' : '') + n.toFixed(1)
@@ -477,15 +526,18 @@ function reasonChip(chip, meta, cat) {
     v ? h('span', null, v) : null)
 }
 
-function pickTip(p, info, meta, cat) {
+// Tu maestría con ese campeón (si la activaste), para el tooltip.
+const masteryTip = (mastery, cid) => { const pts = mastery?.pointsOf(cid); return pts == null ? '' : ' — ' + t('adv.mastery', pts.toLocaleString(getLang())) }
+
+export function pickTip(p, info, meta, cat, mastery) {
   const parts = [t('adv.pickTip', info.name, signed(p.score), p.games.toLocaleString(getLang()))]
   if (p.matchup && meta.rival) parts.push(t('adv.vs', cat.champion(meta.rival).name, p.matchup.wr.toFixed(1), p.matchup.edge != null ? signed(p.matchup.edge) : '–', p.matchup.n))
   if (p.agree) parts.push(t('adv.' + p.agree))
-  return parts.join(' — ')
+  return parts.join(' — ') + masteryTip(mastery, p.championId)
 }
 
-// null cuando no hay nada que enseñar (apagado, sin línea, ARAM…). Antes de la primera respuesta, esqueletos.
-function advisorBlock(adv, cat, ui, actions) {
+// Lista de DRAFT (iTero). null si no hay nada que enseñar (apagado, sin línea, ARAM…). Antes de la primera respuesta, esqueletos.
+function advisorBlock(adv, cat, ui, actions, filters, mastery) {
   if (!adv || adv.status === 'idle') return null
   if (adv.status === 'error') {
     if (adv.reason === 'no-lane' || adv.reason === 'mode') return null
@@ -496,27 +548,89 @@ function advisorBlock(adv, cat, ui, actions) {
   const d = adv.data
   if (!d) return h('div', { class: 'ecp-adv', 'data-advisor': 'loading' }, line(h('span', { class: 'ecp-lead' }, icon('spark', 16)), ...Array.from({ length: 5 }, () => h('div', { class: 'ecp-sk' }))))
   const m = d.meta
-  const sel = d.picks.find((p) => p.championId === ui.advSel) ?? d.picks[0]
+  const picks = filters ? filters.draftPicks() : d.picks
+  const sel = picks.find((p) => p.championId === ui.advSel) ?? picks[0]
+  const mst = mastery?.getState()
   const tags = h('div', { class: 'ecp-tags' },
     h('span', { class: 'ecp-tag ecp-gold', 'data-source': 'itero', title: t('adv.tagTip') }, t('adv.tag')),
-    m.blended && h('span', { class: 'ecp-tag', 'data-blended': '', title: t('adv.tagLola') }, 'LoLalytics'),
+    m.contrasted && h('span', { class: 'ecp-tag', 'data-contrast': '', title: t('adv.tagLola') }, 'LoLalytics'),
+    m.mastery && h('span', { class: 'ecp-tag ecp-gold', 'data-mastery': 'on', title: t('adv.masteryOn') }, icon('user', 11)),
+    !m.mastery && mst?.status === 'error' && h('span', { class: 'ecp-tag ecp-warn', 'data-mastery': 'error', title: t('adv.masteryErr', known('mastery.err.', mst.reason)) }, icon('user', 11), icon('warn', 11)),
     m.unrecognized?.length ? h('span', { class: 'ecp-tag ecp-warn', 'data-warn': 'names', title: t('adv.unrecognized') }, icon('warn', 11)) : null,
     m.sideKnown ? null : h('span', { class: 'ecp-tag ecp-warn', 'data-warn': 'side', title: t('adv.sideAssumed') }, icon('warn', 11)))
   const cell = (p) => {
     const info = cat.champion(p.championId)
     return h('button', {
-      type: 'button', class: 'ecp-pk' + (p.championId === sel?.championId ? ' ecp-on' : ''), 'data-pick': p.championId, 'data-agree': p.agree, title: pickTip(p, info, m, cat),
+      type: 'button', class: 'ecp-pk' + (p.championId === sel?.championId ? ' ecp-on' : ''), 'data-pick': p.championId, 'data-agree': p.agree, title: pickTip(p, info, m, cat, mastery),
       onclick: () => actions.advSelect(p.championId),
     }, pic(info, 'ecp-ico'),
     p.agree ? h('span', { class: 'ecp-badge' + (p.agree === 'conflict' ? ' ecp-bad' : '') }, icon(p.agree === 'agree' ? 'check' : 'warn', 9)) : null,
     h('div', { class: 'ecp-w ' + (p.score >= 0 ? 'ecp-pos' : 'ecp-neg') }, signed(p.score)))
   }
   return h('div', { class: 'ecp-adv' + (adv.status === 'loading' ? ' ecp-dim' : ''), 'data-advisor': adv.status },
-    d.picks.length
-      ? [line(h('span', { class: 'ecp-lead', title: t('adv.tagTip') }, icon('spark', 16)), ...d.picks.map(cell)),
+    picks.length
+      ? [line(h('span', { class: 'ecp-lead', title: t('adv.tagTip') }, icon('spark', 16)), ...picks.map(cell)),
         h('div', { class: 'ecp-reasons', 'data-reasons': sel.championId }, sel.chips.map((c) => reasonChip(c, m, cat)))]
       : h('div', { class: 'ecp-msg', style: 'color:#a09b8c', 'data-advisor-empty': '' }, t('adv.none')),
     tags)
+}
+
+// Lista de MATCHUP (LoLalytics, sin cuenta): los campeones con mejor win rate contra el rival de tu línea. Sin rival conocido: una pista con tooltip.
+function matchupBlock(ov, cat, filters, mastery) {
+  const d = ov?.data
+  if (!d) return null
+  if (!d.rival) {
+    return h('div', { class: 'ecp-adv ecp-mu', 'data-matchup': 'norival' },
+      line(h('span', { class: 'ecp-lead ecp-mute', title: t('mu.noRival') }, icon('swords', 16)), h('span', { class: 'ecp-msg', style: 'color:#7b7a76' }, t('mu.noRivalShort'))))
+  }
+  const picks = filters ? filters.matchupPicks() : d.counters.map((c) => ({ cid: c.cid, wr: c.wr, edge: c.edge, n: c.n, counter: null }))
+  const rivalName = cat.champion(d.rival).name
+  const cell = (c) => {
+    const info = cat.champion(c.cid)
+    return h('div', { class: 'ecp-pk', 'data-mu-pick': c.cid, title: t('mu.pickTip', info.name, c.wr.toFixed(1), rivalName, c.edge != null ? signed(c.edge) : '–', c.n) + masteryTip(mastery, c.cid) },
+      pic(info, 'ecp-ico'),
+      h('div', { class: 'ecp-w ' + (c.edge == null || c.edge >= 0 ? 'ecp-pos' : 'ecp-neg') }, c.wr.toFixed(0) + '%'))
+  }
+  return h('div', { class: 'ecp-adv ecp-mu' + (ov.status === 'loading' ? ' ecp-dim' : ''), 'data-matchup': String(d.rival), title: t('mu.tip', rivalName) },
+    picks.length
+      ? line(h('span', { class: 'ecp-lead', title: t('mu.tip', rivalName) }, icon('swords', 16)), ...picks.map(cell))
+      : h('div', { class: 'ecp-msg', style: 'color:#a09b8c', 'data-matchup-empty': '' }, icon('swords', 13), t('mu.none')),
+    h('div', { class: 'ecp-tags' }, h('span', { class: 'ecp-tag ecp-gold', 'data-source': 'lolalytics-mu', title: t('mu.tagTip', rivalName) }, t('mu.tag')),
+      d.vsReason ? h('span', { class: 'ecp-tag ecp-warn', title: t('mu.vsReason') }, icon('warn', 11)) : null))
+}
+
+// Barra de filtros: un botón con el nº de filtros activos y, desplegada, un grupo por filtro. Los filtros sin fuente de datos se ven deshabilitados.
+const FILTER_GROUPS = [
+  { key: 'mastery', steps: MASTERY_STEPS, off: 'flt.off.mastery', src: 'mastery' },
+  { key: 'matchup', steps: MATCHUP_STEPS, off: 'flt.off.matchup', src: 'matchup' },
+  { key: 'meta', steps: META_STEPS, off: 'flt.off.meta', src: 'meta' },
+  { key: 'phase', steps: PHASE_STEPS, off: 'flt.off.itero', src: 'itero' },
+  { key: 'damage', steps: DAMAGE_STEPS, off: 'flt.off.itero', src: 'itero' },
+]
+
+function filtersBlock(filters, ui, actions) {
+  if (!filters) return null
+  const f = filters.get()
+  const avail = filters.availability()
+  const n = filters.activeCount()
+  const head = line(
+    h('button', { type: 'button', class: 'ecp-fbtn', 'data-act': 'filters-toggle', 'aria-pressed': String(!!ui.filtersOpen), title: n ? t('flt.active', n) : t('flt.title'), onclick: actions.filtersToggle },
+      icon('target', 12), t('flt.btn'), n > 0 && h('span', { class: 'ecp-fcount', 'data-count': n }, n)),
+    n > 0 && h('button', { type: 'button', class: 'ecp-fbtn', 'data-act': 'filters-reset', title: t('flt.reset'), onclick: actions.filtersReset }, icon('close', 11)))
+  if (!ui.filtersOpen) return h('div', { class: 'ecp-flt', 'data-filters': 'closed' }, head)
+  const btn = (key, value, label, pressed, disabled, tip) => h('button', {
+    type: 'button', class: 'ecp-fbtn', 'data-flt': key, 'data-value': value, 'aria-pressed': String(pressed), 'aria-disabled': disabled ? 'true' : null,
+    'data-inactive': pressed && disabled ? '' : null, title: tip, onclick: () => actions.filterSet(key, value, disabled),
+  }, label)
+  const classes = h('div', { class: 'ecp-fgroup', 'data-group': 'classes' }, h('span', { class: 'ecp-fcap' }, t('flt.class')),
+    CLASSES.map((c) => btn('classes', c, t('flt.class.' + c), f.classes.includes(c), false, t('flt.class.' + c))))
+  const groups = FILTER_GROUPS.map((g) => {
+    const ok = evaluable(g.key, avail)
+    return h('div', { class: 'ecp-fgroup', 'data-group': g.key }, h('span', { class: 'ecp-fcap', title: ok ? '' : t(g.off) }, t('flt.' + g.key)),
+      g.steps.map((v) => btn(g.key, v, v === 'any' ? t('flt.any') : t('flt.' + g.key + '.' + v), f[g.key] === v, !ok && v !== 'any',
+        !ok && v !== 'any' ? t(g.off) : g.key === 'mastery' && v !== 'any' ? t('flt.mastery.tip', MASTERY_POINTS[v].toLocaleString(getLang())) : t('flt.tip.' + v))))
+  })
+  return h('div', { class: 'ecp-flt', 'data-filters': 'open' }, head, classes, ...groups)
 }
 
 // Enlace a la misma build en coachless.gg: campeón, rol y (si lo hay) rival. null si el catálogo aún no tiene el nombre.
@@ -533,19 +647,24 @@ function webUrl(state, cat) {
  * onEnableApply(): pide al usuario aceptar el aviso de «Aplicar»; devuelve Promise<boolean>.
  * Devuelve { destroy }.
  */
-export async function mountPanel({ controller, catalog, applier, live, overlay, advisor, onEnableApply, onLogin, onMenu }) {
+export async function mountPanel({ controller, catalog, applier, live, overlay, advisor, enemyRoles, filters, mastery, onEnableApply, onLogin, onMenu }) {
   await whenReady()
   ensureStyle()
   let lastHidden = null
   let dismissedKey = null // × pulsado: oculto mientras el campeón y el rival sean los mismos
   const keyOf = (st) => (st.context ? `${st.context.championId}|${st.context.opponentChampionId ?? 0}|${st.context.source ?? ''}|${st.context.phase ?? ''}` : null)
   let prefs = getPanelPrefs()
-  const ui = { busy: false, kind: null, msg: null, applied: { runes: null, spells: null }, live: null, advSel: null } // live: estado de application/live-game.js; advSel: pick del consejero con motivos a la vista
+  // live: estado de application/live-game.js · advSel: pick del consejero con motivos a la vista · roleOpen: rival cuyo selector de línea está abierto · filtersOpen: barra de filtros desplegada
+  const ui = { busy: false, kind: null, msg: null, applied: { runes: null, spells: null }, live: null, advSel: null, roleOpen: null, filtersOpen: prefs.filtersOpen === true }
   let uiKey = null // el aviso de error solo vale para la recomendación a la que se aplicó
 
+  // Modo anclado: `on` = hay un Champion Select reconocido (lo decide native.js) · `view` = 'build' | 'picks' | null (cerrado) · `anchor` = elemento del que cuelga.
+  const dock = { on: false, view: null, anchor: null, raf: 0, placed: '' }
+  const listeners = new Set() // native.js se entera de cada repintado (estado de «aplicando» / «aplicado» del botón de la barra)
+
   const root = h('div', { class: 'ecp', style: 'display:none' })
-  const fab = h('button', { class: 'ecp-fab', type: 'button', title: 'Easy Coachless (Ctrl+Shift+E)', onclick: () => reopen() || onMenu() }, 'EC')
-  // El botón EC reabre el panel si se cerró con ×; si ya está visible, abre el menú.
+  const fab = h('button', { class: 'ecp-fab', type: 'button', title: 'Draftsage (Ctrl+Shift+E)', onclick: () => reopen() || onMenu() }, 'DS')
+  // El botón DS reabre el panel si se cerró con ×; si ya está visible, abre el menú.
   const reopen = () => {
     if (dismissedKey === null) return false
     dismissedKey = null
@@ -556,12 +675,17 @@ export async function mountPanel({ controller, catalog, applier, live, overlay, 
     if (!document.body) return
     if (!root.isConnected) document.body.append(root)
     if (!fab.isConnected) document.body.append(fab)
+    if (!probe.isConnected) document.body.append(probe)
   }
 
+  // Posición del panel. Se limita a la ventana (si el cliente se hace más pequeño no queda fuera de la vista) y, sin posición guardada,
+  // va arriba a la derecha. El arrastre en la franja superior del cliente (que mueve la ventana) se evita con `-webkit-app-region: no-drag` en el CSS.
   const place = () => {
+    const maxX = Math.max(0, window.innerWidth - 60)
+    const maxY = Math.max(0, window.innerHeight - 40)
     root.style.right = prefs.x == null ? '16px' : 'auto'
-    root.style.left = prefs.x == null ? 'auto' : prefs.x + 'px'
-    root.style.top = (prefs.y ?? 96) + 'px'
+    root.style.left = prefs.x == null ? 'auto' : Math.min(Math.max(0, prefs.x), maxX) + 'px'
+    root.style.top = Math.min(Math.max(0, prefs.y ?? 96), maxY) + 'px'
   }
 
   const actions = {
@@ -575,34 +699,130 @@ export async function mountPanel({ controller, catalog, applier, live, overlay, 
     apply: (kind) => apply(kind),
     advSelect: (id) => { ui.advSel = id; render(controller.getState()) },
     advRetry: () => advisor?.refresh(),
+    // Línea de un rival: abrir/cerrar su selector y elegirla (null = volver a la automática).
+    roleMenu: (cid) => { ui.roleOpen = ui.roleOpen === cid ? null : cid; render(controller.getState()) },
+    setRole: (cid, lane) => { ui.roleOpen = null; controller.setEnemyRole(cid, lane); render(controller.getState()) },
+    // Filtros de la selección. Un filtro sin fuente de datos no se puede activar (sí quitar).
+    filtersToggle: () => { ui.filtersOpen = !ui.filtersOpen; prefs = setPanelPrefs({ filtersOpen: ui.filtersOpen }); render(controller.getState()) },
+    filtersReset: () => filters?.reset(),
+    filterSet: (key, value, disabled) => {
+      if (!filters || disabled) return
+      if (key === 'classes') filters.toggleClass(value)
+      else filters.set({ [key]: filters.get()[key] === value ? 'any' : value })
+    },
   }
 
-  const render = (state) => {
+  // Estado de los botones de aplicar para lo que se ve ahora (lo usa también el botón de la barra de runas: giro → ✓).
+  const applyStatus = (state) => {
+    const d = state.status === 'ready' ? state.data : null
+    const doneRunes = !!d && ui.applied.runes === runesKey(d)
+    const doneSpells = !!d && d.spells.length === 2 && ui.applied.spells === spellsKey(d)
+    const inChampSelect = state.context?.source === 'lcu'
+    return { busy: ui.busy, kind: ui.kind, done: !!d && doneRunes && (doneSpells || d.spells.length !== 2 || !inChampSelect), failed: !!ui.msg }
+  }
+
+  // ---- Popover anclado ----
+  // Con zoom/transformaciones en un ancestro, getBoundingClientRect() da píxeles visuales y `left/top` de un elemento fijo son píxeles de
+  // diseño: la relación entre ambos se mide con el propio panel y se compensa.
+  // La escala se mide con una sonda fija de 100 px (no con el panel: su animación de entrada también escala).
+  const probe = h('div', { style: 'position:fixed;left:0;top:0;width:100px;height:1px;visibility:hidden;pointer-events:none' })
+  const scaleOf = () => { const w = probe.isConnected ? probe.getBoundingClientRect().width : 0; return w > 0 ? w / 100 : 1 }
+  const placeDocked = () => {
+    const a = dock.anchor
+    if (!a?.isConnected) return false
+    const r = a.getBoundingClientRect()
+    if (r.width < 1 || r.height < 1) return false
+    const s = scaleOf() || 1
+    const vw = window.innerWidth / s, vh = window.innerHeight / s
+    const below = dock.view === 'picks' // «picks» baja desde la cabecera de la cuadrícula; «build» sube desde la barra inferior
+    const left = Math.round(Math.min(Math.max(8, r.left / s), Math.max(8, vw - 340 - 8)))
+    const avail = Math.max(160, Math.floor(below ? vh - r.bottom / s - 16 : r.top / s - 16))
+    const edge = below ? Math.round(r.bottom / s + 8) : Math.round(vh - r.top / s + 8)
+    const key = `${left}|${below}|${edge}|${avail}`
+    if (key === dock.placed) return true // nada que escribir: evita recalcular estilos en cada fotograma
+    dock.placed = key
+    root.style.left = left + 'px'
+    root.style.right = 'auto'
+    root.style.top = below ? edge + 'px' : 'auto'
+    root.style.bottom = below ? 'auto' : edge + 'px'
+    root.style.setProperty('--ecp-maxh', Math.max(120, avail - 52) + 'px')
+    root.style.setProperty('--ecp-dy', below ? '-6px' : '6px')
+    return true
+  }
+  const followAnchor = () => {
+    cancelAnimationFrame(dock.raf)
+    const loop = () => { if (!dock.view) return; if (!placeDocked()) closeDock(); else dock.raf = requestAnimationFrame(loop) }
+    dock.raf = requestAnimationFrame(loop)
+  }
+  // Cerrar al hacer clic fuera (salvo en el ancla o en otros botones de la integración, que gestionan su propio clic), con Esc o si el ancla desaparece.
+  const onDocDown = (e) => {
+    if (!dock.view || root.contains(e.target) || dock.anchor?.contains(e.target) || e.target.closest?.('.ecx, .ec-overlay')) return
+    closeDock()
+  }
+  const onDocKey = (e) => { if (e.key === 'Escape' && dock.view) { closeDock(); e.stopPropagation() } }
+  function closeDock(redraw = true) {
+    if (!dock.view && !dock.anchor) return
+    dock.view = null; dock.anchor = null; dock.placed = ''
+    cancelAnimationFrame(dock.raf)
+    document.removeEventListener('mousedown', onDocDown, true)
+    document.removeEventListener('keydown', onDocKey, true)
+    if (redraw) render(controller.getState())
+  }
+  function openDock(view, anchor) {
+    if (!dock.on || !anchor) return false
+    const switching = dock.view !== view
+    dock.view = view; dock.anchor = anchor; dock.placed = ''
+    document.removeEventListener('mousedown', onDocDown, true); document.removeEventListener('keydown', onDocKey, true)
+    document.addEventListener('mousedown', onDocDown, true); document.addEventListener('keydown', onDocKey, true)
+    if (switching) root.style.animation = 'none' // reinicia la animación de entrada al cambiar de vista
+    render(controller.getState())
+    if (switching) { void root.offsetWidth; root.style.animation = '' }
+    followAnchor()
+    return true
+  }
+
+  const render = (state) => { renderPanel(state); for (const fn of listeners) { try { fn() } catch (e) { log.warn('suscriptor del panel:', String(e)) } } }
+
+  const renderPanel = (state) => {
     attach()
-    if (state.status === 'idle') dismissedKey = null
-    const show = prefs.enabled && dismissedKey !== keyOf(state) && state.status !== 'idle'
+    if (state.status === 'idle') { dismissedKey = null; ui.roleOpen = null; if (dock.view) closeDock(false) }
+    fab.style.display = dock.on ? 'none' : '' // con la interfaz integrada, el acceso al menú es el botón de la esquina del cliente
+    const docked = dock.on && state.context?.phase !== 'game'
+    const show = docked
+      ? prefs.enabled && !!dock.view && state.status !== 'idle'
+      : prefs.enabled && dismissedKey !== keyOf(state) && state.status !== 'idle'
     root.style.display = show ? 'block' : 'none'
     if (!show) {
-      if (state.status !== 'idle' && state.status !== lastHidden) log.info('panel oculto', prefs.enabled ? '(cerrado con ×)' : '(desactivado: menú → «Panel»)')
+      if (!docked && state.status !== 'idle' && state.status !== lastHidden) log.info('panel oculto', prefs.enabled ? '(cerrado con ×)' : '(desactivado: menú → «Panel»)')
       lastHidden = state.status
       return
     }
     lastHidden = null
+    const view = docked ? dock.view : 'all'
     root.classList.toggle('ecp-game', state.context?.phase === 'game')
-    place()
+    root.classList.toggle('ecp-docked', docked)
+    root.classList.toggle('ecp-v-picks', docked && view === 'picks')
+    root.classList.toggle('ecp-v-build', docked && view === 'build')
+    if (docked) placeDocked(); else { root.style.removeProperty('bottom'); root.style.removeProperty('--ecp-maxh'); dock.placed = ''; place() }
     const toggle = () => { prefs = setPanelPrefs({ collapsed: !prefs.collapsed }); render(controller.getState()) }
     const url = webUrl(state, catalog)
     const head = h('div', { class: 'ecp-head' },
       titleNode(state, catalog),
       state.context?.championId ? h('button', { class: 'ecp-x', type: 'button', 'data-act': 'web', title: t('panel.web'), disabled: url ? null : 'disabled', onclick: actions.web }, icon('link', 14)) : null,
-      h('button', { class: 'ecp-x', type: 'button', title: prefs.collapsed ? t('panel.unfold') : t('panel.fold'), onclick: toggle }, icon('chevron', 15, prefs.collapsed ? '' : 'ecp-up')),
-      h('button', { class: 'ecp-x', type: 'button', title: t('panel.close'), onclick: () => { dismissedKey = keyOf(controller.getState()); render(controller.getState()) } }, icon('close', 14)))
-    enableDrag(head)
+      docked ? null : h('button', { class: 'ecp-x', type: 'button', title: prefs.collapsed ? t('panel.unfold') : t('panel.fold'), onclick: toggle }, icon('chevron', 15, prefs.collapsed ? '' : 'ecp-up')),
+      h('button', {
+        class: 'ecp-x', type: 'button', 'data-act': 'close', title: docked ? t('nat.close') : t('panel.close'),
+        onclick: () => { if (docked) closeDock(); else { dismissedKey = keyOf(controller.getState()); render(controller.getState()) } },
+      }, icon('close', 14)))
+    if (!docked) enableDrag(head)
     if (state.status !== 'ready' || runesKey(state.data) !== uiKey) { ui.msg = null; uiKey = state.status === 'ready' ? runesKey(state.data) : null }
     ui.live = live?.getState() ?? null
-    const counters = state.context?.phase === 'game' ? null : countersBlock(overlay?.getState(), catalog)
-    const adv = state.context?.phase === 'game' ? null : advisorBlock(advisor?.getState(), catalog, ui, actions)
-    const body = prefs.collapsed ? null : h('div', { class: 'ecp-body' }, [adv, ...bodyOf(state, catalog, actions, ui, applier.getSettings().flashKey), counters])
+    // Arriba, lo primero que se decide: filtros, picks de matchup (LoLalytics) y picks de draft (iTero). En partida no hay nada que elegir.
+    const inGame = state.context?.phase === 'game'
+    const picksTop = inGame || view === 'build' ? [] : [filtersBlock(filters, ui, actions), matchupBlock(overlay?.getState(), catalog, filters, mastery), advisorBlock(advisor?.getState(), catalog, ui, actions, filters, mastery)]
+    // Vista «picks»: solo lo que ayuda a elegir campeón (filtros, listas y rivales). Vista «build»: runas, aplicar, ítems y rivales (cambian el matchup).
+    const main = view === 'picks' ? [rivalsBlock(state, catalog, actions, ui, enemyRoles?.getState())] : bodyOf(state, catalog, actions, ui, applier.getSettings().flashKey, enemyRoles?.getState())
+    const body = !docked && prefs.collapsed ? null : h('div', { class: 'ecp-body', 'data-view': view }, [...picksTop, ...main])
     root.replaceChildren(head, ...(body ? [body] : []))
   }
 
@@ -652,9 +872,9 @@ export async function mountPanel({ controller, catalog, applier, live, overlay, 
   // El cliente puede reconstruir su interfaz: si desaparecen el panel o el botón, se vuelven a poner.
   const guard = setInterval(attach, 5000)
   const onPrefs = () => { prefs = getPanelPrefs(); render(controller.getState()) }
-  addEventListener('easy-coachless:prefs', onPrefs)
+  addEventListener('draftsage:prefs', onPrefs)
   const onShow = () => { dismissedKey = null; render(controller.getState()) }
-  addEventListener('easy-coachless:show-panel', onShow)
+  addEventListener('draftsage:show-panel', onShow)
   const onKey = (e) => {
     if (!e.ctrlKey || !e.shiftKey) return
     if (e.key === 'E' || e.key === 'e') { e.preventDefault(); onMenu() }
@@ -668,13 +888,33 @@ export async function mountPanel({ controller, catalog, applier, live, overlay, 
   const offLive = live?.subscribe(() => render(controller.getState()))
   const offOv = overlay?.subscribe(() => render(controller.getState()))
   const offAdv = advisor?.subscribe(() => render(controller.getState()))
+  const offRoles = enemyRoles?.subscribe(() => render(controller.getState()))
+  const offFlt = filters?.subscribe(() => render(controller.getState()))
+  const offMst = mastery?.subscribe(() => render(controller.getState()))
   attach()
 
   return {
     destroy() {
-      off(); offLive?.(); offOv?.(); offAdv?.(); clearInterval(guard)
-      removeEventListener('keydown', onKey); removeEventListener('easy-coachless:prefs', onPrefs); removeEventListener('easy-coachless:show-panel', onShow)
-      root.remove(); fab.remove()
+      closeDock(false)
+      off(); offLive?.(); offOv?.(); offAdv?.(); offRoles?.(); offFlt?.(); offMst?.(); clearInterval(guard); listeners.clear()
+      removeEventListener('keydown', onKey); removeEventListener('draftsage:prefs', onPrefs); removeEventListener('draftsage:show-panel', onShow)
+      root.remove(); fab.remove(); probe.remove()
     },
+    // ---- Interfaz integrada (la usa presentation/native.js) ----
+    /** Activa/desactiva el modo anclado. Al desactivarlo se cierra el popover y vuelve el panel flotante. */
+    setDocked(on) { on = !!on; if (dock.on === on) return; dock.on = on; if (!on) closeDock(false); render(controller.getState()) },
+    isDocked: () => dock.on,
+    /** Abre la vista ('build' | 'picks') colgada de `anchor`; false si el modo anclado no está activo. */
+    open: (view, anchor) => openDock(view, anchor),
+    close: () => closeDock(),
+    /** Abre la vista o, si ya está abierta con ese ancla, la cierra. */
+    toggle(view, anchor) { if (dock.view === view && dock.anchor === anchor) { closeDock(); return false } return openDock(view, anchor) },
+    view: () => dock.view,
+    /** 'all' | 'runes' | 'spells': igual que el botón «Aplicar» del panel (pide aceptar el aviso la primera vez). */
+    apply: (kind = 'all') => apply(kind),
+    /** { busy, kind, done, failed } del botón de aplicar para lo que se ve ahora. */
+    status: () => applyStatus(controller.getState()),
+    /** Se llama tras cada repintado del panel (aunque esté oculto). Devuelve la función para cancelar. */
+    subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn) },
   }
 }

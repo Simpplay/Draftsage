@@ -1,4 +1,4 @@
-// easy-coachless/src/domain/live.js — seguimiento de la build durante la partida (reglas puras)
+// draftsage/src/domain/live.js — seguimiento de la build durante la partida (reglas puras)
 //
 // Entrada: los ítems que tienes (Live Client Data API → `playeritems`), tu oro y la maquetación de ítems (domain/items.js).
 // Salida: qué ítems de la build ya tienes y cuál es el siguiente por comprar, con el oro que falta contando los componentes que ya llevas.

@@ -1,4 +1,4 @@
-// easy-coachless/src/domain/runes.js — constantes de runas (ids de Riot) y relación keystone → árbol
+// draftsage/src/domain/runes.js — constantes de runas (ids de Riot) y relación keystone → árbol
 // Los nombres e iconos se piden al cliente (application/catalog.js); aquí solo ids, para decidir sin red.
 // Fuente: runesReforged.json de Data Dragon (temporada 2026). Si el cliente aporta su propia lista, tiene prioridad.
 

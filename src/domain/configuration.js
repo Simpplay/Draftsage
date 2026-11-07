@@ -1,14 +1,14 @@
-// easy-coachless/src/domain/configuration.js — de una recomendación a lo que se escribe en el cliente (reglas puras)
+// draftsage/src/domain/configuration.js — de una recomendación a lo que se escribe en el cliente (reglas puras)
 //
 // Páginas de runas del LCU: selectedPerkIds = 9 ids en este orden:
 //   [keystone, fila1, fila2, fila3, secundaria1, secundaria2, fragmento1, fragmento2, fragmento3]
 // Los fragmentos de la build de Coachless (selectedShards) ya vienen en orden de fila (ofensa, flexible, defensa).
 
-export const OWN_PREFIX = '[EC] ' // marca de las páginas que crea el plugin: solo se sobrescriben las que la llevan
+export const OWN_PREFIX = '[DS] ' // marca de las páginas que crea el plugin: solo se sobrescriben las que la llevan
 export const NAME_MAX = 25        // el cliente recorta/rechaza nombres de página más largos
 export const FLASH = 4            // id del hechizo Destello
 
-/** Nombre de la página propia: «[EC] Kai'Sa vs Jinx» (recortado al máximo del cliente). */
+/** Nombre de la página propia: «[DS] Kai'Sa vs Jinx» (recortado al máximo del cliente). */
 export function runePageName(champion, opponent) {
   const base = opponent ? `${champion} vs ${opponent}` : String(champion)
   return (OWN_PREFIX + base).slice(0, NAME_MAX)

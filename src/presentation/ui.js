@@ -1,4 +1,4 @@
-// easy-coachless/src/presentation/ui.js — sistema de ventanas reutilizable (DOM puro; compatible con Pengu Loader 1.1.x)
+// draftsage/src/presentation/ui.js — sistema de ventanas reutilizable (DOM puro; compatible con Pengu Loader 1.1.x)
 //
 // Piezas:  openDialog (ventana genérica) · openForm (formulario) · openMenu (lista de opciones)
 //          confirm · notify · h (crear DOM sin innerHTML) · copyText · whenReady
@@ -11,7 +11,7 @@
 import { log } from '../shared/logger.js'
 import { t } from '../shared/i18n.js'
 
-const STYLE_ID = 'easy-coachless-style'
+const STYLE_ID = 'draftsage-style'
 const T0 = performance.now()
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
@@ -81,7 +81,7 @@ export function richText(text) {
 }
 
 // Abre un enlace en el navegador del sistema (el cliente de League delega los enlaces externos). Si no se puede, copia el enlace.
-// Solo https. ❓ Sin verificar en el cliente real: si no abre nada, se verá en los logs `[easy-coachless]`.
+// Solo https. ❓ Sin verificar en el cliente real: si no abre nada, se verá en los logs `[draftsage]`.
 export async function openExternal(url) {
   if (!/^https:\/\//.test(String(url))) return false
   try {

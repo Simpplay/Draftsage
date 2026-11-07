@@ -1,4 +1,4 @@
-// easy-coachless/src/application/app.js — composición de la parte de datos (cliente Coachless, caché, LCU, controlador)
+// draftsage/src/application/app.js — composición de la parte de datos (cliente Coachless, caché, LCU, controlador)
 // Es el único sitio que conecta las piezas; el resto de módulos reciben lo que necesitan por parámetro.
 import { api, apiGet, isLoggedIn, hasPremium } from './session.js'
 import { catalog } from './catalog.js'
@@ -8,10 +8,13 @@ import { createSourceRouter } from './sources.js'
 import { createLolalyticsSource } from './lolalytics-source.js'
 import { createChampionStats, createOverlayController } from './overlay.js'
 import { createPickAdvisor, createPickAdvisorController } from './pick-advisor.js'
+import { createEnemyRoles } from './enemy-roles.js'
+import { createMastery } from './mastery.js'
+import { createPickFilters } from './pick-filters.js'
 import { createConfigurationApplier } from './configuration.js'
 import { createLiveGame } from './live-game.js'
 import { contextFromSnapshot } from '../domain/live.js'
-import { getApplyPrefs, setApplyPrefs, getFilterPrefs, setFilterPrefs, getSourcePrefs, setSourcePrefs, getOverlayPrefs, setOverlayPrefs, getAdvisorPrefs, setAdvisorPrefs, pins } from './preferences.js'
+import { getApplyPrefs, setApplyPrefs, getFilterPrefs, setFilterPrefs, getSourcePrefs, setSourcePrefs, getOverlayPrefs, setOverlayPrefs, getAdvisorPrefs, setAdvisorPrefs, getPickFilterPrefs, setPickFilterPrefs, pins } from './preferences.js'
 import { needsLogin } from '../domain/sources.js'
 import { createCoachlessClient } from '../infrastructure/coachless/client.js'
 import { createCache } from '../infrastructure/coachless/cache.js'
@@ -20,6 +23,7 @@ import { createIteroClient } from '../infrastructure/itero/client.js'
 import { createEnglishNames } from '../infrastructure/ddragon/names.js'
 import { createChampSelectProvider } from '../infrastructure/lcu/champ-select-provider.js'
 import { lcuGet } from '../infrastructure/lcu/lcu-client.js'
+import { createIdentity } from '../infrastructure/lcu/identity.js'
 import { createLoadoutGateway } from '../infrastructure/lcu/loadout-gateway.js'
 import { createLiveClient } from '../infrastructure/liveclient/live-client.js'
 import { log } from '../shared/logger.js'
@@ -34,7 +38,7 @@ const service = createRecommendationService({ client, log, cache: resultCache, k
 const lolaCache = createCache({ ttlMs: 2 * 60 * 60 * 1000, max: 80 })
 const lolaClient = createLolalyticsClient({ cache: lolaCache, log })
 const lolaSource = createLolalyticsSource({ client: lolaClient, catalog, getFilters: getFilterPrefs, log })
-// Qué fuente responde (Ajustes → Fuente): 'coachless' (por defecto), 'lolalytics' o 'auto' (domain/sources.js).
+// Qué fuente responde (Ajustes → Fuente): 'auto' (por defecto), 'coachless' o 'lolalytics' (domain/sources.js).
 const router = createSourceRouter({ sources: { coachless: service, lolalytics: lolaSource }, getMode: () => getSourcePrefs().mode, isLoggedIn, log })
 
 // Seguimiento de la partida (oro e ítems con la Live Client Data API): solo se sondea mientras hay partida.
@@ -69,13 +73,21 @@ const overlay = createOverlayController({
   source: controller, prefs: { get: getOverlayPrefs, set: setOverlayPrefs }, getFilters: getFilterPrefs, debounceMs: 300, log,
 })
 
-// Consejero de picks (iTero = composición completa + LoLalytics = matchup): DESACTIVADO hasta que el usuario acepte el aviso, porque la
-// composición del draft viaja a un tercero. Una respuesta de iTero pesa ~1,7 MB: caché de 10 min con solo lo recortado.
+// Consejero de picks (iTero = composición completa): DESACTIVADO hasta que el usuario acepte el aviso, porque la composición del draft viaja
+// a un tercero. Una respuesta de iTero pesa ~1,7 MB: caché de 10 min con solo lo recortado. La lista de MATCHUP (LoLalytics) es otra y va aparte.
 const iteroClient = createIteroClient({ cache: createCache({ ttlMs: 10 * 60 * 1000, max: 40 }), log })
+// Maestría del jugador (iTero basic-info): APAGADA hasta que el usuario acepte el aviso (su Riot ID viaja a iTero). La usan iTero y el filtro «dominio».
+const mastery = createMastery({ identity: createIdentity({ lcuGet }), itero: iteroClient, source: controller, prefs: { get: getAdvisorPrefs }, log })
 const advisor = createPickAdvisorController({
-  advisor: createPickAdvisor({ itero: iteroClient, names: createEnglishNames({ log }), catalog, lola: lolaClient, stats: championStats, getFilters: getFilterPrefs, getPrefs: getAdvisorPrefs, log }),
+  advisor: createPickAdvisor({ itero: iteroClient, names: createEnglishNames({ log }), catalog, lola: lolaClient, stats: championStats, mastery, getFilters: getFilterPrefs, getPrefs: getAdvisorPrefs, log }),
   source: controller, prefs: { get: getAdvisorPrefs, set: setAdvisorPrefs }, getFilters: getFilterPrefs, debounceMs: 600, maxQueries: 12, log,
 })
+
+// Línea de cada rival: la que elige el jugador en el panel o la que deduce el plugin (cuota de línea de LoLalytics).
+const enemyRoles = createEnemyRoles({ source: controller, lola: lolaClient, getFilters: getFilterPrefs, log })
+
+// Filtros de la selección (clase, dominio, matchup, meta, fase, daño): deciden qué campeones se ven en las listas y en la cuadrícula.
+const pickFilters = createPickFilters({ catalog, overlay, advisor, mastery, prefs: { get: getPickFilterPrefs, set: setPickFilterPrefs } })
 
 const applier = createConfigurationApplier({ gateway: createLoadoutGateway(), prefs: { get: getApplyPrefs, set: setApplyPrefs }, log })
 
@@ -96,8 +108,12 @@ export const app = {
   },
   /** Estadísticas sobre la selección (win rate y counters). */
   overlay,
-  /** Consejero de picks (iTero + LoLalytics). `advisor.iteroStatus()` = backoff y nº de peticiones, para diagnóstico. */
+  /** Consejero de picks de draft (iTero). `advisor.iteroStatus()` = backoff y nº de peticiones, para diagnóstico. */
   advisor: Object.assign(advisor, { iteroStatus: () => iteroClient.status() }),
+  /** Maestría del jugador (opcional, apagada por defecto) y filtros de la selección. */
+  mastery,
+  enemyRoles,
+  pickFilters,
   /** Al cerrar sesión o cambiar de cuenta: nada de lo cacheado debe pasar a otra cuenta (puede variar el plan). */
   resetData: () => { requestCache.clear(); resultCache.clear() },
 }

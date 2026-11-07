@@ -1,4 +1,4 @@
-// easy-coachless/src/domain/selection.js — qué runa/hechizo elegir de una lista de estadísticas (reglas puras)
+// draftsage/src/domain/selection.js — qué runa/hechizo elegir de una lista de estadísticas (reglas puras)
 //
 // Cada entrada: { rune|spell, wpa, occurrence }. wpa = Win Probability Added (puntos %; mayor es mejor).
 // Para no recomendar opciones raras con mucho ruido (p. ej. 119 partidas), solo cuentan las que tengan

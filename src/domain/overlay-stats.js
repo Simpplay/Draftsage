@@ -1,4 +1,4 @@
-// easy-coachless/src/domain/overlay-stats.js — estadísticas por campeón para mostrar sobre la selección (reglas puras)
+// draftsage/src/domain/overlay-stats.js — estadísticas por campeón para mostrar sobre la selección (reglas puras)
 //
 // Fuente: Lolalytics (docs/lolalytics-counters-synergy.md). Dos tablas:
 //   · lista de tier de TU línea → por campeón: win rate, uso, bans, partidas y nota (S+ … D−)

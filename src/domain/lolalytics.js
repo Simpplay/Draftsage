@@ -1,4 +1,4 @@
-// easy-coachless/src/domain/lolalytics.js — reglas puras para usar LoLalytics como fuente de recomendaciones
+// draftsage/src/domain/lolalytics.js — reglas puras para usar LoLalytics como fuente de recomendaciones
 //
 // Toda la lectura de campos del estado de la web (docs/lolalytics.md §6) vive AQUÍ: si Lolalytics cambia un nombre, es el único
 // sitio que hay que arreglar. Entrada: la raíz ya decodificada de una página de build (infrastructure/lolalytics/qwik.js).

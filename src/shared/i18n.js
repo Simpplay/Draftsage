@@ -1,4 +1,4 @@
-// easy-coachless/src/shared/i18n.js — textos de la interfaz en español e inglés
+// draftsage/src/shared/i18n.js — textos de la interfaz en español e inglés
 //
 // t('clave', ...args) devuelve el texto en el idioma activo; {0}, {1}… se sustituyen por los argumentos.
 // Si falta una clave en el idioma activo se usa la del español, y si tampoco existe, la propia clave.

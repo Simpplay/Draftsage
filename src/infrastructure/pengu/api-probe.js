@@ -1,4 +1,4 @@
-// easy-coachless/src/infrastructure/pengu/api-probe.js
+// draftsage/src/infrastructure/pengu/api-probe.js
 // Sonda de acceso a api.coachless.gg (requiere DisableWebSecurity=1 en la config de Pengu).
 
 import { log } from '../../shared/logger.js'

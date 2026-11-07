@@ -1,17 +1,18 @@
-// easy-coachless/src/presentation/settings.js — pantalla principal de ajustes (reemplaza al menú de texto)
+// draftsage/src/presentation/settings.js — pantalla principal de ajustes (reemplaza al menú de texto)
 //
 // Orden pensado para el jugador: lo que toca a diario arriba y a la vista (interruptor de Aplicar, destino de las runas,
 // tecla de Destello) y lo que casi nunca se usa (simular, panel, conexión) plegado en «Más».
 // Todo son controles gráficos con una palabra de apoyo; las explicaciones largas van en el tooltip (title).
 // No conoce la API ni el LCU: recibe todo lo que necesita por parámetro (ver mainMenu en menus.js).
 
-import { openDialog, h } from './ui.js'
+import { openDialog, h, notify } from './ui.js'
 import { icon } from './icons.js'
 import { getLang, t } from '../shared/i18n.js'
 import { log } from '../shared/logger.js'
 import { MAX_PATCH_RANGE, toggleTier } from '../domain/filters.js'
+import { MASTERY_WEIGHTS } from '../domain/itero.js'
 
-const STYLE_ID = 'easy-coachless-settings-style'
+const STYLE_ID = 'draftsage-settings-style'
 const CSS = `
 .ecs{display:flex;flex-direction:column;gap:16px;user-select:none}
 .ecs-top{display:flex;align-items:center;gap:8px}
@@ -84,11 +85,13 @@ const TARGETS = [
  * @param {{applier, catalog, filters:{get:()=>object, set:(patch:object)=>object}, getSession:()=>{loggedIn:boolean,email?:string,premium?:boolean}, isSimulating:()=>boolean,
  *          source:{get:()=>string, set:(mode:string)=>string}, overlay:{isEnabled:()=>boolean, setEnabled:(on:boolean)=>void},
  *          advisor:{isEnabled:()=>boolean, setEnabled:(on:boolean)=>void},
+ *          mastery:{isEnabled:()=>boolean, weight:()=>number, setWeight:(w:number)=>void, off:()=>void},
  *          panelEnabled:()=>boolean,
+ *          updates:{mode:()=>('auto'|'packaged'), setMode:(m:string)=>void, build:()=>{version:string, source:string}},
  *          actions:{login:Function, logout:Function, simulate:Function, cors:Function, enableApply:()=>Promise<boolean>, enableAdvisor:()=>Promise<boolean>,
- *                   reopen:Function, unsimulate:Function, togglePanel:Function}}} deps
+ *                   enableMastery:()=>Promise<boolean>, resetPanel:Function, reopen:Function, unsimulate:Function, togglePanel:Function}}} deps
  */
-export function openSettings({ applier, catalog, filters, source, overlay, advisor, getSession, isSimulating, panelEnabled, actions }) {
+export function openSettings({ applier, catalog, filters, source, overlay, advisor, mastery, getSession, isSimulating, panelEnabled, updates, actions }) {
   ensureStyle()
   const box = h('div', { class: 'ecs' })
   let more = false
@@ -106,7 +109,7 @@ export function openSettings({ applier, catalog, filters, source, overlay, advis
       : h('button', { type: 'button', class: 'ecs-plan', 'data-plan': 'none', title: t('set.enterTip'), onclick: () => go(actions.login) }, icon('user', 14), t('set.enter'))
 
     const top = h('div', { class: 'ecs-top' },
-      h('div', { class: 'ecs-brand' }, icon('gear', 16), 'Easy Coachless'),
+      h('div', { class: 'ecs-brand' }, icon('gear', 16), 'Draftsage'),
       plan,
       ses.loggedIn && h('button', { type: 'button', class: 'ecs-ib', title: t('set.logout'), 'data-act': 'logout', onclick: () => go(actions.logout) }, icon('logout', 15)))
 
@@ -173,13 +176,37 @@ export function openSettings({ applier, catalog, filters, source, overlay, advis
     const grid = more && h('div', { class: 'ecs-grid ecs-pop' },
       mini('simulate', 'target', t('set.simulate'), t('set.simulateTip'), () => go(actions.simulate)),
       sim && mini('unsimulate', 'close', t('set.exit'), t('set.exitTip'), () => { actions.unsimulate(); render() }),
-      mini('overlay', 'swords', t('set.overlay'), overlay.isEnabled() ? t('set.overlayOn') : t('set.overlayOff'), () => { overlay.setEnabled(!overlay.isEnabled()); window.dispatchEvent(new Event('easy-coachless:prefs')); render() }, overlay.isEnabled()),
+      mini('overlay', 'swords', t('set.overlay'), overlay.isEnabled() ? t('set.overlayOn') : t('set.overlayOff'), () => { overlay.setEnabled(!overlay.isEnabled()); window.dispatchEvent(new Event('draftsage:prefs')); render() }, overlay.isEnabled()),
       // Consejero de picks: apagarlo es inmediato; encenderlo pasa por el aviso (los datos del draft viajan a iTero).
       mini('advisor', 'spark', t('set.advisor'), advisor.isEnabled() ? t('set.advisorOn') : t('set.advisorOff'),
         () => { if (advisor.isEnabled()) { advisor.setEnabled(false); render() } else go(async () => { await actions.enableAdvisor(); actions.reopen() }) }, advisor.isEnabled()),
       mini('panel', panelEnabled() ? 'eye' : 'eyeOff', t('set.panel'), panelEnabled() ? t('set.panelHide') : t('set.panelShow'), () => { actions.togglePanel(); render() }, panelEnabled()),
+      mini('resetpos', 'refresh', t('set.resetPos'), t('set.resetPosTip'), () => actions.resetPanel()),
       mini('lang', 'globe', getLang().toUpperCase(), t('set.langTip'), () => { actions.toggleLanguage(); relabel() }),
       mini('cors', 'plug', t('set.conn'), t('set.connTip'), () => go(actions.cors)))
+
+    // Maestría de iTero (envía tu Riot ID a un tercero): apagada por defecto; encenderla pasa por el aviso. El peso es cuánto cuentan tus campeones.
+    const mOn = mastery.isEnabled()
+    const mW = mastery.weight()
+    const mNearest = Object.keys(MASTERY_WEIGHTS).reduce((a, b) => (Math.abs(MASTERY_WEIGHTS[b] - mW) < Math.abs(MASTERY_WEIGHTS[a] - mW) ? b : a))
+    const mChip = (id, label, tip, pressed, onclick) => h('button', { type: 'button', class: 'ecs-chip', 'data-mastery': id, 'aria-pressed': String(pressed), title: tip, onclick }, label)
+    const masteryRow = more && h('div', { class: 'ecs-pop' },
+      h('div', { class: 'ecs-cap' }, icon('user', 13), t('set.mastery')),
+      h('div', { class: 'ecs-chips', role: 'group' },
+        mChip('off', t('set.masteryOff'), t('set.masteryTip'), !mOn, () => { mastery.off(); render() }),
+        [['low', 'set.masteryLow'], ['normal', 'set.masteryNormal'], ['high', 'set.masteryHigh']].map(([id, label]) => mChip(id, t(label), t('set.masteryWeightTip', MASTERY_WEIGHTS[id]), mOn && mNearest === id,
+          () => { if (mOn) { mastery.setWeight(MASTERY_WEIGHTS[id]); render() } else go(async () => { if (await actions.enableMastery()) mastery.setWeight(MASTERY_WEIGHTS[id]); actions.reopen() }) }))))
+
+    // Actualizaciones: «Auto» descarga versiones firmadas (se aplican al reiniciar el cliente); «Solo incluida» usa únicamente el código del plugin.
+    const uMode = updates.mode()
+    const uBuild = updates.build()
+    const uChip = (id, label, tip) => h('button', { type: 'button', class: 'ecs-chip', 'data-updates': id, 'aria-pressed': String(uMode === id), title: tip,
+      onclick: () => { updates.setMode(id); notify.success(t('set.updRestart')); render() } }, label)
+    const updatesRow = more && h('div', { class: 'ecs-pop' },
+      h('div', { class: 'ecs-cap' }, icon('refresh', 13), t('set.updates')),
+      h('div', { class: 'ecs-chips', role: 'group', title: t('set.updatesTip', uBuild.version, t(uBuild.source === 'remote' ? 'set.updSrcRemote' : 'set.updSrcPackaged')) },
+        uChip('auto', t('set.updAuto'), t('set.updAutoTip')),
+        uChip('packaged', t('set.updPackaged'), t('set.updPackagedTip'))))
 
     return [
       top, power, src,
@@ -187,6 +214,8 @@ export function openSettings({ applier, catalog, filters, source, overlay, advis
       elo, patches,
       h('button', { type: 'button', class: 'ecs-more', 'aria-expanded': String(more), 'data-act': 'more', title: t('set.moreTip'), onclick: () => { more = !more; render() } }, icon('chevron', 14), t('set.more')),
       grid,
+      masteryRow,
+      updatesRow,
     ]
   }
 

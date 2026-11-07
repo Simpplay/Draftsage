@@ -1,0 +1,15 @@
+{
+  "name": "draftsage-dev",
+  "private": true,
+  "type": "module",
+  "description": "Herramientas de desarrollo y release de Draftsage. NO se distribuye con el plugin.",
+  "scripts": {
+    "check": "node tools/check.mjs",
+    "test": "node tests/run.mjs",
+    "keygen": "node tools/keygen.mjs",
+    "release": "node tools/release.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

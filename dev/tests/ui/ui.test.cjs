@@ -13,7 +13,7 @@ await new Promise((r) => setTimeout(r, 800))
 const browser = await chromium.launch()
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, locale: 'es-ES' }) // «auto» → español
 const logs = [], errors = []
-page.on('console', (m) => { if (m.text().includes('[easy-coachless]')) logs.push(m.type() + ' ' + m.text()) })
+page.on('console', (m) => { if (m.text().includes('[draftsage]')) logs.push(m.type() + ' ' + m.text()) })
 page.on('pageerror', (e) => errors.push(String(e)))
 let pass = 0, fail = 0
 const ok = (c, msg) => { c ? pass++ : (fail++, console.log('FALLA:', msg)); if (c) console.log('ok  ', msg) }
@@ -21,7 +21,7 @@ try {
   await page.goto('http://127.0.0.1:8765/dev/tests/ui/harness.html')
   await page.evaluate(() => window.__start())
   await page.waitForSelector('.ecp-fab', { timeout: 15000 })
-  ok(true, 'el botón EC aparece tras whenReady')
+  ok(true, 'el botón DS aparece tras whenReady')
   await page.waitForSelector('.ec-modal', { timeout: 5000 })
   ok((await page.textContent('.ec-title')).includes('Iniciar sesión'), 'sin sesión se pide login')
   await page.fill('input[name=email]', 'test@example.com'); await page.fill('input[name=password]', 'bad')
@@ -29,7 +29,7 @@ try {
   ok(true, 'credenciales malas → error en el formulario')
   await page.fill('input[name=password]', 'good'); await page.click('.ec-btn.ec-primary')
   await page.waitForSelector('.ec-modal', { state: 'detached' })
-  ok(!(await page.evaluate(() => JSON.stringify([...window.DataStore.get('easy-coachless/auth', {}) ? [window.DataStore.get('easy-coachless/auth')] : []])).then((s) => s.includes('good'))), 'la contraseña no se guarda')
+  ok(!(await page.evaluate(() => JSON.stringify([...window.DataStore.get('draftsage/auth', {}) ? [window.DataStore.get('draftsage/auth')] : []])).then((s) => s.includes('good'))), 'la contraseña no se guarda')
 
   // Champion Select simulado: Kai'Sa ADC (bottom) contra Jinx
   await page.evaluate(() => {
@@ -38,7 +38,7 @@ try {
     window.__lcu.session = { localPlayerCellId: 3, actions: [], myTeam: [p(0, 10, 'top', 'a'), p(1, 11, 'jungle', 'b'), p(2, 103, 'middle', 'c'), p(3, 145, 'bottom', 'd'), p(4, 412, 'utility', 'e')],
       theirTeam: [p(5, 238, 'middle'), p(6, 222, 'bottom')] }
   })
-  await page.waitForSelector('.ecp .ecp-body img.ecp-ico', { timeout: 8000 })
+  await page.waitForSelector('.ecp [data-apply="all"]', { timeout: 15000 }) // ya lista (no el esqueleto de carga, que también trae retratos de rivales)
   ok(true, 'el panel aparece en Champion Select con iconos')
   const title = await page.getAttribute('.ecp-title', 'title'); ok(title.includes("Kai'Sa") && !title.includes(' vs ') && title.includes('ADC'), 'título sin «vs» si el matchup no se aplica (cuenta gratuita): ' + title)
   ok((await page.$$('.ecp-head .ecp-por')).length === 1 && (await page.textContent('.ecp-role')) === 'ADC', 'cabecera gráfica: un retrato (sin rival) y el rol')
@@ -65,7 +65,7 @@ try {
   await page.click('.ecp-head .ecp-x >> nth=1'); ok((await page.$('.ecp-body')) !== null, 'desplegar lo vuelve a mostrar')
   await page.click('.ecp-head .ecp-x >> nth=2'); ok(!(await page.isVisible('.ecp')), '× oculta el panel')
   await page.click('.ecp-fab'); await page.waitForSelector('.ecp', { state: 'visible' })
-  ok(await page.isVisible('.ecp') && !(await page.$('.ecp-menu, [data-ec-menu]')), 'el botón EC reabre el panel cerrado con ×')
+  ok(await page.isVisible('.ecp') && !(await page.$('.ecp-menu, [data-ec-menu]')), 'el botón DS reabre el panel cerrado con ×')
   // arrastre
   // atajo de teclado
   await page.keyboard.press('Control+Shift+E'); await page.waitForSelector('.ec-modal')
@@ -79,13 +79,13 @@ try {
   // ajustes en vivo: destino y tecla de Destello
   ok((await page.getAttribute('[data-key=f]', 'aria-checked')) === 'true', 'Destello en F por defecto')
   await page.click('[data-key=d]')
-  ok((await page.getAttribute('[data-key=d]', 'aria-checked')) === 'true' && (await page.evaluate(() => window.DataStore.get('easy-coachless/apply').flashKey)) === 'd', 'elegir la tecla D se guarda y se marca')
+  ok((await page.getAttribute('[data-key=d]', 'aria-checked')) === 'true' && (await page.evaluate(() => window.DataStore.get('draftsage/apply').flashKey)) === 'd', 'elegir la tecla D se guarda y se marca')
   await page.click('[data-target=current]')
-  ok((await page.getAttribute('[data-target=current]', 'aria-checked')) === 'true' && (await page.evaluate(() => window.DataStore.get('easy-coachless/apply').target)) === 'current', 'elegir «Activa» se guarda y se marca')
+  ok((await page.getAttribute('[data-target=current]', 'aria-checked')) === 'true' && (await page.evaluate(() => window.DataStore.get('draftsage/apply').target)) === 'current', 'elegir «Activa» se guarda y se marca')
   await page.click('[data-target=own]'); await page.click('[data-key=f]')
 
   // filtros de datos: rango de Elo y de parches (el panel de Kai'Sa está abierto: cambiar un filtro lo vuelve a consultar)
-  const filt = () => page.evaluate(() => window.DataStore.get('easy-coachless/filters'))
+  const filt = () => page.evaluate(() => window.DataStore.get('draftsage/filters'))
   const tiersSent = () => page.evaluate(() => window.__net.filter((n) => n.body?.commonFilters?.leagueTiers).map((n) => n.body.commonFilters.leagueTiers.join()).pop())
   ok((await page.getAttribute('[data-tier=auto]', 'aria-pressed')) === 'true' && (await page.getAttribute('[data-patch=auto]', 'aria-pressed')) === 'true', 'Elo y parches empiezan en automático')
   ok((await page.getAttribute('[data-patch="1"]', 'aria-disabled')) === 'true' && (await page.getAttribute('[data-patch="2"]', 'aria-disabled')) === 'true', 'cuenta gratuita: los rangos de parches están bloqueados')
@@ -114,7 +114,7 @@ try {
   const simTxt = await page.textContent('.ecp'); ok((await page.$('.ecp-tag-sim')) !== null && simTxt.includes('Gold'), 'simulación manual mostrada (Ahri, Gold): ' + simTxt.slice(-60))
   ok((await page.$('.ecp-rivals')) === null, 'sin rivales revelados no hay fila de rivales')
   await page.screenshot({ path: shots + '/panel-sim.png' })
-  await page.evaluate(() => window.easyCoachless.simulate(null))
+  await page.evaluate(() => window.draftsage.simulate(null))
   await page.waitForFunction(() => document.querySelector('.ecp-title')?.getAttribute('title').includes('Kai'))
   ok(true, 'quitar la simulación vuelve al Champion Select real (Kai\'Sa)')
 
@@ -140,7 +140,7 @@ try {
   ok((await page.getAttribute('[data-act=pin]', 'aria-pressed')) === 'false', 'fijar: empieza sin fijar')
   await page.click('[data-act=pin]')
   ok((await page.getAttribute('[data-act=pin]', 'aria-pressed')) === 'true' && (await page.getAttribute('[data-act=pin]', 'class')).includes('ecp-pinned'), 'fijar: el botón se ilumina')
-  ok((await page.evaluate(() => Object.values(DataStore.get('easy-coachless/pins'))))[0].keystone === 8005, 'fijar guarda la runa clave en el equipo')
+  ok((await page.evaluate(() => Object.values(DataStore.get('draftsage/pins'))))[0].keystone === 8005, 'fijar guarda la runa clave en el equipo')
   await page.evaluate(() => { window.__lcu.phase = 'None' })
   await page.waitForFunction(() => document.querySelector('.ecp')?.style.display === 'none', null, { timeout: 8000 })
   await page.evaluate(() => { window.__lcu.phase = 'ChampSelect' })
@@ -149,7 +149,7 @@ try {
   await page.click('[data-auto]'); await page.waitForFunction(() => document.querySelector('.ecp-big')?.alt === 'Ritmo Letal' && !document.querySelector('.ecp-stale'), null, { timeout: 8000 })
   ok((await page.getAttribute('[data-act=pin]', 'aria-pressed')) === 'false', 'volver a la recomendada: ya no coincide con lo fijado')
   await page.click('[data-act=pin]'); await page.click('[data-act=pin]')
-  ok((await page.evaluate(() => Object.keys(DataStore.get('easy-coachless/pins')).length)) === 0, 'fijar dos veces seguidas lo suelta')
+  ok((await page.evaluate(() => Object.keys(DataStore.get('draftsage/pins')).length)) === 0, 'fijar dos veces seguidas lo suelta')
 
   // hechizo intercambiable
   const sOpts = await page.$$eval('[data-alts=spells] .ecp-alt[data-spell]', (a) => a.map((b) => b.dataset.spell))
@@ -163,20 +163,20 @@ try {
   ok(true, 'volver a la recomendación de hechizos')
 
   // hechizos por modo y rol (simulación con modo)
-  const sim = async (ctx) => { await page.evaluate((c) => window.easyCoachless.simulate(c), ctx); await settled() }
+  const sim = async (ctx) => { await page.evaluate((c) => window.draftsage.simulate(c), ctx); await settled() }
   await sim({ championId: 103, role: 1, mode: 'CLASSIC' })
   ok((await spellAlts()).includes('Aplastar'), 'jungla: Aplastar siempre: ' + (await spellAlts()))
   await sim({ championId: 103, role: 5, mode: 'ARAM' })
   ok(!(await spellAlts()).includes('Aplastar'), 'ARAM: sin Aplastar: ' + (await spellAlts()))
-  await page.evaluate(() => window.easyCoachless.simulate({ championId: 103, role: 2, mode: 'CHERRY' }))
+  await page.evaluate(() => window.draftsage.simulate({ championId: 103, role: 2, mode: 'CHERRY' }))
   await page.waitForFunction(() => document.querySelector('.ecp-body img.ecp-ico') && !document.querySelector('.ecp-stale') && !document.querySelector('.ecp-keycap'), null, { timeout: 8000 })
   ok((await page.$('[data-apply=spells]')) === null, 'Arena: sin hechizos ni botón de hechizos')
   // el modo llega del cliente: ARAM desde gameflow/session
-  await page.evaluate(() => { window.easyCoachless.simulate(null); window.__lcu.phase = 'None' })
+  await page.evaluate(() => { window.draftsage.simulate(null); window.__lcu.phase = 'None' })
   await page.waitForFunction(() => document.querySelector('.ecp')?.style.display === 'none', null, { timeout: 8000 })
   await page.evaluate(() => { window.__queue = { gameMode: 'ARAM', id: 450 }; window.__lcu.phase = 'ChampSelect' })
   await page.waitForSelector('.ecp-big', { timeout: 8000 }); await settled()
-  ok(!(await spellAlts()).includes('Aplastar') && (await page.evaluate(() => window.easyCoachless.state().context.mode)) === 'ARAM', 'el modo ARAM llega del LCU y se usa')
+  ok(!(await spellAlts()).includes('Aplastar') && (await page.evaluate(() => window.draftsage.state().context.mode)) === 'ARAM', 'el modo ARAM llega del LCU y se usa')
   await page.evaluate(() => { window.__lcu.phase = 'None' })
   await page.waitForFunction(() => document.querySelector('.ecp')?.style.display === 'none', null, { timeout: 8000 })
   await page.evaluate(() => { window.__queue = { gameMode: 'CLASSIC', id: 420 }; window.__lcu.phase = 'ChampSelect' })
@@ -196,7 +196,7 @@ try {
   await page.click('[data-act=more]'); await page.click('[data-act=lang]')
   ok((await page.getAttribute('[data-act=power]', 'title')).startsWith('Apply') && (await page.textContent('.ec-actions .ec-btn')) === 'Done', 'ajustes en inglés')
   ok((await page.getAttribute('.ecp-head [data-act=web]', 'title')) === 'Open on coachless.gg' && (await page.getAttribute('[data-act=pin]', 'title')).startsWith('Pin'), 'el panel cambia a inglés al instante')
-  ok((await page.evaluate(() => DataStore.get('easy-coachless/panel').lang)) === 'en' && (await page.textContent('.ecp-role')) === 'ADC', 'el idioma se guarda')
+  ok((await page.evaluate(() => DataStore.get('draftsage/panel').lang)) === 'en' && (await page.textContent('.ecp-role')) === 'ADC', 'el idioma se guarda')
   await page.screenshot({ path: shots + '/panel-en.png' })
   await page.click('[data-act=lang]')
   ok((await page.getAttribute('.ecp-head [data-act=web]', 'title')) === 'Ver en coachless.gg', 'y de vuelta a español')
@@ -204,13 +204,13 @@ try {
   await page.screenshot({ path: shots + '/panel-alternativas.png' })
 
   // 403 total → error con botón de reintento
-  await page.evaluate(() => { window.__forbidAll = true; window.easyCoachless.simulate({ championId: 238, role: 2 }) })
+  await page.evaluate(() => { window.__forbidAll = true; window.draftsage.simulate({ championId: 238, role: 2 }) })
   await page.waitForSelector('.ecp .ecp-btn'); ok(/rechaz/.test(await page.textContent('.ecp')), '403 sin remedio → mensaje corto y botón Reintentar')
   await page.evaluate(() => { window.__forbidAll = false }); await page.click('.ecp .ecp-btn'); await page.waitForSelector('.ecp-body img.ecp-ico')
   ok(true, 'Reintentar recupera la recomendación')
 
   // ---- Aplicar en el cliente ----
-  await page.evaluate(() => { window.easyCoachless.simulate(null) })
+  await page.evaluate(() => { window.draftsage.simulate(null) })
   await page.waitForSelector('.ecp-apply .ecp-btn')
   ok((await page.$$('.ecp-apply .ecp-btn')).length === 4, 'botones Aplicar todo / Runas / Hechizos / Fijar')
   await page.click('[data-apply=runes]'); await page.waitForSelector('.ec-modal')
@@ -222,7 +222,7 @@ try {
   await page.click('.ec-modal .ec-btn.ec-primary'); await page.waitForSelector('[data-apply=runes].ecp-done')
   const w1 = await page.evaluate(() => window.__writes)
   const post = w1.find((x) => x.method === 'POST')
-  ok(!!post && post.body.name.startsWith('[EC] ') && post.body.selectedPerkIds.join() === '8008,9111,9104,8017,8321,8313,5005,5008,5011' && post.body.primaryStyleId === 8000 && post.body.subStyleId === 8300, 'POST de la página propia con 9 runas en orden')
+  ok(!!post && post.body.name.startsWith('[DS] ') && post.body.selectedPerkIds.join() === '8008,9111,9104,8017,8321,8313,5005,5008,5011' && post.body.primaryStyleId === 8000 && post.body.subStyleId === 8300, 'POST de la página propia con 9 runas en orden')
   ok(await page.evaluate(() => window.__pages[0].name === 'Mi página' && window.__pages[0].selectedPerkIds.length === 9 && window.__pages[0].selectedPerkIds[0] === 1), 'la página del usuario no se modifica')
   ok((await page.$$('[data-apply=runes].ecp-done svg')).length === 1, 'el botón de runas muestra la marca ✓ tras aplicar')
   await page.click('[data-apply=spells]'); await page.waitForSelector('[data-apply=spells].ecp-done')
@@ -234,16 +234,16 @@ try {
   ok((await page.evaluate(() => window.__writes.filter((x) => x.method === 'PUT' && x.url.includes('/pages/')).length)) >= 1, 'la segunda vez se actualiza la página propia (PUT) en vez de crear otra')
   await page.screenshot({ path: shots + '/panel-apply.png' })
   await page.evaluate(() => { window.__rejectSpells = false })
-  ok(!(await page.evaluate(() => JSON.stringify(window.DataStore.get('easy-coachless/apply', {}))).then((s) => /token|password/i.test(s))), 'los ajustes de Aplicar no guardan credenciales')
+  ok(!(await page.evaluate(() => JSON.stringify(window.DataStore.get('draftsage/apply', {}))).then((s) => /token|password/i.test(s))), 'los ajustes de Aplicar no guardan credenciales')
 
   // simulación: las runas se pueden aplicar, los hechizos no (fuera de Champion Select)
-  await page.evaluate(() => window.easyCoachless.simulate({ championId: 103, role: 2 }))
+  await page.evaluate(() => window.draftsage.simulate({ championId: 103, role: 2 }))
   await page.waitForFunction(() => document.querySelector('.ecp-title')?.getAttribute('title').includes('Ahri'))
   await page.waitForSelector('.ecp-apply .ecp-btn')
   ok(await page.$eval('[data-apply=spells]', (b) => b.disabled), 'en simulación el botón Hechizos está desactivado')
 
   // ---- Ítems de la build: compactos en Champion Select, completos en partida ----
-  await page.evaluate(() => window.easyCoachless.simulate(null))
+  await page.evaluate(() => window.draftsage.simulate(null))
   await page.waitForFunction(() => document.querySelector('.ecp-title')?.getAttribute('title').includes('Kai') && !document.querySelector('.ecp-stale'), null, { timeout: 8000 })
   await page.waitForSelector('[data-items=compact]', { timeout: 8000 })
   const rows = (mode) => page.$$eval(`[data-items=${mode}] [data-row]`, (a) => a.map((e) => e.dataset.row))
@@ -301,7 +301,7 @@ try {
   await page.evaluate(() => { window.__lcu.phase = 'ChampSelect' })
 
   // ---- Recuperación: el cliente se reinicia en plena partida y no recuerda la selección ----
-  await page.evaluate(() => { window.easyCoachless.simulate(null); window.__lcu.phase = 'None' })
+  await page.evaluate(() => { window.draftsage.simulate(null); window.__lcu.phase = 'None' })
   await page.waitForFunction(() => document.querySelector('.ecp')?.style.display === 'none', null, { timeout: 8000 })
   await page.evaluate((g) => { window.__live = g; window.__lcu.session = null; window.__lcu.phase = 'InProgress' }, GAME(300, [1055]))
   await page.waitForFunction(() => document.querySelector('.ecp-title')?.getAttribute('title').includes('Kai') && document.querySelector('[data-items=game]'), null, { timeout: 10000 })
@@ -310,7 +310,7 @@ try {
   await page.evaluate(() => { window.__live = null; window.__lcu.phase = 'None' })
 
   // fin de Champion Select
-  await page.evaluate(() => { window.easyCoachless.simulate(null); window.__lcu.phase = 'None' })
+  await page.evaluate(() => { window.draftsage.simulate(null); window.__lcu.phase = 'None' })
   await page.waitForFunction(() => document.querySelector('.ecp')?.style.display === 'none', null, { timeout: 8000 })
   ok(true, 'al salir de Champion Select el panel se oculta')
 

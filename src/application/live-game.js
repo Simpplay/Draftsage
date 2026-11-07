@@ -1,4 +1,4 @@
-// easy-coachless/src/application/live-game.js — seguimiento de la partida en curso (oro e ítems) con la Live Client Data API
+// draftsage/src/application/live-game.js — seguimiento de la partida en curso (oro e ítems) con la Live Client Data API
 //
 // start()/stop() los llama la composición (app.js) según la fase: solo se sondea mientras hay partida. Estado:
 //   { status: 'off' | 'connecting' | 'live' | 'offline', gold, level, items:[{item,count,slot}] }

@@ -24,7 +24,7 @@ let pass = 0, fail = 0
 const ok = (c, msg) => { c ? pass++ : (fail++, console.log('FALLA:', msg)); if (c) console.log('ok  ', msg) }
 try {
   await page.goto('http://127.0.0.1:8766/dev/tests/ui/harness.html')
-  await page.evaluate(() => window.DataStore.set('easy-coachless/source', { mode: 'lolalytics' }))
+  await page.evaluate(() => window.DataStore.set('draftsage/source', { mode: 'lolalytics' }))
   await page.evaluate(() => window.__start())
   await page.waitForSelector('.ecp-fab', { timeout: 15000 })
   ok((await page.$$('.ec-modal')).length === 0, 'con la fuente LoLalytics no se pide iniciar sesión')
@@ -51,7 +51,7 @@ try {
   const ys = await page.$$eval('.ecb', (a) => a.map((e) => parseInt(e.style.top)))
   ok(ys.every((y) => y > 100), 'todos los marcadores están sobre la cuadrícula (ninguno sobre los baneos)')
   ok(await page.$('.ecp-tag[data-source=lolalytics]') !== null, 'el panel marca la fuente LoLalytics')
-  ok(await page.$('.ecp-counters') !== null, 'el panel muestra la fila de counters')
+  ok(await page.$('.ecp-mu[data-matchup]') !== null, 'el panel muestra la lista de matchup (LoLalytics)')
   ok(lolaCalls.length <= 4, 'pocas peticiones a LoLalytics (' + lolaCalls.length + ')')
   const n = lolaCalls.length; await page.waitForTimeout(1500)
   ok(lolaCalls.length === n, 'sin peticiones repetidas en reposo')
@@ -61,7 +61,7 @@ try {
   await page.click('.ecp-fab'); await page.waitForSelector('.ecs')
   ok(await page.$('.ecs-chip[data-source=lolalytics][aria-pressed=true]') !== null, 'ajustes: LoLalytics seleccionado')
   await page.click('.ecs-chip[data-source=coachless]')
-  ok(await page.evaluate(() => window.DataStore.get('easy-coachless/source').mode) === 'coachless', 'cambiar de fuente se guarda')
+  ok(await page.evaluate(() => window.DataStore.get('draftsage/source').mode) === 'coachless', 'cambiar de fuente se guarda')
   await page.click('.ec-actions .ec-btn')
   await page.waitForFunction(() => !document.querySelector('.ecp-tag[data-source=lolalytics]'), null, { timeout: 8000 })
   ok(true, 'al elegir Coachless sin sesión desaparece la recomendación de LoLalytics')

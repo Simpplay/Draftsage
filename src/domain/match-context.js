@@ -1,4 +1,4 @@
-// easy-coachless/src/domain/match-context.js — tipos del dominio (solo JSDoc, sin código en tiempo de ejecución)
+// draftsage/src/domain/match-context.js — tipos del dominio (solo JSDoc, sin código en tiempo de ejecución)
 // Todo proveedor de contexto (LCU, entrada manual) debe producir un MatchContext.
 
 /**

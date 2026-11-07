@@ -1,4 +1,4 @@
-// easy-coachless/src/domain/patch.js — elección de parche (regla pura)
+// draftsage/src/domain/patch.js — elección de parche (regla pura)
 //
 // El parche más reciente suele tener muy poca muestra (16.22: 243 k partidas frente a 6,8 M en los anteriores),
 // así que se usa el último cuya muestra sea al menos `minRatio` de la de los parches anteriores.

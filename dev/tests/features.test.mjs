@@ -93,9 +93,9 @@ test('fijados: guardar, leer, quitar, validar y limitar', () => {
   assert.deepEqual(pins.get(145, 3), { keystone: null, spells: null })
   pins.remove(145, 3); assert.equal(pins.get(145, 3), null)
   for (let i = 1; i <= 205; i++) pins.set(i, 0, { keystone: 8005 })
-  assert.equal(Object.keys(DataStore.get('easy-coachless/pins')).length, 200)
+  assert.equal(Object.keys(DataStore.get('draftsage/pins')).length, 200)
   assert.equal(pins.get(205, 0).keystone, 8005); assert.equal(pins.get(1, 0), null) // se descartan los más antiguos
-  assert.ok(!/token|password/i.test(JSON.stringify(DataStore.get('easy-coachless/pins'))))
+  assert.ok(!/token|password/i.test(JSON.stringify(DataStore.get('draftsage/pins'))))
 })
 
 test('idioma: auto según el navegador, preferencia guardada y sustitución de argumentos', () => {
@@ -107,7 +107,7 @@ test('idioma: auto según el navegador, preferencia guardada y sustitución de a
   assert.equal(t('stat.tip', 'X', '+1.0'), 'X · WPA +1.0 · {2} games') // argumento que falta: se deja el marcador
   setLanguagePref('es'); assert.equal(getLang(), 'es'); assert.equal(getPanelPrefs().lang, 'es')
   setLanguagePref('klingon'); assert.equal(getPanelPrefs().lang, 'auto')
-  DataStore.set('easy-coachless/panel', { lang: 'en' }); initLanguage(); assert.equal(getLang(), 'en')
+  DataStore.set('draftsage/panel', { lang: 'en' }); initLanguage(); assert.equal(getLang(), 'en')
   setLang('es')
 })
 

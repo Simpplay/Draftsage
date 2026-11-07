@@ -1,4 +1,4 @@
-// easy-coachless/src/infrastructure/liveclient/live-client.js — Live Client Data API de Riot (solo lectura, solo durante la partida)
+// draftsage/src/infrastructure/liveclient/live-client.js — Live Client Data API de Riot (solo lectura, solo durante la partida)
 //
 // https://127.0.0.1:2999/liveclientdata/... es la API OFICIAL del juego para apps (docs: developer.riotgames.com/docs/lol#game-client-api).
 // Solo responde mientras hay una partida en marcha; fuera de ella la conexión se rechaza (→ 'offline'), nunca lanza.

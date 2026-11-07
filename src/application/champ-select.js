@@ -1,4 +1,4 @@
-// easy-coachless/src/application/champ-select.js — controlador: contexto de la partida → recomendación → estado para la UI
+// draftsage/src/application/champ-select.js — controlador: contexto de la partida → recomendación → estado para la UI
 //
 // Estados (state.status):
 //   idle          sin Champion Select, partida ni simulación
@@ -17,6 +17,8 @@
 // Se olvidan al cambiar de campeón o rol y al terminar el Champion Select; las fijadas persisten.
 
 import { ROLE_FILL } from '../domain/lobby.js'
+import { laneOfRole } from '../domain/itero.js'
+import { opponentByManual, pruneManual, setManual, withManualPositions } from '../domain/enemy-roles.js'
 import { log } from '../shared/logger.js'
 
 const enemiesKey = (c) => (c.enemies ?? []).map((e) => e.championId).join(',')
@@ -27,7 +29,9 @@ const sameCtx = (a, b) =>
 
 // Lo que solo mira el consejero de picks (aliados con su posición, bans y lado): si es lo único que cambia se avisa a los suscriptores
 // SIN volver a consultar la recomendación (Coachless/LoLalytics no dependen de ello).
-const extrasKey = (c) => [c.side ?? '', (c.bans ?? []).join(','), (c.allies ?? []).map((a) => a.championId + ':' + a.position).join(',')].join('|')
+// También la línea de cada rival (la del cliente o la que eligió el jugador): solo cambia el reparto de rivales, no la recomendación.
+const extrasKey = (c) => [c.side ?? '', (c.bans ?? []).join(','), (c.allies ?? []).map((a) => a.championId + ':' + a.position).join(','),
+  (c.enemies ?? []).map((e) => e.championId + ':' + (e.position ?? '')).join(',')].join('|')
 
 const loadoutKey = (c) => `${c.championId}|${c.role ?? ROLE_FILL}`
 const spellIds = (d) => (d.spells.length === 2 ? d.spells.map((s) => s.spell) : null)
@@ -49,6 +53,7 @@ export function createChampSelectController({ provider, recommend, isLoggedIn, h
   let lcuCtx = null
   let manualCtx = null
   let opponentOverride = null // rival elegido a mano en el panel (manda sobre el detectado)
+  let enemyManual = {}        // línea que el jugador cree que jugará cada rival: { championId: 'TOP'|… } (solo esta selección)
   let choice = null           // { key, keystone?: number|null, spells?: number[]|null }  null = automático
   let generation = 0
   let abort = null
@@ -68,8 +73,19 @@ export function createChampSelectController({ provider, recommend, isLoggedIn, h
 
   async function evaluate({ force = false } = {}) {
     const base = manualCtx ?? lcuCtx
-    if (!base) { opponentOverride = null; choice = null } // terminó la selección: la próxima empieza en automático
+    if (!base) { opponentOverride = null; choice = null; enemyManual = {} } // terminó la selección: la próxima empieza en automático
     let ctx = base && opponentOverride ? { ...base, opponentChampionId: opponentOverride, opponentSource: 'manual' } : base
+    if (base) {
+      // Líneas de los rivales elegidas a mano: se escriben como `position` (así las entiende todo lo que ya leía la del cliente) y, si el
+      // jugador puso a un rival en MI línea, es mi rival (salvo que haya elegido otro a mano en la fila de rivales).
+      enemyManual = pruneManual(enemyManual, base.enemies)
+      const hasManual = Object.keys(enemyManual).length > 0
+      const assigned = hasManual && !opponentOverride ? opponentByManual(enemyManual, laneOfRole(base.role)) : null
+      if (hasManual || assigned) {
+        ctx = { ...ctx, enemies: withManualPositions(base.enemies, enemyManual), enemyRoles: { ...enemyManual },
+          ...(assigned && { opponentChampionId: assigned, opponentSource: 'assigned' }) }
+      }
+    }
     if (ctx?.championId) ctx = withLoadout(ctx)
     const prev = state.context
     if (!force && sameCtx(ctx, prev) && state.status !== 'idle') {
@@ -132,6 +148,11 @@ export function createChampSelectController({ provider, recommend, isLoggedIn, h
     refresh: () => evaluate({ force: true }),
     /** Fija el rival a mano (id) o vuelve al automático (null). */
     setOpponent(id) { opponentOverride = id || null; return evaluate({ force: true }) },
+    /**
+     * Línea que el jugador cree que jugará un rival ('TOP' | 'JUNGLE' | 'MIDDLE' | 'BOTTOM' | 'UTILITY') o null para volver al automático.
+     * Solo vuelve a consultar la recomendación si con ello cambia MI rival (poner a un rival en tu línea); si no, solo se actualizan los rivales.
+     */
+    setEnemyRole(championId, lane) { enemyManual = setManual(enemyManual, championId, lane); return evaluate() },
     /** Elige la runa clave (id) o vuelve a la recomendada (null). */
     setKeystone: (rune) => choose({ keystone: rune || null }),
     /** Elige la pareja de hechizos ([a, b]) o vuelve a la recomendada (null). */

@@ -1,4 +1,4 @@
-// easy-coachless/src/infrastructure/lolalytics/client.js — descarga y lectura de páginas de Lolalytics (con caché, tiempo máximo y backoff)
+// draftsage/src/infrastructure/lolalytics/client.js — descarga y lectura de páginas de Lolalytics (con caché, tiempo máximo y backoff)
 //
 // Lolalytics no tiene API pública para build/counters: los datos viajan en el HTML de la página (ver qwik.js y docs/lolalytics.md).
 // Es scraping de contenido de terceros, así que el cliente es deliberadamente discreto:

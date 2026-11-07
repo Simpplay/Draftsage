@@ -30,7 +30,7 @@ test('página incompleta o inválida no se construye', () => {
 })
 
 test('nombre de página: marca propia y recorte', () => {
-  assert.equal(runePageName("Kai'Sa", 'Jinx'), "[EC] Kai'Sa vs Jinx")
+  assert.equal(runePageName("Kai'Sa", 'Jinx'), "[DS] Kai'Sa vs Jinx")
   assert.ok(runePageName('Nombre larguísimo de campeón', 'Otro nombre muy largo').length <= NAME_MAX)
   assert.ok(runePageName('Ahri', null).startsWith(OWN_PREFIX))
 })

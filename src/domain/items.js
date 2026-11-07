@@ -1,4 +1,4 @@
-// easy-coachless/src/domain/items.js — ítems de una build de Coachless (reglas puras: sin DOM, sin fetch)
+// draftsage/src/domain/items.js — ítems de una build de Coachless (reglas puras: sin DOM, sin fetch)
 //
 // Entrada: una build normalizada por infrastructure/coachless/client.js (`builds`) y, opcionalmente, estadísticas sueltas de
 // GetGlobalItemStatistics (botas y tercer ítem). Salida: un «plan» con los ítems clasificados y una función de maquetación

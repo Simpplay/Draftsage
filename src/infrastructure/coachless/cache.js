@@ -1,4 +1,4 @@
-// easy-coachless/src/infrastructure/coachless/cache.js — caché en memoria con caducidad y peticiones compartidas
+// draftsage/src/infrastructure/coachless/cache.js — caché en memoria con caducidad y peticiones compartidas
 //
 // - memo(key, fn): si hay un valor vigente lo devuelve; si hay una petición en curso con la misma clave, la comparte;
 //   si no, ejecuta fn. Solo se guardan los resultados con `cacheable(valor) === true` (los fallos no se cachean).

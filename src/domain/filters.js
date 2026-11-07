@@ -1,4 +1,4 @@
-// easy-coachless/src/domain/filters.js — filtros que elige el usuario: rango de parches y rango de Elo (reglas puras)
+// draftsage/src/domain/filters.js — filtros que elige el usuario: rango de parches y rango de Elo (reglas puras)
 //
 // Por defecto todo es automático (como hasta ahora): rango de Elo = el de la lobby ±1; parches = el último con muestra
 // suficiente (+ el anterior con premium). El usuario puede fijar a mano cualquiera de los dos.

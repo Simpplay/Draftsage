@@ -1,4 +1,4 @@
-// easy-coachless/src/infrastructure/lcu/loadout-gateway.js — ÚNICO módulo que ESCRIBE en el cliente (runas y hechizos)
+// draftsage/src/infrastructure/lcu/loadout-gateway.js — ÚNICO módulo que ESCRIBE en el cliente (runas y hechizos)
 //
 // Solo lo usa application/configuration.js, tras una acción explícita del usuario (botón «Aplicar»).
 // Endpoints del LCU (no oficiales; ❓ sin verificar en el cliente real, ver docs/HANDOFF.md):

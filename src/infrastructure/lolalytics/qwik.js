@@ -1,4 +1,4 @@
-// easy-coachless/src/infrastructure/lolalytics/qwik.js — lectura del estado Qwik que Lolalytics incrusta en su HTML
+// draftsage/src/infrastructure/lolalytics/qwik.js — lectura del estado Qwik que Lolalytics incrusta en su HTML
 //
 // La web (Qwik, renderizada en servidor) no pide sus datos desde el navegador: viajan dentro del HTML, en
 // <script type="qwik/json"> { refs, ctx, objs, subs }. `objs` es un grafo serializado: cada elemento de un array/objeto es una

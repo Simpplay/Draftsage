@@ -1,4 +1,4 @@
-// easy-coachless/src/application/ensure-api-access.js
+// draftsage/src/application/ensure-api-access.js
 // Comprueba si el cliente puede llamar a api.coachless.gg. Si no, abre la pantalla de pasos (menus.js).
 // El plugin NO edita la config de Pengu.
 
@@ -7,15 +7,15 @@ import { whenReady } from '../presentation/ui.js'
 import { corsSetupMenu } from '../presentation/menus.js'
 import { isApiReachable } from '../infrastructure/pengu/api-probe.js'
 
-const SKIP_KEY = 'easy-coachless/skip-cors-prompt'
-const FORCE_KEY = 'easy-coachless/force-prompt'
+const SKIP_KEY = 'draftsage/skip-cors-prompt'
+const FORCE_KEY = 'draftsage/force-prompt'
 
 // Utilidades desde la consola de DevTools:
-//   easyCoachless.openSetup()      abre la pantalla de pasos a mano
-//   easyCoachless.forcePrompt()    simula "bloqueado por CORS" (recarga el cliente para verlo)
-//   easyCoachless.forcePrompt(false)
-//   easyCoachless.resetPrompt()    borra el "No volver a preguntar"
-window.easyCoachless = Object.assign(window.easyCoachless ?? {}, {
+//   draftsage.openSetup()      abre la pantalla de pasos a mano
+//   draftsage.forcePrompt()    simula "bloqueado por CORS" (recarga el cliente para verlo)
+//   draftsage.forcePrompt(false)
+//   draftsage.resetPrompt()    borra el "No volver a preguntar"
+window.draftsage = Object.assign(window.draftsage ?? {}, {
   openSetup: () => corsSetupMenu(),
   forcePrompt: (on = true) => DataStore.set(FORCE_KEY, !!on),
   resetPrompt: () => DataStore.remove(SKIP_KEY),

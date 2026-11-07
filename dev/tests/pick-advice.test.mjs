@@ -43,7 +43,7 @@ test('rankPicks: relativo a la mediana, filtros de uso/partidas/bans y límite',
   const med = A.median([60, 55, 50, 40, 45, 52, 53])                              // 52
   assert.equal(r.picks[0].delta, 60 - med); assert.equal(r.picks[0].score, 60 - med)
   assert.ok(r.picks.every((p, i) => p.rank === i + 1 && !('pred' in p) && !('_s' in p)))   // nunca la probabilidad absoluta
-  assert.deepEqual(A.rankPicks({ candidates: [], idOf: () => 1 }), { picks: [], blended: false, pool: 0 })
+  assert.deepEqual(A.rankPicks({ candidates: [], idOf: () => 1 }), { picks: [], rows: [], blended: false, contrasted: false, pool: 0 })
   assert.equal(A.rankPicks({ candidates: [cand('X', 50)], idOf: () => null }).picks.length, 0) // sin id no hay pick
 })
 
@@ -56,7 +56,7 @@ test('rankPicks: mezcla con el matchup (encogido por muestra, peso 0,5) y etique
     3: { vs: { wr: 70, edge: 20, n: 40, low: true } },        // muestra ínfima: casi no pesa
     4: { vs: { wr: 60, edge: 10, n: 30_000, low: false } },   // gran matchup: sube, pero no está en el top de iTero (agreeTop 3)
   } }
-  const r = A.rankPicks({ candidates: cs, idOf: (n) => ids[n], stats, options: { agreeTop: 3 } })
+  const r = A.rankPicks({ candidates: cs, idOf: (n) => ids[n], stats, options: { agreeTop: 3, weight: 0.5 } })
   assert.equal(r.blended, true)
   const by = Object.fromEntries(r.picks.map((p) => [p.name, p]))
   assert.equal(A.median([56, 55, 54, 50, 49, 48]), 52)
@@ -70,7 +70,7 @@ test('rankPicks: mezcla con el matchup (encogido por muestra, peso 0,5) y etique
   const solo = A.rankPicks({ candidates: cs, idOf: (n) => ids[n], stats, options: { weight: 0 } })
   assert.deepEqual(solo.picks.slice(0, 3).map((p) => p.name), ['A', 'B', 'C'])
   // veto por win rate bajo con muestra grande
-  const veto = A.rankPicks({ candidates: cs, idOf: (n) => ids[n], stats: { champions: { 2: { vs: { wr: 46, edge: 0.5, n: 800, low: false } } } }, options: { agreeTop: 3 } })
+  const veto = A.rankPicks({ candidates: cs, idOf: (n) => ids[n], stats: { champions: { 2: { vs: { wr: 46, edge: 0.5, n: 800, low: false } } } }, options: { agreeTop: 3, weight: 0.5 } })
   assert.equal(veto.picks.find((p) => p.name === 'B').agree, 'conflict')
 })
 
@@ -157,19 +157,17 @@ test('consejero: errores de iTero se propagan con su razón; sin LoLalytics func
   assert.ok((await f.advisor.advise({ role: 3 })).ok)                      // LoLalytics roto no tumba al consejero
 })
 
-test('consejero: mezcla con las estadísticas de LoLalytics y respeta los ajustes (peso, uso mínimo)', async () => {
+test('consejero: por defecto NO mezcla con LoLalytics (listas separadas) pero sí contrasta y entrega las filas', async () => {
   const top = D.normalizeResponse(FIXTURE_ROWS, 'MIDDLE').candidates.slice(0, 3).map((c) => c.name)
   const idOfName = (n) => Number(Object.entries(champs).find(([, v]) => v === n)?.[0])
   const stats = () => ({ ok: true, data: { champions: { [idOfName(top[0])]: { vs: { wr: 40, edge: -10, n: 50_000, low: false } }, [idOfName(top[1])]: { vs: { wr: 54, edge: 3, n: 50_000, low: false } } } } })
-  const base = mkDeps({ stats, prefs: { weight: 0.5, minPick: 0 } })
+  const base = mkDeps({ stats, prefs: { minPick: 0 } })
   const r = await base.advisor.advise({ role: 2, lobbyTier: 5, opponentChampionId: 777 })
-  assert.equal(r.data.meta.blended, true)
-  assert.equal(r.data.picks.find((p) => p.name === top[1]).matchup.edge, 3)
+  assert.equal(r.data.meta.blended, false)                                 // el orden es solo de iTero
+  assert.equal(r.data.picks[0].name, top[0])
+  assert.equal(r.data.picks.find((p) => p.name === top[1]).matchup.edge, 3) // pero el dato de LoLalytics acompaña como contraste
+  assert.ok(Array.isArray(r.data.rows) && r.data.rows.length >= r.data.picks.length)
   assert.equal(base.calls.stats[0].opponentChampionId, 777)
-  const w0 = mkDeps({ stats, prefs: { weight: 0, minPick: 0 } })
-  const r0 = await w0.advisor.advise({ role: 2, lobbyTier: 5 })
-  assert.equal(r0.data.picks[0].name, top[0])                              // sin peso de LoLalytics: el primero de iTero sigue primero
-  assert.notEqual(r.data.picks[0].name, top[0])                            // con peso: su mal matchup lo baja
 })
 
 // ---------- controlador ----------
@@ -239,11 +237,11 @@ test('controlador del consejero: ignora la partida, descarta respuestas obsoleta
 })
 
 test('preferencias del consejero: apagado por defecto y valores saneados', () => {
-  assert.deepEqual(getAdvisorPrefs(), { enabled: false, weight: 0.5, minPick: 0.0025 })
+  assert.deepEqual(getAdvisorPrefs(), { enabled: false, minPick: 0.0025, useMastery: false, masteryWeight: 0.3 })
   assert.equal(setAdvisorPrefs({ enabled: 'si' }).enabled, false)                              // solo true estricto
-  const p = setAdvisorPrefs({ enabled: true, weight: 9, minPick: -1 })
-  assert.deepEqual(p, { enabled: true, weight: 1, minPick: 0.0005 })
-  assert.equal(setAdvisorPrefs({ weight: 'x' }).weight, 0.5)
-  DataStore.set('easy-coachless/advisor', 'basura'); assert.equal(getAdvisorPrefs().enabled, false)
-  DataStore.remove('easy-coachless/advisor')
+  const p = setAdvisorPrefs({ enabled: true, masteryWeight: 9, minPick: -1, useMastery: 'si' })
+  assert.deepEqual(p, { enabled: true, minPick: 0.0005, useMastery: false, masteryWeight: 1 })
+  assert.equal(setAdvisorPrefs({ masteryWeight: 'x' }).masteryWeight, 0.3)
+  DataStore.set('draftsage/advisor', 'basura'); assert.equal(getAdvisorPrefs().enabled, false)
+  DataStore.remove('draftsage/advisor')
 })

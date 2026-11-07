@@ -124,7 +124,7 @@ Kai'Sa (145). Premium: parche 16.22 +1. Gratuita: 16.21 +0.
 
 ## 7. Almacenamiento en el plugin
 
-- `DataStore` es **compartido por todos los plugins y no está cifrado** ⇒ guardar solo el **refresh token** (nunca la contraseña), con clave propia (`easy-coachless/auth`). El access token, solo en memoria.
+- `DataStore` es **compartido por todos los plugins y no está cifrado** ⇒ guardar solo el **refresh token** (nunca la contraseña), con clave propia (`draftsage/auth`). El access token, solo en memoria.
 - Guardar siempre el refresh token que devuelve `Auth/refresh` (renueva la caducidad deslizante de 30 días).
 - Renovar con una sola petición a la vez: la reutilización no se penaliza, pero evita peticiones redundantes.
 - El refresh token **no se puede revocar en el servidor** (ver §3): conviene que «Cerrar sesión» lo borre del disco y que no se guarde más de lo necesario.

@@ -1,9 +1,9 @@
-// easy-coachless/src/application/configuration.js — ConfigurationApplier: aplicar la recomendación en el cliente
+// draftsage/src/application/configuration.js — ConfigurationApplier: aplicar la recomendación en el cliente
 //
 // Es la ÚNICA vía para modificar páginas de runas o hechizos. Reglas (ver CLAUDE.md, políticas de Riot/Pengu):
 //  - canApply() está desactivado de inicio; el usuario lo activa tras leer un aviso (presentation/menus.js).
 //  - Solo se aplica por una acción explícita del usuario (clic o atajo). Nunca automáticamente.
-//  - Por defecto solo se toca la página propia «[EC] …»; reemplazar la página activa es una opción aparte.
+//  - Por defecto solo se toca la página propia «[DS] …»; reemplazar la página activa es una opción aparte.
 //  - Nunca se envía una página incompleta.
 // Resultado: { ok:true, … } | { ok:false, reason, status? }
 //   reason: 'disabled' | 'incomplete' | 'invalid' | 'lcu' | 'not-editable' | 'no-slot' | 'rejected' | 'not-in-champ-select'

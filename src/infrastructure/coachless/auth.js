@@ -1,4 +1,4 @@
-// easy-coachless/src/infrastructure/coachless/auth.js — sesión de Coachless para Pengu Loader 1.1.x
+// draftsage/src/infrastructure/coachless/auth.js — sesión de Coachless para Pengu Loader 1.1.x
 //
 // - Login con email/contraseña: la contraseña NO se guarda; solo se guarda el refresh token en DataStore.
 // - El access token vive solo en memoria y se renueva solo (con una única renovación a la vez).
@@ -10,7 +10,7 @@
 import { log } from '../../shared/logger.js'
 
 const API = 'https://api.coachless.gg/api/'
-const KEY = 'easy-coachless/auth'            // { refreshToken }
+const KEY = 'draftsage/auth'            // { refreshToken }
 const SKEW_MS = 5 * 60 * 1000                // renovar 5 min antes de que caduque
 
 let access = null                            // { token, exp (ms), claims }
@@ -153,7 +153,7 @@ export const api = (path, body) => authed('POST', path, body)
 export const apiGet = (path) => authed('GET', path)
 
 // Solo para pruebas desde DevTools (la contraseña quedaría en el historial de la consola):
-//   await easyCoachless.auth.login('email', 'pass')   |   easyCoachless.auth.status()
-window.easyCoachless = Object.assign(window.easyCoachless ?? {}, {
+//   await draftsage.auth.login('email', 'pass')   |   draftsage.auth.status()
+window.draftsage = Object.assign(window.draftsage ?? {}, {
   auth: { login, logout, status: () => ({ loggedIn: isLoggedIn(), premium: hasPremium(), exp: access?.exp }) },
 })

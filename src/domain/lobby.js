@@ -1,4 +1,4 @@
-// easy-coachless/src/domain/lobby.js — roles y rangos de la lobby (reglas puras, sin DOM ni red)
+// draftsage/src/domain/lobby.js — roles y rangos de la lobby (reglas puras, sin DOM ni red)
 //
 // Verificado contra la API de Coachless (2026-11-05): role 0 Top · 1 Jungla · 2 Mid · 3 ADC · 4 Support · 5 «cualquiera»
 // (el servidor resuelve 5 al rol principal del campeón). leagueTiers: 3 Gold … 7 Master+; 0–2 devuelven vacío.

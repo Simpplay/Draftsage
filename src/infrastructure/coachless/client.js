@@ -1,4 +1,4 @@
-// easy-coachless/src/infrastructure/coachless/client.js — endpoints de datos de Coachless
+// draftsage/src/infrastructure/coachless/client.js — endpoints de datos de Coachless
 //
 // Recibe `post(path, body)` y `get(path)` (los de auth.js: ya añaden el token, renuevan y aplican tiempo máximo)
 // y devuelve las respuestas normalizadas: { ok, data } | { ok:false, reason }.

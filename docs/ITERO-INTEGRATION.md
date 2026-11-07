@@ -140,7 +140,8 @@ Observación: `result_pred` **no** es el producto de win rate × counter × sine
 ### 4.4 `POST /api/basic-info` (cuenta del jugador) ❓
 
 - Petición (del bundle): `{ "gameName": "...", "tagLine": "...", "region": "euw1" }`. Con un ID inexistente → 500. **No se probó con un Riot ID real** (dato personal; pedir al usuario que use el suyo en la sesión de pruebas).
-- Respuesta (deducida del bundle): `current_rank.tier` (el sitio lo traduce: `UNRANKED`→`GOLD`; `MASTER|GRANDMASTER|CHALLENGER`→`MASTER+` en el simulador, `DIAMOND` en el constructor de pool) y `mastery`: objeto `{ "<Campeón>": número, …, "avg": número }` que se envía tal cual como `masteryData`. El significado de los números (puntos de maestría, normalizado…) ❓ y por qué mi prueba sintética no tuvo efecto ❓.
+- Petición real verificada por el usuario (2026-11-06): `{ "gameName": "Simpplay", "tagLine": "UwU", "region": "LA1" }` (región en mayúsculas ✅ en el ejemplo; ❓ desde el cliente).
+- Respuesta real ✅: `info` (datos de la cuenta: puuid, nivel, región… **no se usa ni se guarda**), `current_rank` (`tier`, `rank`, LP…) y `mastery`: objeto **indexado por id numérico de campeón** `{ "<championId>": puntos, …, "avg": número }` (puntos de maestría; `avg` = media). Se envía tal cual como `masteryData` de `draft-picks`. El plugin la normaliza en `domain/itero.js#normalizeBasicInfo` (solo claves numéricas + `avg`).
 - Privacidad: enviar un Riot ID a un tercero exige consentimiento explícito y opción desactivada por defecto. El plugin ya conoce el `puuid` y las maestrías por el LCU (`/lol-champion-mastery/v1/local-player/champion-mastery` ❓ sin verificar): si se llega a usar maestría, valorar construir `masteryData` desde el LCU **sin enviar el Riot ID a iTero** (depende de entender el formato).
 
 ### 4.5 Filtros del lado cliente en la web (replicables) ✅
@@ -237,7 +238,7 @@ src/infrastructure/itero/
 src/application/
   pick-advisor.js     createPickAdvisor({ itero, stats, catalog, getFilters, getPrefs, log }).advise(ctx) → {ok, data}; unifica con ChampionStats (Lolalytics)
                       createPickAdvisorController(...): como createOverlayController (estado {status,data,key}, debounce, cancelación, caché por composición)
-  preferences.js      (ampliar) 'easy-coachless/pickAdvisor': { enabled, useItero, useLolalytics, blendWeight, minPickRate, masteryWeight }
+  preferences.js      (ampliar) 'draftsage/pickAdvisor': { enabled, useItero, useLolalytics, blendWeight, minPickRate, masteryWeight }
 src/presentation/
   panel.js            sección «Picks sugeridos» (top 5 + chips + hover what-if); etiquetas en la cuadrícula (reutiliza overlay.js) opcional
   settings.js         interruptores y pesos (en «Más»)
@@ -246,7 +247,7 @@ dev/api-probes/ dev/tests/  ver §9
 
 ### 8.1 Cambios en `MatchContext` / proveedor LCU (`champ-select-provider.js`)
 
-Hoy el contexto trae `championId`, `role`, `opponentChampionId`, `lobbyTier`, `mode`, `enemies[{championId, position}]`, `allies[{championId, position}]`. Para iTero hace falta además (todo ❓ en el LCU real, verificar con `easyCoachless.state()`/logs):
+Hoy el contexto trae `championId`, `role`, `opponentChampionId`, `lobbyTier`, `mode`, `enemies[{championId, position}]`, `allies[{championId, position}]`. Para iTero hace falta además (todo ❓ en el LCU real, verificar con `draftsage.state()`/logs):
 - `side`: `myTeam[].team` (1 = azul, 2 = rojo; ❓ comprobar) → `Blue`/`Red`.
 - `bans`: `session.bans.myTeamBans` + `theirTeamBans` (ids) ❓.
 - `allies[].position` fiable: en ranked `assignedPosition` viene en tu equipo; **en el rival normalmente no** (el código actual ya lo asume). Hay que **asignar líneas a los rivales revelados**: resolver la asignación 1–a–1 que maximice la cuota de línea (`pctLane` de Lolalytics: 5 listas de tier, cacheadas 2 h; con ≤5 rivales basta la fuerza bruta de ≤120 permutaciones). Empates/dudas → dejar ese rival **fuera** (se trata como hueco; mejor «medias» que un dato equivocado).

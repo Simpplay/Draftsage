@@ -1,4 +1,4 @@
-// easy-coachless/src/application/overlay.js — estadísticas de cada campeón para mostrar en Champion Select (win rate y counters)
+// draftsage/src/application/overlay.js — estadísticas de cada campeón para mostrar en Champion Select (win rate y counters)
 //
 // Dos piezas:
 //  · createChampionStats: contexto → datos. Pide la lista de tier de TU línea (win rate, uso, bans, nota de cada campeón) y, si se conoce el

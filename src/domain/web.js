@@ -1,4 +1,4 @@
-// easy-coachless/src/domain/web.js — enlaces a coachless.gg (reglas puras)
+// draftsage/src/domain/web.js — enlaces a coachless.gg (reglas puras)
 //
 // Forma de la URL: https://coachless.gg/builds/{campeón}?role={rol}&matchup={rival}
 //   p. ej. https://coachless.gg/builds/caitlyn?role=adc&matchup=jinx

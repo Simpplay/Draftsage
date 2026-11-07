@@ -142,7 +142,7 @@ Objeto `{ "<idRuna>": [[pr, wr, n], …] }` (71 claves; ¡ojo: aquí el orden es
 - `itemSets`: `{ itemBootSet1..3: { "<itemId>": [x, y] } }` ❓ significado de los pares sin determinar.
 - `cache` ("cached"), `response`: metadatos del servidor.
 
-## 7. Cómo encaja en Easy Coachless
+## 7. Cómo encaja en Draftsage
 
 Objetivo: que Lolalytics sea **otra fuente** de recomendación, sin tocar la UI ni el resto de la aplicación.
 

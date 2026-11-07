@@ -1,4 +1,4 @@
-// easy-coachless/src/infrastructure/ddragon/names.js — nombres de campeón en inglés (Data Dragon, el CDN público de Riot)
+// draftsage/src/infrastructure/ddragon/names.js — nombres de campeón en inglés (Data Dragon, el CDN público de Riot)
 //
 // iTero exige el nombre inglés exacto de cada campeón y NO avisa si no lo reconoce (domain/itero.js). Los nombres del LCU salen en el
 // idioma del cliente y los alias no valen (`MonkeyKing`, `Nunu`, `Renata`), así que se leen una vez de

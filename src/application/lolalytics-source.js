@@ -1,4 +1,4 @@
-// easy-coachless/src/application/lolalytics-source.js — fuente de recomendaciones basada en LoLalytics
+// draftsage/src/application/lolalytics-source.js — fuente de recomendaciones basada en LoLalytics
 //
 // Misma firma que el servicio de Coachless (application/recommendation.js): getRecommendation(ctx, {premium, signal}) →
 // { ok:true, data: Recommendation } | { ok:false, reason }   reason: 'network' | 'blocked' | 'http' | 'no-data' | 'shape' | 'aborted'

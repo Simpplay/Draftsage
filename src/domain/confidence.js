@@ -1,4 +1,4 @@
-// easy-coachless/src/domain/confidence.js — cuánto fiarse de una cifra según las partidas que la respaldan (reglas puras)
+// draftsage/src/domain/confidence.js — cuánto fiarse de una cifra según las partidas que la respaldan (reglas puras)
 //
 // Con ~7 000 partidas el error típico del WPA ronda ±0,6 puntos (ver domain/selection.js): por debajo de unos pocos
 // miles de partidas, una diferencia de WPA es ruido. Niveles: 1 baja · 2 media · 3 alta.

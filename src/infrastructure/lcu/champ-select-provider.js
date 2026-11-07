@@ -1,4 +1,4 @@
-// easy-coachless/src/infrastructure/lcu/champ-select-provider.js — MatchContextProvider basado en sondeo del LCU
+// draftsage/src/infrastructure/lcu/champ-select-provider.js — MatchContextProvider basado en sondeo del LCU
 //
 // Implementa la interfaz de domain/match-context.js (getCurrentContext / subscribeToChanges). Se sondea porque en
 // Pengu 1.1.6 no hay un socket documentado para plugins; si más adelante se verifica uno, basta con sustituir este
@@ -22,7 +22,7 @@ import { sideOfTeam } from '../../domain/itero.js'
 const GAME_PHASES = new Set(['GameStart', 'InProgress', 'Reconnect'])
 // Todo lo que el consejero de picks necesita ver cambiar: aliados (con su posición), rivales, bans y lado.
 const key = (c) => (c ? [c.phase ?? '', c.championId, c.opponentChampionId ?? 0, c.role, c.lobbyTier ?? 0, c.mode ?? '', c.side ?? '',
-  (c.enemies ?? []).map((e) => e.championId).join(','), (c.allies ?? []).map((a) => a.championId + ':' + a.position).join(','), (c.bans ?? []).join(',')].join('|') : 'null')
+  (c.enemies ?? []).map((e) => e.championId + ':' + e.position).join(','), (c.allies ?? []).map((a) => a.championId + ':' + a.position).join(','), (c.bans ?? []).join(',')].join('|') : 'null')
 const revealed = (list) => (list ?? []).filter((p) => p.championId > 0).map((p) => ({ championId: p.championId, position: p.assignedPosition || '' }))
 
 /**

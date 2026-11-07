@@ -1,19 +1,19 @@
-// easy-coachless/src/domain/pick-advice.js — consejero de picks: reglas puras (sin red ni DOM)
+// draftsage/src/domain/pick-advice.js — consejero de picks: reglas puras (sin red ni DOM)
 //
-// Fusiona dos señales (docs/ITERO-INTEGRATION.md §7):
+// Dos señales que se muestran POR SEPARADO (la interfaz tiene una lista de cada una):
 //   · iTero  → cómo encaja cada campeón en la COMPOSICIÓN completa (`pred`, solo útil de forma RELATIVA dentro de una respuesta);
 //   · LoLalytics → cómo le va contra el rival de tu línea, con tamaño de muestra (`vs` de domain/overlay-stats.js).
-//   S(c) = Δi(c) + w · Es(c)     Δi = pred − mediana de los candidatos que pasan los filtros
-//                                Es = (win rate contra el rival − su media) · n / (n + n0)   (encogido por muestra)
-// El peso `w` es moderado (0,5) porque iTero ya incluye parte del counter de línea: sumar LoLalytics entero lo contaría dos veces.
+//   Puntuación de iTero:  S(c) = Δi(c)   con Δi = pred − mediana de los candidatos que pasan los filtros.
+//   (Mezcla opcional, DESACTIVADA por defecto: S(c) = Δi(c) + w · Es(c), Es = (win rate contra el rival − su media) · n / (n + n0).
+//    Con `weight` 0 —el valor por defecto— el orden es el de iTero puro.)
+// La coincidencia o discrepancia entre las dos fuentes solo se MUESTRA (`agree`, una marca ✓/⚠ en el pick de iTero), no cambia el orden.
 // Nunca se devuelve la probabilidad absoluta de iTero (está inflada y depende del lado/rango): solo puntos relativos.
-// La discrepancia entre fuentes se MUESTRA (`agree`), no se esconde.
 
 import { LANES, laneOfPosition, nameKey } from './itero.js'
 
 export const MIN_LANE_SHARE = 30 // % mínimo de las partidas de un campeón en una línea para colocarlo en ella (igual que overlay-stats)
 export const DEFAULTS = Object.freeze({
-  weight: 0.5,        // peso de LoLalytics en la mezcla (0 = solo iTero)
+  weight: 0,          // peso de LoLalytics en la mezcla (0 = solo iTero; las listas de iTero y de matchup van separadas)
   minPick: 0.0025,    // uso mínimo (fracción 0–1) como en la web de iTero: oculta fuera de línea y raros
   minGames: 1000,     // partidas mínimas del campeón en la línea
   n0: 300,            // muestra a partir de la cual el matchup pesa la mitad
@@ -76,6 +76,11 @@ export function assignLanes(members, share, { minShare = MIN_LANE_SHARE, slack =
 
 const pct = (mult) => (isNum(mult) ? round1((mult - 1) * 100) : null)
 
+/** Reparto de daño del equipo con este pick (% de AD): 'ad' > 65 · 'ap' < 35 · 'balanced' el resto · null si iTero no lo informa. */
+export const dmgOf = (adRatio) => (isNum(adRatio) ? (adRatio > 65 ? 'ad' : adRatio < 35 ? 'ap' : 'balanced') : null)
+/** Fase de la partida en la que el pick más mejora al equipo (≥ 1 % sobre la media), o null. Mismo criterio que el chip de escalado. */
+export const SCALE_MIN = 0.01
+
 /**
  * Por qué encaja (chips para la interfaz, sin texto): sinergia con un aliado, counter contra un rival, punto débil, escalado y reparto de daño.
  * @param {object} c  candidato normalizado (domain/itero.js)
@@ -102,28 +107,31 @@ export function chipsOf(c, { allyLanes = [], enemyLanes = [] } = {}) {
   let phase = null
   for (const p of ['early', 'mid', 'late']) {
     const v = c.scale?.[p]
-    if (isNum(v) && v >= 0.01 && (!phase || v > phase.v)) phase = { p, v }
+    if (isNum(v) && v >= SCALE_MIN && (!phase || v > phase.v)) phase = { p, v }
   }
   if (phase) out.push({ kind: 'scale', phase: phase.p, value: round1(phase.v * 100) })
-  if (isNum(c.adRatio)) out.push({ kind: 'dmg', value: c.adRatio > 65 ? 'ad' : c.adRatio < 35 ? 'ap' : 'balanced' })
+  if (isNum(c.adRatio)) out.push({ kind: 'dmg', value: dmgOf(c.adRatio) })
   return out
 }
 
 /**
- * Ordena los candidatos de iTero y los mezcla con la ventaja de matchup de LoLalytics.
+ * Ordena los candidatos de iTero (y, solo si `weight` > 0, los mezcla con la ventaja de matchup de LoLalytics).
  * @param {{candidates:object[], idOf:(name:string)=>number|null, stats?:object|null, banned?:string[], reveal?:object, options?:object}} p
- *   stats = datos de application/overlay.js (`champions[cid].vs = {wr, edge, n, low}`); null/sin rival → solo iTero.
- * @returns {{picks:object[], blended:boolean, pool:number}}
+ *   stats = datos de application/overlay.js (`champions[cid].vs = {wr, edge, n, low}`); null/sin rival → sin marca de acuerdo.
+ * @returns {{picks:object[], rows:object[], blended:boolean, contrasted:boolean, pool:number}}
+ *   picks = los `top` primeros · rows = TODOS los que pasan los filtros, ya ordenados (la interfaz aplica encima los filtros del jugador)
+ *   blended = se mezcló el matchup en la puntuación · contrasted = hay datos de matchup con los que marcar acuerdo/discrepancia
  */
 export function rankPicks({ candidates, idOf, stats = null, banned = [], reveal = {}, options = {} }) {
   const o = { ...DEFAULTS, ...options }
   const banSet = new Set(banned.map(nameKey))
   const pool = (candidates ?? []).filter((c) => c.pick >= o.minPick && c.count >= o.minGames && !banSet.has(nameKey(c.name)))
-  if (!pool.length) return { picks: [], blended: false, pool: 0 }
+  if (!pool.length) return { picks: [], rows: [], blended: false, contrasted: false, pool: 0 }
   const med = median(pool.map((c) => c.pred))
   const byDelta = [...pool].sort((a, b) => b.pred - a.pred)
   const topSet = new Set(byDelta.slice(0, o.agreeTop).map((c) => c.name))
   let blended = false
+  let contrasted = false
 
   const rows = []
   for (const c of pool) {
@@ -132,7 +140,8 @@ export function rankPicks({ candidates, idOf, stats = null, banned = [], reveal 
     const vs = stats?.champions?.[cid]?.vs ?? null
     const usable = !!vs && isNum(vs.edge) && isNum(vs.n) && vs.n > 0
     const shrunk = usable ? vs.edge * (vs.n / (vs.n + o.n0)) : 0
-    if (usable) blended = true
+    if (usable) contrasted = true
+    if (usable && o.weight > 0) blended = true
     const delta = c.pred - med
     const score = delta + o.weight * shrunk
     let agree = null
@@ -144,9 +153,10 @@ export function rankPicks({ candidates, idOf, stats = null, banned = [], reveal 
     rows.push({
       championId: cid, name: c.name, score: round1(score), delta: round1(delta), games: c.count, agree,
       matchup: vs ? { wr: vs.wr, edge: vs.edge, n: vs.n, low: !!vs.low } : null,
-      chips: chipsOf(c, reveal), _s: score,
+      chips: chipsOf(c, reveal), scale: c.scale ?? {}, dmg: dmgOf(c.adRatio), _s: score,
     })
   }
   rows.sort((a, b) => b._s - a._s)
-  return { picks: rows.slice(0, o.top).map(({ _s, ...r }, i) => ({ rank: i + 1, ...r })), blended, pool: pool.length }
+  const clean = rows.map(({ _s, ...r }, i) => ({ rank: i + 1, ...r }))
+  return { picks: clean.slice(0, o.top), rows: clean, blended, contrasted, pool: pool.length }
 }

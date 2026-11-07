@@ -1,4 +1,4 @@
-// easy-coachless/src/domain/spells.js — qué hechizos tienen sentido según el modo de juego y el rol (reglas puras)
+// draftsage/src/domain/spells.js — qué hechizos tienen sentido según el modo de juego y el rol (reglas puras)
 //
 // Los datos de Coachless son de Grieta del Invocador (ranked). Estas reglas son una red de seguridad para que el panel
 // nunca proponga un hechizo que el cliente va a rechazar o que no tiene sentido:
