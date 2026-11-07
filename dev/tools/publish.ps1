@@ -117,7 +117,16 @@ for ($i = 0; $i -lt 3; $i++) {
 if (-not $isGreater) { Fail "La versión $next debe ser mayor que la actual ($curText)." }
 
 $tag = "v$next"
-if (Capture 'git' @('tag', '--list', $tag)) { Fail "La etiqueta $tag ya existe en local." }
+if (Capture 'git' @('tag', '--list', $tag)) {
+  $where = Capture 'git' @('log', '-1', '--format=%h %s', "refs/tags/$tag")
+  $onRemote = [bool](Capture 'git' @('ls-remote', '--tags', 'origin', "refs/tags/$tag"))
+  if ($onRemote) {
+    Fail "La etiqueta $tag ya existe en local Y en origin (apunta a: $where). Esa versión ya está publicada: usa otra con -Version o -Bump."
+  }
+  Fail ("La etiqueta $tag ya existe en local pero NO en origin (apunta a: $where). Seguramente es de un intento anterior que no se subió.`n" +
+        "   - Para descartarla y repetir:       git tag -d $tag      (si dejó un commit 'release $tag' sin subir, revísalo con git log antes de repetir)`n" +
+        "   - Si ese release está bien y solo falta subirlo:   git push --atomic origin main $tag")
+}
 if (Capture 'git' @('ls-remote', '--tags', 'origin', "refs/tags/$tag")) { Fail "La etiqueta $tag ya existe en origin." }
 Info "versión actual $curText  ->  nueva $next  (etiqueta $tag)"
 
