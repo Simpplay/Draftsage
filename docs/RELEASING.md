@@ -21,6 +21,8 @@ git tag v1.0.1
 git push origin main --tags
 ```
 
+Al subir la etiqueta, el workflow `.github/workflows/release.yml` crea solo el **Release de GitHub** con `Draftsage-X.Y.Z.zip` y su `.sha256` (notas automáticas). Ese zip es lo que se reparte a los usuarios (ver «Distribución»). El workflow **no firma nada y no usa secretos**: solo comprueba (`check.mjs`, pruebas de actualizaciones, `dev/tools/package.mjs`) y publica. Si falla, no se crea el Release; corrige, borra la etiqueta (`git push origin :refs/tags/vX.Y.Z`) y vuelve a etiquetar.
+
 `release.mjs` hace, por este orden: valida que la versión sea mayor que la actual y que la clave privada corresponda a una pública del loader → `check.mjs` (+ pruebas) → escribe `src/shared/version.js` → empaqueta `bootstrap.js` en un solo archivo con esbuild → crea y firma `dist/manifest.json` → **se verifica a sí mismo como lo hará el loader** (firma, hash, tamaño, sintaxis) → solo entonces escribe `dist/`. Si algo falla restaura `version.js` y no toca `dist/`. No hace commit, ni etiqueta, ni sube nada.
 
 - **Etiqueta `vX.Y.Z`**: el loader pide `app.js` a `…@vX.Y.Z/dist/app.js`; sin etiqueta no lo encuentra. Etiqueta siempre el mismo commit que contiene `dist/`.
@@ -56,6 +58,10 @@ Si un cambio necesita tocar el loader: súbelo en un plugin nuevo para reinstala
 | IndexedDB manipulada en el equipo | La versión guardada se re-verifica en cada lectura → se borra y se usa el código incluido. (Quien ya puede escribir en el perfil del cliente puede, de todas formas, modificar el plugin local.) |
 | Clave privada robada | **No se mitiga con el código**: rotar la clave y reinstalar (ver arriba). Es el punto único de confianza. |
 | Servidor/CDN caído o sin red | Sin efecto: se usa el código incluido; el cliente no se bloquea. |
+
+## Distribución (el .zip)
+
+`node dev/tools/package.mjs [--tag vX.Y.Z] [--out carpeta]` genera `Draftsage-X.Y.Z.zip` (+ `.sha256`) con `git archive` de lo **commiteado**: `draftsage/{index.js, README.md, src/**}` y nada más (sin `dev/`, `docs/`, `dist/`, `.git`, `CLAUDE.md`). Se niega a crearlo si: la etiqueta no es `v<VERSION>`; el loader no tiene claves públicas; `dist/manifest.json` no está firmado por esas claves, no es de esta versión o `dist/app.js` no coincide con su hash; hay cambios sin commitear en lo empaquetado; o hay un `.pem`/`.key` versionado. El workflow lo ejecuta en cada etiqueta; también puedes ejecutarlo a mano para probar. El usuario instala descomprimiendo la carpeta `draftsage` en `<Pengu Loader>/plugins/`.
 
 ## Antes de distribuir públicamente
 

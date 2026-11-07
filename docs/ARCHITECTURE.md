@@ -7,6 +7,7 @@ Capas con dependencias hacia dentro: `presentation → application → domain`; 
 ```
 draftsage/
 ├── index.js                         Entrada de Pengu: solo exporta load() y delega en el loader (application/loader.js)
+├── .github/workflows/release.yml   Al subir una etiqueta vX.Y.Z crea el Release de GitHub con el .zip (no firma, no usa secretos)
 ├── dist/                            app.js + manifest.json firmados (los genera dev/tools/release.mjs; los sirve jsDelivr)
 ├── src/
 │   ├── domain/                      Reglas puras (sin DOM, sin fetch, sin Pengu): se prueban con node --test
@@ -74,6 +75,7 @@ draftsage/
 │   ├── tools/check.mjs              node --check + imports relativos + reglas del proyecto
 │   ├── tools/keygen.mjs             Crea el par de claves de firma (privada fuera del repo) y registra la pública en el loader
 │   ├── tools/release.mjs            Empaqueta con esbuild, firma y se autoverifica → dist/ (ver docs/RELEASING.md)
+│   ├── tools/package.mjs            Crea el .zip de distribución (git archive) tras verificar etiqueta, firma, hash y que no haya claves
 │   └── package.json                 Única dependencia: esbuild (solo desarrollo)
 └── docs/                            HANDOFF, coachless-api, coachless-auth, lolalytics (análisis y estado de la 2.ª fuente), champ-select-dom (anclas del DOM del cliente), este archivo
 ```

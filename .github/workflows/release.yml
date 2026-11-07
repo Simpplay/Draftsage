@@ -1,0 +1,33 @@
+# Al subir una etiqueta vX.Y.Z crea el Release de GitHub con el .zip para distribuir.
+# NO firma nada: la firma (dist/manifest.json) se hace en tu equipo con dev/tools/release.mjs y se commitea antes de etiquetar.
+# El workflow solo comprueba que lo commiteado es coherente (dev/tools/package.mjs) y publica. No usa secretos propios: solo el token de la ejecución.
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write   # crear el Release y subir los archivos
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Comprobaciones (sintaxis, imports y pruebas de actualizaciones)
+        run: |
+          node dev/tools/check.mjs
+          node --test dev/tests/update.test.mjs
+      - name: Crear el .zip (verifica etiqueta, firma, hash y que no haya claves)
+        env:
+          TAG: ${{ github.ref_name }}
+        run: node dev/tools/package.mjs --tag "$TAG" --out release-assets
+      - name: Publicar el Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: gh release create "$TAG" release-assets/* --title "Draftsage $TAG" --generate-notes --verify-tag
