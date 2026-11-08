@@ -1,5 +1,11 @@
 # Draftsage — estado para retomar (2026-11-08)
 
+## Rediseño de UX/UI: especificación y auditoría (Fase 0) (2026-11-08)
+- Especificación del rediseño aportada por el usuario: `docs/UX-SPEC.md`. Auditoría de la Fase 0 (sin cambios de código): `docs/UX-AUDIT.md` (línea base de pruebas, mapa de componentes y de datos, inventario frente a la spec, decisiones pendientes).
+- ⚠ **Línea base con 2 pruebas desfasadas** (el código es correcto, las pruebas no): `dev/tests/lolalytics.test.mjs:35` espera `coachless` como modo por defecto (ahora es `auto`); `dev/tests/ui/ui.test.cjs` espera el login al arrancar sin sesión (con `auto` ya no se abre) y se aborta tras la 1.ª comprobación, así que hoy no protege el panel flotante. Arreglarlas antes de la Fase 1.
+- ⚠ Huecos de integridad confirmados (sin corregir, cambian lo que ve el usuario): la lista MATCHUP (`application/pick-filters.js: matchupPicks`) ordena por win rate bruto en vez de por ventaja (`edge`) y no excluye campeones baneados ni ya elegidos.
+- Decisiones del usuario necesarias antes de las Fases 2–4: texto visible frente al diseño «casi sin texto»; fuente de las características de composición (frontline, engage, peel… no las da ninguna fuente actual); criterio de «principal + alternativas» sin pesos arbitrarios. Ver `docs/UX-AUDIT.md` §6–8.
+
 ## Filtro de regiones y revisión de discrepancias con la web (2026-11-08)
 **Regiones** — ✅ implementado y probado con el harness · ❓ sin probar en el cliente real
 - Ajustes → «Regiones» bajo Parches: `Todas` (por defecto, envía `regions: null` como la web) o `Elegir` (despliega las 15 regiones de la web: BR, EUNE, EUW, JP, KR, LAN, LAS, ME, NA, OCE, SG, RU, TR, TW, VN; el botón resume la elección, p. ej. «EUW +2»). Se guarda en DataStore `draftsage/filters.regions` (solo ids). Cambiarlas vuelve a consultar; la caché de resultados incluye las regiones.
