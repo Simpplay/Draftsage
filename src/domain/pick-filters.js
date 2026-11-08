@@ -85,3 +85,20 @@ export function matches(f, facts, avail = { mastery: true, matchup: true, itero:
   if (f.damage !== 'any' && evaluable('damage', avail) && facts.dmg !== f.damage) return false
   return true
 }
+
+/**
+ * Campeones que el jugador NO puede elegir ahora: baneados (los dos equipos) y ya elegidos por otro jugador (aliado o rival).
+ * Tu propio campeón no cuenta: si ya lo tienes elegido, sigue siendo una opción válida para ti.
+ * Regla de integridad de la especificación (docs/UX-SPEC.md §6.5, regla 8): no recomendar un campeón no disponible como si se pudiera elegir.
+ * ❓ Los campeones que el jugador no posee no se conocen todavía (no se lee la lista del cliente): no se excluyen.
+ * @param {{championId?:number|null, bans?:number[], allies?:{championId:number}[], enemies?:{championId:number}[]}|null} ctx
+ * @returns {Set<number>}
+ */
+export function unavailableIds(ctx) {
+  const out = new Set()
+  if (!ctx) return out
+  for (const id of ctx.bans ?? []) if (Number.isInteger(id) && id > 0) out.add(id)
+  for (const p of [...(ctx.allies ?? []), ...(ctx.enemies ?? [])]) if (Number.isInteger(p?.championId) && p.championId > 0) out.add(p.championId)
+  if (ctx.championId) out.delete(ctx.championId)
+  return out
+}

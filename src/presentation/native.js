@@ -13,54 +13,58 @@
 // simulación o si ya hay partida, no se inserta nada y sigue el panel flotante de siempre. Las piezas se reponen solas si el cliente las borra.
 // No hace fetch: lee el estado de los controladores. Sin innerHTML: todo con h().
 
+import { ensureTheme } from './theme.js'
 import { h, whenReady } from './ui.js'
 import { icon } from './icons.js'
 import { pickTip } from './panel.js'
 import { buildSpellPair } from '../domain/configuration.js'
 import { getPanelPrefs } from '../application/preferences.js'
+import { resolvePerspective } from '../domain/draft-summary.js'
 import { t } from '../shared/i18n.js'
 import { log } from '../shared/logger.js'
 
 const STYLE_ID = 'draftsage-native-style'
 const MAX_PICKS = 5
 const CSS = `
-.ecx{box-sizing:border-box;display:inline-flex;align-items:center;gap:6px;vertical-align:middle;font:12px/1.3 sans-serif;color:#cdbe91;user-select:none;-webkit-app-region:no-drag}
+.ecx{box-sizing:border-box;display:inline-flex;align-items:center;gap:6px;vertical-align:middle;font:12px/1.3 sans-serif;color:var(--ds-text);user-select:none;-webkit-app-region:no-drag}
 .ecx *{-webkit-app-region:no-drag;box-sizing:border-box}
-.ecx button{font:inherit;color:inherit;cursor:pointer;padding:0;margin:0;outline:none}
+.ecx button{font:inherit;color:inherit;cursor:pointer;padding:0;margin:0}
+.ecx button:focus:not(:focus-visible){outline:none}
 .ecx svg{display:block}
 .ecx-loadout{flex:none;margin:0 10px}
-.ecx-key{position:relative;width:38px;height:38px;border-radius:50%;background:#010a13;border:2px solid #785a28;display:flex;align-items:center;justify-content:center;color:#a09b8c;transition:border-color .15s,box-shadow .15s,transform .15s}
-.ecx-key:hover{border-color:#c8aa6e;box-shadow:0 0 10px rgba(200,170,110,.55);transform:scale(1.05)}
-.ecx-key.ecx-open{border-color:#f0e6d2;box-shadow:0 0 12px rgba(240,230,210,.6)}
+.ecx-key{position:relative;width:38px;height:38px;border-radius:50%;background:var(--ds-bg);border:2px solid var(--ds-gold-dim);display:flex;align-items:center;justify-content:center;color:var(--ds-meta);transition:border-color .15s,box-shadow .15s,transform .15s}
+.ecx-key:hover{border-color:var(--ds-gold);box-shadow:0 0 10px rgba(200,170,110,.55);transform:scale(1.05)}
+.ecx-key.ecx-open{border-color:var(--ds-text-hi);box-shadow:0 0 12px rgba(240,230,210,.6)}
 .ecx-key img.ecx-k{width:100%;height:100%;border-radius:50%;object-fit:cover}
-.ecx-key .ecx-tree{position:absolute;right:-5px;bottom:-5px;width:18px;height:18px;border-radius:50%;background:#010a13;border:1px solid #785a28;object-fit:cover}
-.ecx-key .ecx-dot{position:absolute;left:-3px;top:-3px;width:12px;height:12px;border-radius:50%;background:#1e2328;border:1px solid #785a28;display:flex;align-items:center;justify-content:center}
-.ecx-key[data-state=loading]{border-color:#785a28;animation:ecx-pulse 1.2s ease-in-out infinite}
+.ecx-key .ecx-tree{position:absolute;right:-5px;bottom:-5px;width:18px;height:18px;border-radius:50%;background:var(--ds-bg);border:1px solid var(--ds-gold-dim);object-fit:cover}
+.ecx-key .ecx-dot{position:absolute;left:-3px;top:-3px;width:12px;height:12px;border-radius:50%;background:var(--ds-surface-2);border:1px solid var(--ds-gold-dim);display:flex;align-items:center;justify-content:center}
+.ecx-key[data-state=loading]{border-color:var(--ds-gold-dim);animation:ecx-pulse 1.2s ease-in-out infinite}
 .ecx-key[data-state=waiting]{opacity:.7}
-.ecx-key[data-state=error]{border-color:#8a6a1f;color:#e0a93a}
+.ecx-key[data-state=error]{border-color:#8a6a1f;color:var(--ds-amber)}
 .ecx-key.ecx-pop{animation:ecx-pop .6s ease-out}
-.ecx-ap{width:28px;height:28px;border-radius:50%;background:linear-gradient(#2a2314,#17130a);border:1px solid #c8aa6e;color:#f0e6d2;display:flex;align-items:center;justify-content:center;transition:.15s}
+.ecx-ap{width:28px;height:28px;border-radius:50%;background:linear-gradient(var(--ds-gold-bg),#17130a);border:1px solid var(--ds-gold);color:var(--ds-text-hi);display:flex;align-items:center;justify-content:center;transition:.15s}
 .ecx-ap:hover:not(:disabled){box-shadow:0 0 10px rgba(200,170,110,.6);transform:scale(1.08)}
-.ecx-ap:disabled{opacity:.35;cursor:default;border-color:#5b5a56}
-.ecx-ap.ecx-done{border-color:#0ac8b9;color:#0ac8b9;background:#06201f}
-.ecx-ap.ecx-fail{border-color:#e0a93a;color:#e0a93a}
+.ecx-ap:disabled{opacity:.35;cursor:default;border-color:var(--ds-mute-2)}
+.ecx-ap.ecx-done{border-color:var(--ds-teal);color:var(--ds-teal);background:var(--ds-teal-bg)}
+.ecx-ap.ecx-fail{border-color:var(--ds-amber);color:var(--ds-amber)}
 .ecx-ap.ecx-done svg{animation:ecx-pop .3s ease-out}
-.ecx-spin{width:14px;height:14px;border:2px solid #785a28;border-top-color:#f0e6d2;border-radius:50%;animation:ecx-rot .7s linear infinite;display:inline-block}
+.ecx-spin{width:14px;height:14px;border:2px solid var(--ds-gold-dim);border-top-color:var(--ds-text-hi);border-radius:50%;animation:ecx-rot .7s linear infinite;display:inline-block}
 .ecx-picks{flex:0 1 auto;min-width:0;max-width:100%;margin:0 8px;gap:4px;overflow:hidden}
-.ecx-ib{flex:none;position:relative;width:26px;height:26px;border-radius:50%;background:#010a13;border:1px solid #785a28;color:#c8aa6e;display:flex;align-items:center;justify-content:center;transition:.15s}
-.ecx-ib:hover{border-color:#c8aa6e;color:#f0e6d2;box-shadow:0 0 8px rgba(200,170,110,.5)}
-.ecx-ib.ecx-open{border-color:#f0e6d2;color:#f0e6d2}
-.ecx-ib .ecx-n{position:absolute;right:-5px;top:-5px;min-width:14px;height:14px;padding:0 3px;border-radius:7px;background:#c8aa6e;color:#1a1408;font:bold 10px/14px sans-serif;text-align:center}
+.ecx-ib{flex:none;position:relative;width:26px;height:26px;border-radius:50%;background:var(--ds-bg);border:1px solid var(--ds-gold-dim);color:var(--ds-gold);display:flex;align-items:center;justify-content:center;transition:.15s}
+.ecx-ib:hover{border-color:var(--ds-gold);color:var(--ds-text-hi);box-shadow:0 0 8px rgba(200,170,110,.5)}
+.ecx-ib.ecx-open{border-color:var(--ds-text-hi);color:var(--ds-text-hi)}
+.ecx-ib .ecx-n{position:absolute;right:-5px;top:-5px;min-width:14px;height:14px;padding:0 3px;border-radius:7px;background:var(--ds-gold);color:#1a1408;font:bold 10px/14px sans-serif;text-align:center}
 .ecx-pk{flex:none;position:relative;display:flex;flex-direction:column;align-items:center;width:30px;background:none;border:0}
-.ecx-pk img{width:26px;height:26px;border-radius:50%;object-fit:cover;border:1px solid #3c3c41;background:#1e2328;transition:.12s}
-.ecx-pk:hover img{border-color:#c8aa6e;transform:scale(1.12)}
-.ecx-pk b{display:block;margin-top:1px;font:bold 9px/10px sans-serif;color:#a09b8c}
-.ecx-pk b.ecx-pos{color:#0ac8b9}.ecx-pk b.ecx-neg{color:#e84057}
+.ecx-pk img{width:26px;height:26px;border-radius:50%;object-fit:cover;border:1px solid var(--ds-border);background:var(--ds-surface-2);transition:.12s}
+.ecx-pk:hover img{border-color:var(--ds-gold);transform:scale(1.12)}
+.ecx-pk b{display:block;margin-top:1px;font:bold 10px/11px sans-serif;color:var(--ds-meta)}
+.ecx-pk b.ecx-pos{color:var(--ds-teal)}.ecx-pk b.ecx-neg{color:var(--ds-red)}
+.ecx-pk.ecx-top img{border:2px solid var(--ds-gold);box-shadow:0 0 6px rgba(200,170,110,.55)}
 .ecx-pk.ecx-shake{animation:ecx-shake .35s}
-.ecx-hint{flex:0 1 auto;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:11px;color:#7b7a76}
-.ecx-launch{position:fixed;right:14px;bottom:14px;z-index:2147483100;pointer-events:auto;cursor:pointer;justify-content:center;width:34px;height:34px;border-radius:50%;background:#010a13;border:1px solid #785a28;color:#c8aa6e;font:bold 11px/1 sans-serif;transition:.15s}
-.ecx-launch:hover{border-color:#c8aa6e;color:#f0e6d2;box-shadow:0 0 10px rgba(200,170,110,.5)}
-.grid-champion.ecx-flash .grid-champion-hitbox{animation:ecx-flash .5s ease-in-out 3;box-shadow:inset 0 0 0 2px #f0c870,0 0 14px #f0c870}
+.ecx-hint{flex:0 1 auto;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:11px;color:var(--ds-mute)}
+.ecx-launch{position:fixed;right:14px;bottom:14px;z-index:2147483100;pointer-events:auto;cursor:pointer;justify-content:center;width:34px;height:34px;border-radius:50%;background:var(--ds-bg);border:1px solid var(--ds-gold-dim);color:var(--ds-gold);font:bold 11px/1 sans-serif;transition:.15s}
+.ecx-launch:hover{border-color:var(--ds-gold);color:var(--ds-text-hi);box-shadow:0 0 10px rgba(200,170,110,.5)}
+.grid-champion.ecx-flash .grid-champion-hitbox{animation:ecx-flash .5s ease-in-out 3;box-shadow:inset 0 0 0 2px var(--ds-gold-hi),0 0 14px var(--ds-gold-hi)}
 @keyframes ecx-pulse{0%,100%{box-shadow:0 0 0 rgba(200,170,110,0)}50%{box-shadow:0 0 12px rgba(200,170,110,.7)}}
 @keyframes ecx-pop{0%{transform:scale(.7)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
 @keyframes ecx-rot{to{transform:rotate(360deg)}}
@@ -69,6 +73,7 @@ const CSS = `
 `
 
 function ensureStyle() {
+  ensureTheme()
   if (document.getElementById(STYLE_ID)) return
   const s = document.createElement('style')
   s.id = STYLE_ID
@@ -195,9 +200,14 @@ export async function mountNative({ panel, controller, catalog, overlay, advisor
   // ---- Tira de picks en la cabecera de la cuadrícula ----
   const signed = (n) => (n >= 0 ? '+' : '') + n.toFixed(1)
 
+  // La tira sigue la perspectiva elegida en la vista «picks» (auto: línea si hay rival con datos; si no, equipo). El primero es la recomendación principal.
   function picksModel() {
     const ov = overlay?.getState()
-    if (ov?.data?.rival) {
+    const adv0 = advisor?.getState()
+    const lane = !!ov?.data?.rival && (filters ? filters.matchupPicks().length > 0 : ov.data.counters.length > 0)
+    const team = !!adv0?.data && (filters ? filters.draftPicks().length > 0 : adv0.data.picks.length > 0)
+    const p = resolvePerspective(getPanelPrefs().perspective, { lane, team })
+    if (p === 'lane' || (!p && ov?.data?.rival)) {
       const list = (filters ? filters.matchupPicks() : ov.data.counters.map((c) => ({ cid: c.cid, wr: c.wr, edge: c.edge, n: c.n }))).slice(0, MAX_PICKS)
       const rival = catalog.champion(ov.data.rival).name
       return {
@@ -205,7 +215,7 @@ export async function mountNative({ panel, controller, catalog, overlay, advisor
         items: list.map((c) => ({ cid: c.cid, label: Math.round(c.wr) + '%', good: c.edge == null || c.edge >= 0, tip: t('mu.pickTip', catalog.champion(c.cid).name, c.wr.toFixed(1), rival, c.edge != null ? signed(c.edge) : '–', c.n) })),
       }
     }
-    const adv = advisor?.getState()
+    const adv = adv0
     if (adv?.data) {
       const list = (filters ? filters.draftPicks() : adv.data.picks).slice(0, MAX_PICKS)
       return {
@@ -227,14 +237,15 @@ export async function mountNative({ panel, controller, catalog, overlay, advisor
     const toggle = () => panel.toggle('picks', el.picks)
     const head = h('button', { type: 'button', class: 'ecx-ib' + (open ? ' ecx-open' : ''), 'data-ecx': 'picks-open', 'aria-pressed': String(open), title: m.mode === 'none' ? m.tip : t('nat.picksOpen') + '\n' + m.tip, onclick: toggle },
       icon(m.mode === 'matchup' ? 'target' : 'spark', 15), n > 0 && h('span', { class: 'ecx-n', 'data-count': n }, n))
-    const cells = m.items.map((i) => {
+    const cells = m.items.map((i, k) => {
       const info = catalog.champion(i.cid)
       const btn = h('button', {
-        type: 'button', class: 'ecx-pk', 'data-pick': i.cid, title: i.tip + '\n' + t('nat.find'),
+        type: 'button', class: 'ecx-pk' + (k === 0 ? ' ecx-top' : ''), 'data-pick': i.cid, 'data-primary': k === 0 ? '' : null,
+        'aria-label': (k === 0 ? t('ds.title') + ': ' : '') + info.name + ' — ' + i.label, title: (k === 0 ? t('ds.title') + ' — ' : '') + i.tip + '\n' + t('nat.find'),
         onclick: () => {
           if (!flashTile(i.cid, root)) { btn.classList.add('ecx-shake'); btn.title = t('nat.notInGrid'); setTimeout(() => btn.classList.remove('ecx-shake'), 400) }
         },
-      }, info.icon ? h('img', { src: info.icon, alt: info.name, draggable: 'false' }) : h('div', { style: 'width:26px;height:26px;border-radius:50%;background:#1e2328' }),
+      }, info.icon ? h('img', { src: info.icon, alt: info.name, draggable: 'false' }) : h('div', { style: 'width:26px;height:26px;border-radius:50%;background:var(--ds-surface-2)' }),
       h('b', { class: i.good ? 'ecx-pos' : 'ecx-neg' }, i.label))
       return btn
     })
@@ -278,6 +289,8 @@ export async function mountNative({ panel, controller, catalog, overlay, advisor
   const schedule = () => { if (!timer) timer = setTimeout(sync, 80) }
 
   // Suscripciones: cada cambio de estado, del panel (aplicando/aplicado), de preferencias o del catálogo repinta como mucho una vez cada 80 ms.
+  // «Localizar» de la recomendación principal del panel usa la misma búsqueda de ficha que la tira.
+  panel.setLocator?.((cid) => flashTile(cid, root))
   const offs = [controller.subscribe(schedule), panel.subscribe(schedule), overlay?.subscribe(schedule), advisor?.subscribe(schedule), filters?.subscribe(schedule)].filter(Boolean)
   addEventListener('draftsage:prefs', schedule)
   addEventListener('resize', schedule)

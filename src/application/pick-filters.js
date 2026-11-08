@@ -8,16 +8,17 @@
 //   · availability()     — qué filtros se pueden evaluar ahora (la interfaz deshabilita el resto).
 // No hace peticiones: lee el estado de los demás controladores y re-emite sus cambios para que la interfaz se repinte una sola vez.
 
-import { activeCount, isActive, matches as matchesFilters, normalizePickFilters, toggleClass } from '../domain/pick-filters.js'
+import { activeCount, isActive, matches as matchesFilters, normalizePickFilters, toggleClass, unavailableIds } from '../domain/pick-filters.js'
 
 const TOP = 5
 
 /**
  * @param {{catalog:{champion:(id:number)=>{classes?:string[]}}, overlay:{getState:Function, subscribe:Function}, advisor:{getState:Function, subscribe:Function},
  *          mastery:{getState:Function, subscribe:Function, pointsOf:(id:number)=>number|null},
- *          prefs:{get:()=>object, set:(patch:object)=>object}, top?:number}} deps
+ *          prefs:{get:()=>object, set:(patch:object)=>object}, top?:number, getContext?:()=>object|null}} deps
+ *   getContext: contexto actual de Champion Select (bans, aliados y rivales): los campeones no disponibles salen de las dos listas.
  */
-export function createPickFilters({ catalog, overlay, advisor, mastery, prefs, top = TOP }) {
+export function createPickFilters({ catalog, overlay, advisor, mastery, prefs, top = TOP, getContext = () => null }) {
   const listeners = new Set()
   const offs = []
   let advRef = null
@@ -68,24 +69,25 @@ export function createPickFilters({ catalog, overlay, advisor, mastery, prefs, t
     toggleClass: (cls) => set(toggleClass(current(), cls)),
     reset: () => set({ classes: [], mastery: 'any', matchup: 'any', meta: 'any', phase: 'any', damage: 'any' }),
 
-    /** Lista de MATCHUP (LoLalytics): mejor win rate contra el rival, con muestra suficiente, que cumple los filtros. [] sin rival o sin datos. */
+    /** Lista de MATCHUP (LoLalytics): mejor win rate contra el rival, con muestra suficiente, disponible y que cumple los filtros. [] sin rival o sin datos.
+     *  Orden: win rate DEL MATCHUP (no el general); `edge` (ventaja sobre su media en la línea) viaja con cada pick para que la interfaz lo muestre. */
     matchupPicks() {
       const ov = overlayData()
       if (!ov?.rival) return []
-      const f = current(), avail = availability()
+      const f = current(), avail = availability(), taken = unavailableIds(getContext())
       return Object.entries(ov.champions)
-        .filter(([, c]) => c.vs && !c.vs.low)
+        .filter(([cid, c]) => c.vs && !c.vs.low && !taken.has(Number(cid)))
         .map(([cid, c]) => ({ cid: Number(cid), wr: c.vs.wr, edge: c.vs.edge, n: c.vs.n, counter: c.counter }))
         .sort((a, b) => b.wr - a.wr)
         .filter((p) => matches(p.cid, f, avail))
         .slice(0, top)
     },
 
-    /** Lista de DRAFT (iTero): los mejores del consejero (ya ordenados) que cumplen los filtros. [] si el consejero no tiene datos. */
+    /** Lista de DRAFT (iTero): los mejores del consejero (ya ordenados), disponibles y que cumplen los filtros. [] si el consejero no tiene datos. */
     draftPicks() {
       const rows = advisor.getState().data?.rows ?? []
-      const f = current(), avail = availability()
-      return rows.filter((r) => matches(r.championId, f, avail)).slice(0, top)
+      const f = current(), avail = availability(), taken = unavailableIds(getContext())
+      return rows.filter((r) => !taken.has(r.championId) && matches(r.championId, f, avail)).slice(0, top)
     },
 
     subscribe(cb) { listeners.add(cb); return () => listeners.delete(cb) },

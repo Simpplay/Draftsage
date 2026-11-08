@@ -12,6 +12,7 @@
 // misma cuadrícula de iconos existe en otras pantallas del cliente (colección de campeones).
 // No hace peticiones: solo lee el estado de application/overlay.js. Sin innerHTML: todo con h().
 
+import { ensureTheme } from './theme.js'
 import { h, whenReady } from './ui.js'
 import { t } from '../shared/i18n.js'
 import { log } from '../shared/logger.js'
@@ -21,12 +22,12 @@ const ICON_RE = /champion-icons\/(\d+)\.(?:png|jpg|webp)/i
 const MIN_GRID = 20
 const CSS = `
 .ecb-layer{position:fixed;inset:0;z-index:2147483000;pointer-events:none}
-.ecb{position:fixed;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:2px;padding:0 3px;height:14px;min-width:30px;border-radius:2px;background:rgba(1,10,19,.88);border:1px solid #3c3c41;color:#cdbe91;font:bold 10px/12px sans-serif;white-space:nowrap}
-.ecb-up{color:#0ac8b9}.ecb-down{color:#e84057}
+.ecb{position:fixed;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:2px;padding:0 3px;height:14px;min-width:30px;border-radius:2px;background:rgba(1,10,19,.88);border:1px solid var(--ds-border);color:var(--ds-text);font:bold 10px/12px sans-serif;white-space:nowrap}
+.ecb-up{color:var(--ds-teal)}.ecb-down{color:var(--ds-red)}
 .ecb-low{opacity:.6;font-style:italic}
-.ecb-top{border-color:#0ac8b9;box-shadow:0 0 6px rgba(10,200,185,.6);color:#f0e6d2}
-.ecb-top b{color:#0ac8b9}
-.ecb-rival{border-color:#e84057;box-shadow:0 0 6px rgba(232,64,87,.6)}
+.ecb-top{border-color:var(--ds-teal);box-shadow:0 0 6px rgba(10,200,185,.6);color:var(--ds-text-hi)}
+.ecb-top b{color:var(--ds-teal)}
+.ecb-rival{border-color:var(--ds-red);box-shadow:0 0 6px rgba(232,64,87,.6)}
 .ecb-veil{position:fixed;box-sizing:border-box;background:rgba(1,10,19,.72);-webkit-backdrop-filter:grayscale(1);backdrop-filter:grayscale(1)}
 `
 
@@ -34,6 +35,7 @@ const fmt = (x) => (typeof x === 'number' ? x.toFixed(1) : '–')
 const sign = (x) => (x >= 0 ? '+' : '') + x.toFixed(1)
 
 function ensureStyle() {
+  ensureTheme()
   if (document.getElementById(STYLE_ID)) return
   const s = document.createElement('style')
   s.id = STYLE_ID

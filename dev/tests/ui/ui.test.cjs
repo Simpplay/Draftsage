@@ -19,9 +19,13 @@ let pass = 0, fail = 0
 const ok = (c, msg) => { c ? pass++ : (fail++, console.log('FALLA:', msg)); if (c) console.log('ok  ', msg) }
 try {
   await page.goto('http://127.0.0.1:8765/dev/tests/ui/harness.html')
+  // Esta suite prueba el flujo de Coachless con login: con la fuente «auto» (la de por defecto) iniciar sesión es opcional y no se abre
+  // ningún diálogo al arrancar, así que se elige «solo Coachless» y se abre el login como lo haría el botón «Entrar».
+  await page.evaluate(() => window.DataStore.set('draftsage/source', { mode: 'coachless' }))
   await page.evaluate(() => window.__start())
   await page.waitForSelector('.ecp-fab', { timeout: 15000 })
   ok(true, 'el botón DS aparece tras whenReady')
+  await page.evaluate(() => window.draftsage.loginMenu())
   await page.waitForSelector('.ec-modal', { timeout: 5000 })
   ok((await page.textContent('.ec-title')).includes('Iniciar sesión'), 'sin sesión se pide login')
   await page.fill('input[name=email]', 'test@example.com'); await page.fill('input[name=password]', 'bad')
@@ -47,7 +51,10 @@ try {
   ok(imgs[0].startsWith('Ritmo Letal'), 'primera runa = keystone: ' + imgs[0])
   const txt = await page.textContent('.ecp')
   ok((await page.$$('.ecp-tag.ecp-warn[title*="premium"]')).length === 1, 'cuenta gratuita: icono de aviso de matchup premium (tooltip)')
-  ok(txt.length < 140, 'el panel casi no tiene texto (' + txt.length + ' caracteres): ' + txt)
+  // Rediseño (docs/UX-SPEC.md §7.3, §18.8): los nombres de runas, fragmentos y hechizos se ven sin depender del tooltip.
+  ok(['Ritmo Letal', 'Triunfo', 'Inspiración', 'Fragmentos', 'Destello'].every((s) => txt.includes(s)), 'nombres de runas, árboles, fragmentos y hechizos a la vista: ' + txt.slice(0, 160))
+  ok((await page.getAttribute('[data-origin]', 'data-origin')) === 'auto' && (await page.getAttribute('[data-scope]', 'data-scope')) === 'general', 'la página dice que es la recomendada y general (sin matchup)')
+  ok((await page.$('[data-legend=keystones]')) !== null, 'las alternativas de runa clave explican qué significa el % y cómo se ordenan')
   ok((await page.$$eval('.ecp-keycap', (a) => a.map((e) => e.textContent).join())) === 'D,F', 'los hechizos llevan la tecla D y F')
   ok((await page.$$eval('.ecp-it img[title^="Destello"]', (a) => a.length)) === 1, 'Destello en el panel (tecla F por defecto: el segundo hechizo)')
   ok(txt.includes('16.21') && txt.includes('Platino – Diamante'), 'pie con parche y rangos: ' + txt.slice(-60))
@@ -70,12 +77,13 @@ try {
   // atajo de teclado
   await page.keyboard.press('Control+Shift+E'); await page.waitForSelector('.ec-modal')
   ok((await page.getAttribute('.ecs-plan', 'data-plan')) === 'free', 'Ctrl+Shift+E abre los ajustes (cuenta gratuita)')
-  // orden: Aplicar → Runas → Destello arriba; «Más» plegado
+  // orden (docs/UX-SPEC.md §13): General → Datos (Elo, parches, regiones) → Consejero → Aplicación (Aplicar, runas, Destello) → «Avanzado» plegado
   const order = await page.$$eval('.ec-modal [data-act=power], .ec-modal [data-target], .ec-modal [data-key], .ec-modal [data-tier], .ec-modal [data-patch], .ec-modal [data-region], .ec-modal [data-act=more]',
     (a) => a.map((e) => e.dataset.act || e.dataset.target || e.dataset.key || (e.dataset.tier ? 't' + e.dataset.tier : e.dataset.patch ? 'p' + e.dataset.patch : 'r' + e.dataset.region)))
-  ok(order.join() === 'power,own,current,d,f,tauto,t3,t4,t5,t6,t7,pauto,p0,p1,p2,rall,rpick,more', 'lo importante primero, luego los filtros de Elo, parches y regiones: ' + order.join())
+  ok(order.join() === 'tauto,t3,t4,t5,t6,t7,pauto,p0,p1,p2,rall,rpick,power,own,current,d,f,more', 'cinco categorías en orden; «Avanzado» al final: ' + order.join())
+  ok((await page.$$eval('.ec-modal [data-section]', (a) => a.map((e) => e.dataset.section))).join() === 'general,data,advisor,apply', 'secciones General, Datos, Consejero y Aplicación (Avanzado plegado)')
   ok((await page.$('[data-act=simulate]')) === null, 'simular un matchup está oculto en «Más»')
-  ok((await page.textContent('.ec-modal')).length < 200, 'los ajustes casi no tienen texto (' + (await page.textContent('.ec-modal')).length + ' caracteres)')
+  ok((await page.$$('.ec-modal .ecs-desc')).length >= 8, 'cada categoría y los controles clave llevan una descripción breve visible (no solo tooltip)')
   // ajustes en vivo: destino y tecla de Destello
   ok((await page.getAttribute('[data-key=f]', 'aria-checked')) === 'true', 'Destello en F por defecto')
   await page.click('[data-key=d]')
@@ -289,6 +297,7 @@ try {
   await page.waitForTimeout(1500)
   ok((await page.evaluate(() => window.__net.length)) === netBefore, 'en partida no se vuelve a consultar Coachless')
   ok((await page.evaluate(() => { const r = document.querySelector('.ecp').getBoundingClientRect(); return r.width > 320 && r.right <= innerWidth && r.bottom <= innerHeight })), 'el panel de partida cabe en 1280×720')
+  ok((await page.$('[data-runes=summary]')) !== null && (await page.textContent('[data-runes=summary]')).includes('Ritmo Letal'), 'en partida, resumen de runas en texto (con nombres)')
   await page.screenshot({ path: shots + '/panel-game.png' })
   // ---- Seguimiento en vivo (Live Client Data API): ítems que ya tienes, siguiente por comprar y oro ----
   const GAME = (gold, items) => ({ activePlayer: { riotId: 'Yo#EUW', summonerName: 'Yo#EUW', currentGold: gold, level: 9 },

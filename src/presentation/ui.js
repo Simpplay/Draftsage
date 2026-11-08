@@ -8,6 +8,7 @@
 //          - todas devuelven un handle { result: Promise<{action, value}>, close(), setStatus(), ... }
 // Las pantallas concretas del plugin viven en menus.js.
 
+import { ensureTheme } from './theme.js'
 import { log } from '../shared/logger.js'
 import { t } from '../shared/i18n.js'
 
@@ -20,29 +21,30 @@ export const whenReady = (ms = 8000) => sleep(Math.max(0, ms - (performance.now(
 
 const CSS = `
 .ec-overlay{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:rgba(1,10,19,.72)}
-.ec-modal{box-sizing:border-box;width:min(var(--ec-w,520px),92vw);max-height:90vh;overflow:auto;background:#010a13;color:#cdbe91;border:1px solid #785a28;box-shadow:0 0 24px #000;padding:20px 24px;font-size:14px;line-height:1.5;outline:none}
-.ec-title{font-size:16px;font-weight:bold;margin:0 0 10px;color:#f0e6d2}
+.ec-modal{box-sizing:border-box;width:min(var(--ec-w,520px),92vw);max-height:90vh;overflow:auto;background:var(--ds-bg);color:var(--ds-text);border:1px solid var(--ds-gold-dim);box-shadow:0 0 24px #000;padding:20px 24px;font-size:14px;line-height:1.5;outline:none}
+.ec-title{font-size:16px;font-weight:bold;margin:0 0 10px;color:var(--ds-text-hi)}
 .ec-body p{margin:0 0 8px}
-.ec-box{margin:8px 0;padding:8px 10px;background:#0a1428}
-.ec-status{min-height:20px;margin-top:8px;color:#0ac8b9}
-.ec-status.ec-error{color:#e84057}
+.ec-box{margin:8px 0;padding:8px 10px;background:var(--ds-surface)}
+.ec-status{min-height:20px;margin-top:8px;color:var(--ds-teal)}
+.ec-status.ec-error{color:var(--ds-red)}
 .ec-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
-.ec-btn{background:#1e2328;color:#cdbe91;border:1px solid #785a28;padding:6px 14px;cursor:pointer;font:inherit}
-.ec-btn:hover:not(:disabled){border-color:#c8aa6e;color:#f0e6d2}
+.ec-btn{background:var(--ds-surface-2);color:var(--ds-text);border:1px solid var(--ds-gold-dim);padding:6px 14px;cursor:pointer;font:inherit}
+.ec-btn:hover:not(:disabled){border-color:var(--ds-gold);color:var(--ds-text-hi)}
 .ec-btn:disabled{opacity:.5;cursor:default}
-.ec-btn.ec-primary{border-color:#c8aa6e;color:#f0e6d2}
-.ec-btn.ec-danger{border-color:#e84057;color:#e84057}
+.ec-btn.ec-primary{border-color:var(--ds-gold);color:var(--ds-text-hi)}
+.ec-btn.ec-danger{border-color:var(--ds-red);color:var(--ds-red)}
 .ec-field{display:block;margin:8px 0}
-.ec-field>span{display:block;margin-bottom:2px;font-size:12px;color:#a09b8c}
-.ec-input{box-sizing:border-box;width:100%;padding:6px 8px;background:#1e2328;color:#f0e6d2;border:1px solid #3c3c41;font:inherit}
-.ec-input:focus{outline:none;border-color:#c8aa6e}
+.ec-field>span{display:block;margin-bottom:2px;font-size:12px;color:var(--ds-meta)}
+.ec-input{box-sizing:border-box;width:100%;padding:6px 8px;background:var(--ds-surface-2);color:var(--ds-text-hi);border:1px solid var(--ds-border);font:inherit}
+.ec-input:focus{outline:none;border-color:var(--ds-gold)}
 .ec-check{display:flex;align-items:center;gap:6px;margin:8px 0}
 .ec-menu{display:flex;flex-direction:column;gap:6px;margin-top:6px}
 .ec-menu .ec-btn{text-align:left}
-.ec-menu small{display:block;color:#a09b8c}
+.ec-menu small{display:block;color:var(--ds-meta)}
 `
 
 function ensureStyle() {
+  ensureTheme()
   if (document.getElementById(STYLE_ID)) return
   const s = document.createElement('style')
   s.id = STYLE_ID
