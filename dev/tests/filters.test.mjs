@@ -1,15 +1,15 @@
 import './_setup.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { normalizeFilters, resolveTiers, resolveAdditions, toggleTier, MAX_PATCH_RANGE } from '../../src/domain/filters.js'
+import { normalizeFilters, resolveTiers, resolveAdditions, resolveRegions, toggleTier, toggleRegion, REGIONS, MAX_PATCH_RANGE } from '../../src/domain/filters.js'
 import { patchSpanLabel } from '../../src/domain/patch.js'
 const { createRecommendationService } = await import('../../src/application/recommendation.js')
 const { createCache } = await import('../../src/infrastructure/coachless/cache.js')
 
 test('normalizeFilters: valores por defecto, saneado y límites', () => {
-  assert.deepEqual(normalizeFilters(undefined), { tiers: { mode: 'auto', min: 5, max: 7 }, patches: { mode: 'auto', additions: 1 } })
+  assert.deepEqual(normalizeFilters(undefined), { tiers: { mode: 'auto', min: 5, max: 7 }, patches: { mode: 'auto', additions: 1 }, regions: [] })
   assert.deepEqual(normalizeFilters({ tiers: { mode: 'range', min: 9, max: 1 }, patches: { mode: 'manual', additions: 99 } }),
-    { tiers: { mode: 'range', min: 3, max: 7 }, patches: { mode: 'manual', additions: MAX_PATCH_RANGE } })
+    { tiers: { mode: 'range', min: 3, max: 7 }, patches: { mode: 'manual', additions: MAX_PATCH_RANGE }, regions: [] })
   assert.deepEqual(normalizeFilters({ tiers: { mode: 'range', min: 6, max: 4 } }).tiers, { mode: 'range', min: 4, max: 6 }) // extremos invertidos
   assert.equal(normalizeFilters({ patches: { mode: 'manual', additions: -3 } }).patches.additions, 0)
   assert.equal(normalizeFilters({ patches: { mode: 'manual', additions: 'x' } }).patches.additions, 1)
@@ -41,6 +41,21 @@ test('toggleTier: amplía, acorta y vuelve a automático', () => {
   assert.deepEqual(toggleTier(R(3, 7), 4), R(4, 7)) // en medio: mueve el extremo más cercano
   assert.deepEqual(toggleTier(R(3, 7), 6), R(3, 6))
   assert.equal(toggleTier(R(5, 5), 5).mode, 'auto')
+})
+
+test('regiones: saneado, «todas» = null y alternar', () => {
+  assert.deepEqual(normalizeFilters({ regions: [4, '2', 4, 99, -1, 'x', 10] }).regions, [2, 4]) // solo ids que ofrece la web (10 = PH no)
+  assert.deepEqual(normalizeFilters({ regions: 'basura' }).regions, [])
+  assert.deepEqual(normalizeFilters({ regions: REGIONS.map((r) => r.id) }).regions, []) // todas marcadas = todas
+  assert.deepEqual(resolveRegions(undefined), { regions: null, manual: false })
+  assert.deepEqual(resolveRegions({ regions: [4] }), { regions: [4], manual: true })
+  assert.deepEqual(toggleRegion([], 4), [4])
+  assert.deepEqual(toggleRegion([4], 2), [2, 4])
+  assert.deepEqual(toggleRegion([2, 4], 4), [2])
+  assert.deepEqual(toggleRegion([2], 2), [])
+  assert.deepEqual(toggleRegion([2], 77), [2]) // id desconocido: sin cambios
+  assert.equal(REGIONS.length, 15)
+  assert.deepEqual(REGIONS.find((r) => r.code === 'KR').id, 4) // el único id verificado antes contra la API
 })
 
 test('patchSpanLabel', () => {
@@ -103,4 +118,40 @@ test('servicio: cambiar los filtros no reutiliza una recomendación cacheada con
   await svc.getRecommendation(CTX, { premium: true }); filters = { tiers: { mode: 'range', min: 3, max: 4 } }
   await svc.getRecommendation(CTX, { premium: true })
   assert.deepEqual(calls, ['3', '3,4'])
+})
+
+test('servicio: regiones elegidas viajan en commonFilters, cambian la caché y se quitan ante un 403', async () => {
+  const kr = mk({ regions: [4] })
+  const r = await kr.svc.getRecommendation(CTX, { premium: true })
+  assert.deepEqual(r.data.meta.regions, [4]); assert.equal(r.data.meta.regionSource, 'manual')
+  assert.ok(kr.calls.filter((f) => f?.leagueTiers).every((f) => f.regions?.join() === '4'))
+  const all = mk(undefined)
+  const r2 = await all.svc.getRecommendation(CTX, { premium: true })
+  assert.equal(r2.data.meta.regions, null); assert.equal(r2.data.meta.regionSource, 'all')
+  assert.ok(all.calls.filter((f) => f?.leagueTiers).every((f) => f.regions === null))
+
+  // misma caché de resultados, filtros distintos → no se reutiliza
+  let filters = { regions: [4] }
+  const calls = []
+  const ok = (data) => async (...a) => { calls.push(a[0]); return { ok: true, data } }
+  const client = {
+    patches: async () => ({ ok: true, data: PATCHES }), championRole: async () => ({ ok: true, data: 3 }),
+    keystones: ok([e(8008, 0.2, 50000)]), spells: ok([{ spell: 4, wpa: 0, occurrence: 50000 }]), builds: ok([]), items: ok([]),
+    treeRunes: ok({ rows: [[e(8009, 0, 1000)], [e(9104, 0, 1000)], [e(8017, 0, 1000)]] }),
+  }
+  const svc = createRecommendationService({ client, log: { info() {}, warn() {}, error() {}, debug() {} }, cache: createCache(), getFilters: () => filters })
+  await svc.getRecommendation(CTX, { premium: true })
+  filters = { regions: [2] }
+  const r3 = await svc.getRecommendation(CTX, { premium: true })
+  assert.deepEqual(r3.data.meta.regions, [2])
+  assert.ok(calls.some((f) => f?.regions?.join() === '2'))
+
+  // 403 con regiones (¿filtro premium?): se reintenta sin ellas y se avisa
+  const seen = []
+  const forbidIfRegions = (data) => async (f) => { seen.push(f); return f.regions ? { ok: false, reason: 'forbidden' } : { ok: true, data } }
+  const c2 = { ...client, keystones: forbidIfRegions([e(8008, 0.2, 50000)]), spells: forbidIfRegions([{ spell: 4, wpa: 0, occurrence: 50000 }]), builds: forbidIfRegions([]) }
+  const s2 = createRecommendationService({ client: c2, log: { info() {}, warn() {}, error() {}, debug() {} }, cache: createCache(), getFilters: () => ({ regions: [4] }) })
+  const r4 = await s2.getRecommendation(CTX, { premium: false })
+  assert.equal(r4.ok, true); assert.equal(r4.data.meta.regions, null)
+  assert.ok(r4.data.meta.notices.includes('filters-downgraded'))
 })

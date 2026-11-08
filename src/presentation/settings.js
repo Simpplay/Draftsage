@@ -9,7 +9,7 @@ import { openDialog, h, notify } from './ui.js'
 import { icon } from './icons.js'
 import { getLang, t } from '../shared/i18n.js'
 import { log } from '../shared/logger.js'
-import { MAX_PATCH_RANGE, toggleTier } from '../domain/filters.js'
+import { MAX_PATCH_RANGE, REGIONS, regionCode, toggleRegion, toggleTier } from '../domain/filters.js'
 import { MASTERY_WEIGHTS } from '../domain/itero.js'
 
 const STYLE_ID = 'draftsage-settings-style'
@@ -53,6 +53,8 @@ const CSS = `
 .ecs-chip[aria-pressed=true]{border-color:#c8aa6e;color:#f0e6d2;background:#17130a;box-shadow:inset 0 0 12px rgba(200,170,110,.22)}
 .ecs-chips-t .ecs-chip{padding:8px 0;font-size:10px;letter-spacing:0;text-transform:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ecs-chips-t .ecs-chip[data-tier=auto]{flex:0 0 46px;text-transform:uppercase}
+.ecs-chips-r{flex-wrap:wrap;margin-top:6px}
+.ecs-chips-r .ecs-chip{flex:0 0 calc(20% - 5px);padding:6px 0;font-size:10px}
 .ecs-chip[aria-disabled=true]{opacity:.35;cursor:not-allowed}
 .ecs-chip[aria-disabled=true]:hover{border-color:#3c3c41;color:#7b7a76}
 .ecs-more{display:flex;align-items:center;gap:6px;align-self:center;padding:4px 10px;background:none;border:0;color:#6b6b73;font:inherit;font-size:11px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer}
@@ -95,6 +97,8 @@ export function openSettings({ applier, catalog, filters, source, overlay, advis
   ensureStyle()
   const box = h('div', { class: 'ecs' })
   let more = false
+  let regionsOpen = false // la lista de regiones se despliega bajo demanda (son 15 y casi nunca se tocan)
+  let regionsAnim = false // animar solo al desplegar, no en cada clic (cada clic repinta los ajustes)
   let handle
 
   // Cierra los ajustes y ejecuta algo que abre otra ventana (solo hay una ventana a la vez).
@@ -136,7 +140,7 @@ export function openSettings({ applier, catalog, filters, source, overlay, advis
         onclick: () => { applier.setSettings({ flashKey: k }); render() },
       }, flashIcon && h('img', { src: flashIcon, alt: '', draggable: 'false' }), k.toUpperCase()))))
 
-    // Filtros de datos: rango de Elo (clic en los rangos que quieres incluir) y rango de parches (solo premium).
+    // Filtros de datos: rango de Elo (clic en los rangos que quieres incluir), rango de parches (solo premium) y regiones.
     const fl = filters.get()
     const eloChip = (id, label, tip, pressed, onclick) => h('button', { type: 'button', class: 'ecs-chip', 'data-tier': id, 'aria-pressed': String(pressed), title: tip, onclick }, label)
     const elo = h('div', null,
@@ -146,6 +150,20 @@ export function openSettings({ applier, catalog, filters, source, overlay, advis
         [3, 4, 5, 6, 7].map((n) => eloChip(String(n), t('tier.' + n), t('set.eloTip', t('tier.' + n)),
           fl.tiers.mode === 'range' && n >= fl.tiers.min && n <= fl.tiers.max,
           () => { filters.set({ tiers: toggleTier(fl.tiers, n) }); render() }))))
+
+    // Regiones: «Todas» (por defecto, `regions: null`) o una lista elegida a mano. El botón de la derecha despliega la lista y resume la elección.
+    const picked = fl.regions
+    const regionSummary = !picked.length ? t('set.regionsPick') : picked.length <= 2 ? picked.map(regionCode).join(' ') : regionCode(picked[0]) + ' +' + (picked.length - 1)
+    const regionChip = (id, label, tip, pressed, onclick, extra = {}) => h('button', { type: 'button', class: 'ecs-chip', 'data-region': id, 'aria-pressed': String(pressed), title: tip, onclick, ...extra }, label)
+    const regions = h('div', null,
+      h('div', { class: 'ecs-cap' }, icon('globe', 13), t('set.regions')),
+      h('div', { class: 'ecs-chips', role: 'group' },
+        regionChip('all', t('set.regionsAll'), t('set.regionsAllTip'), !picked.length, () => { filters.set({ regions: [] }); render() }),
+        regionChip('pick', regionSummary, picked.length ? picked.map(regionCode).join(', ') : t('set.regionsPickTip'), picked.length > 0,
+          () => { regionsOpen = !regionsOpen; regionsAnim = regionsOpen; render() }, { 'aria-expanded': String(regionsOpen) })),
+      regionsOpen && h('div', { class: 'ecs-chips ecs-chips-r' + (regionsAnim ? ' ecs-pop' : ''), role: 'group' },
+        REGIONS.map((r) => regionChip(String(r.id), r.code, t('set.regionTip', r.code), picked.includes(r.id),
+          () => { regionsAnim = false; filters.set({ regions: toggleRegion(picked, r.id) }); render() }))))
 
     const premium = !!ses.premium
     const patchChip = (id, label, tip, pressed, locked, onclick) => h('button', {
@@ -211,7 +229,7 @@ export function openSettings({ applier, catalog, filters, source, overlay, advis
     return [
       top, power, src,
       h('div', { class: cfg.enabled ? '' : 'ecs-off' }, h('div', { class: 'ecs', style: 'gap:16px' }, target, keys)),
-      elo, patches,
+      elo, patches, regions,
       h('button', { type: 'button', class: 'ecs-more', 'aria-expanded': String(more), 'data-act': 'more', title: t('set.moreTip'), onclick: () => { more = !more; render() } }, icon('chevron', 14), t('set.more')),
       grid,
       masteryRow,

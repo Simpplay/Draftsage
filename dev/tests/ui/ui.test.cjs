@@ -71,9 +71,9 @@ try {
   await page.keyboard.press('Control+Shift+E'); await page.waitForSelector('.ec-modal')
   ok((await page.getAttribute('.ecs-plan', 'data-plan')) === 'free', 'Ctrl+Shift+E abre los ajustes (cuenta gratuita)')
   // orden: Aplicar → Runas → Destello arriba; «Más» plegado
-  const order = await page.$$eval('.ec-modal [data-act=power], .ec-modal [data-target], .ec-modal [data-key], .ec-modal [data-tier], .ec-modal [data-patch], .ec-modal [data-act=more]',
-    (a) => a.map((e) => e.dataset.act || e.dataset.target || e.dataset.key || (e.dataset.tier ? 't' + e.dataset.tier : 'p' + e.dataset.patch)))
-  ok(order.join() === 'power,own,current,d,f,tauto,t3,t4,t5,t6,t7,pauto,p0,p1,p2,more', 'lo importante primero, luego los filtros de Elo y parches: ' + order.join())
+  const order = await page.$$eval('.ec-modal [data-act=power], .ec-modal [data-target], .ec-modal [data-key], .ec-modal [data-tier], .ec-modal [data-patch], .ec-modal [data-region], .ec-modal [data-act=more]',
+    (a) => a.map((e) => e.dataset.act || e.dataset.target || e.dataset.key || (e.dataset.tier ? 't' + e.dataset.tier : e.dataset.patch ? 'p' + e.dataset.patch : 'r' + e.dataset.region)))
+  ok(order.join() === 'power,own,current,d,f,tauto,t3,t4,t5,t6,t7,pauto,p0,p1,p2,rall,rpick,more', 'lo importante primero, luego los filtros de Elo, parches y regiones: ' + order.join())
   ok((await page.$('[data-act=simulate]')) === null, 'simular un matchup está oculto en «Más»')
   ok((await page.textContent('.ec-modal')).length < 200, 'los ajustes casi no tienen texto (' + (await page.textContent('.ec-modal')).length + ' caracteres)')
   // ajustes en vivo: destino y tecla de Destello
@@ -102,6 +102,22 @@ try {
   await page.click('[data-tier=auto]'); await page.click('[data-patch=auto]')
   const f2 = await filt()
   ok(f2.tiers.mode === 'auto' && f2.patches.mode === 'auto', 'Auto restablece los dos filtros')
+  // regiones: «Todas» por defecto (regions null); «Elegir» despliega la lista; marcar KR y EUW las envía a Coachless
+  const regionsSent = () => page.evaluate(() => window.__net.filter((n) => n.body?.commonFilters?.leagueTiers).map((n) => n.body.commonFilters.regions).pop())
+  ok((await page.getAttribute('[data-region=all]', 'aria-pressed')) === 'true' && (await regionsSent()) === null, 'regiones: «Todas» por defecto y se envía regions null')
+  ok((await page.$('[data-region="4"]')) === null, 'la lista de regiones empieza plegada')
+  await page.click('[data-region=pick]')
+  ok((await page.$$('[data-region]')).length === 17, 'Elegir despliega las 15 regiones de la web')
+  await page.click('[data-region="4"]'); await page.click('[data-region="2"]')
+  ok(JSON.stringify((await filt()).regions) === '[2,4]', 'marcar KR y EUW se guarda: ' + JSON.stringify((await filt()).regions))
+  ok((await page.textContent('[data-region=pick]')).trim() === 'EUW KR' && (await page.getAttribute('[data-region=all]', 'aria-pressed')) === 'false', 'el botón resume la elección')
+  await page.waitForFunction(() => window.__net.some((n) => n.body?.commonFilters?.regions?.join() === '2,4') && !document.querySelector('.ecp-stale'), null, { timeout: 8000 })
+  ok(JSON.stringify(await regionsSent()) === '[2,4]', 'cambiar las regiones vuelve a consultar con ellas')
+  await page.waitForSelector('.ecp-tag[data-regions="2,4"]', { timeout: 8000 })
+  ok(true, 'el panel marca las regiones elegidas')
+  await page.click('[data-region=all]')
+  ok(JSON.stringify((await filt()).regions) === '[]' && (await page.getAttribute('[data-region=all]', 'aria-pressed')) === 'true', '«Todas» restablece las regiones')
+  await page.click('[data-region=pick]') // vuelve a plegar la lista
   await page.screenshot({ path: shots + '/menu.png' })
   await page.click('[data-act=more]'); await page.click('[data-act=simulate]'); await page.waitForSelector('input[name=champion]')
   await page.fill('input[name=champion]', 'zzz'); await page.click('.ec-btn.ec-primary')
