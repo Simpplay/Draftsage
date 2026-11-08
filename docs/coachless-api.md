@@ -86,15 +86,28 @@ Por defecto (Emerald+, Diamond, Master+) se enviaba `[5, 6, 7]`; con Platinum, `
 
 ### 3.2 `regions`
 
-| Valor | Región | Confianza |
-|---|---|---|
-| 4 | Korea | ✅ (única región verificada) |
-| otros | Brazil, Europe Nordic & East, Europe West, Japan, LAN, LAS, Middle East, North America, Oceania, Southeast Asia… | ❓ La UI lista estas regiones, pero solo se verificó el ID de Korea. Orden alfabético y 0-based es una hipótesis (Korea sería la 5.ª) |
+✅ Ids leídos del enum de regiones del código de coachless.gg (chunk de filtros, 2026-11-08). `null` (o lista vacía en la web) = todas.
+
+| Valor | Región | | Valor | Región |
+|---|---|---|---|---|
+| 0 | BR | | 9 | OCE |
+| 1 | EUNE | | 10 | PH (en el enum; la web no la ofrece) |
+| 2 | EUW | | 11 | RU |
+| 3 | JP | | 12 | SG |
+| 4 | KR (✅ también verificado contra la API) | | 13 | TH (en el enum; la web no la ofrece) |
+| 5 | LAN | | 14 | TR |
+| 6 | LAS | | 15 | TW |
+| 7 | ME | | 16 | VN |
+| 8 | NA | | 17–21 | Global, Americas, Europe, Asia, Sea (macrorregiones; la web no las envía) ❓ |
+
+- La web envía `regions: s.length === 0 ? null : s` con las casillas marcadas (todas desmarcadas por defecto). Las casillas **no** están bloqueadas para cuentas gratuitas en la UI (el rango de parches sí); ❓ sin verificar si la API da 403 con regiones en cuenta gratuita — el plugin, por si acaso, las quita al reintentar tras un 403.
+- El plugin (2026-11-08): Ajustes → «Regiones» (`Todas` / `Elegir`), DataStore `draftsage/filters.regions` (`domain/filters.js: REGIONS, resolveRegions, toggleRegion`). Solo afecta a Coachless.
 
 ### 3.3 `role`
 
 - ✅ **Verificado (2026-11-05, GetRecommendedBuilds con `role` 0–4 y campeones de cada rol):** 0 Top (Darius) · 1 Jungla (Lee Sin) · 2 Mid (Ahri) · 3 ADC (Kai'Sa) · 4 Support (Thresh); `role: 5` devuelve el rol principal del campeón.
 - La petición envía **`role: 5`** tanto para Kai'Sa como para Thresh ✅ → `5` actúa como "sin rol / el que decida el servidor" 🔶.
+- ✅ En el código de la web el enum es `Top 0 · Jungle 1 · Mid 2 · Adc 3 · Support 4 · All 5`; el rol por defecto es `All` salvo que la URL traiga `?role=`. ❓ Si `All` agrega todas las líneas en `GetKeystoneData`/runas (en `GetRecommendedBuilds` se resuelve al rol principal).
 - La respuesta de `GetRecommendedBuilds` incluye el **rol resuelto**: Kai'Sa → `3`, Thresh → `4` ✅.
 - Mapeo consistente con el orden de iconos de la UI (fill, top, jungle, mid, adc, support) 🔶:
 
@@ -169,8 +182,10 @@ type SpellDuo = { spellIds: number[2], wpa: number, occurrence: number }
 | 0 | Doran's Bow\* + Health Potion | Starter |
 | 1 | Cull + Dark Seal + Boots | Early Game (first back) |
 | 2 | Componentes + legendario + botas | Core Build |
-| 3 | Lista de opciones con `chooseOne` | 2nd item / alternativas |
-| 4 | Lista larga de ítems (Dusk and Dawn, Zhonya's, Terminus…) con algunos `highlighted` | Situacionales |
+| 3 | Lista de opciones con `chooseOne` | ✅ `ThirdOptions` («3rd Item») |
+| 4 | Lista larga de ítems (Dusk and Dawn, Zhonya's, Terminus…) con algunos `highlighted` | ✅ `Lategame` («Late Game») |
+
+✅ Enum confirmado en el código de la web (2026-11-08): `Starter 0 · Early 1 · Core 2 · ThirdOptions 3 · Lategame 4`.
 
 **Ejemplo recortado (Kai'Sa, rango Platinum+)**
 ```json
@@ -456,12 +471,21 @@ def items(champion_id, item_type=1, slots=None, **kw):
 
 ---
 
+## 8b. Cómo elige la web lo que muestra (leído en su código, 2026-11-08) ✅
+
+Explica por qué el plugin puede discrepar de la web (ver también HANDOFF «Revisión de discrepancias»).
+- **Página de runas de la build** (`cl-recommended-rune-page`, pestaña Builds): pinta `builds[i].runes.selectedRunes` + `selectedShards` de `GetRecommendedBuilds` **tal cual**; la elección la hace el servidor. Con cuenta gratuita solo se ve la build `mostPopular` (o la primera); con premium todas (S/A/B), seleccionada la primera. `GetRecommendedBuilds` ignora el matchup.
+- **Pestaña Runes** (`cl-runes-tree`): runa clave por defecto = **la más jugada** de `GetKeystoneData`; árbol secundario por defecto = **el más jugado** según `POST /api/Rune/GetSecondaryTreePlaycount` `{commonFilters, tree, keystone}` → `[{tree, occurrence}]`; filas con `GetRunesForKeystoneAndTree` (primario y secundario, ambos con `keystone`); fragmentos con `POST /api/Rune/GetShardsForKeystoneAndTree`. El jugador elige cada fila; una fila sin runa con muestra suficiente sale «unpicked».
+- **Parche por defecto**: premium → último parche **aunque tenga poca muestra** con `patchAdditions: 2` (3 parches); gratuita → el último, o el anterior si su `matchCount` < 2 000 000. El rango elegido se guarda en el navegador.
+- **Rangos por defecto**: Emerald, Diamond y Master+ (`[5,6,7]`), guardados en el navegador. **Regiones**: ninguna marcada → `null`. **Rol**: `All` (5) salvo `?role=`.
+- Filtros de cliente: «Hide low occurrence» (activado; umbral 1 000 partidas) y «Hide low pick rate» (desactivado; 1 %).
+
 ## 9. Lo que falta por verificar
 
 1. ✅ Resuelto: requieren `Authorization: Bearer <accessToken>` (JWT). Con cuenta gratuita funcionan con `patchAdditions: 0` (≥ 1 da 403); con premium (`isSubscribed: "1"`) funcionan también los rangos ✅.
 2. ✅ `Auth/refresh` es `POST` con `{refreshToken}`; `GetPatches` es `GET` sin cuerpo.
 2b. ✅ Medido (cuenta gratuita, 2026-11-05): una recomendación completa del plugin son ≈ 10 peticiones (GetPatches + 3 + 6) y tarda 0,4–0,6 s con la caché de parches caliente (hasta ~3 s en frío). ❓ Límites de tasa: sin señales de 429 con ~100 peticiones, pero solo se ha probado con la gratuita (ver `dev/api-probes/test-coachless-premium.mjs`).
-3. ❓ IDs de todas las regiones (solo Korea = 4 verificado) y el ID de Gold.
+3. ✅ IDs de regiones (§3.2, del código de la web; solo Korea = 4 probado contra la API) y Gold = 3 (enum de la web: Iron 0 … Challenger 9).
 4. ❓ Significado de `runeType` (siempre 0), `runeEffects.type` (observados: 0, 3, 7, 12, 14, 15, 20) y `loadFirstEpicPurchase`.
 5. ❓ Valores de `itemType` distintos de 1, 2 y 6 en `GetGlobalItemStatistics` (probe de ítems: `dev/api-probes/test-coachless-items.mjs`), y de `keystone`/`starterId`/`firstPurchaseId` encadenados (la UI los usa al elegir una build concreta).
 6. ✅ `matchupChampionIds` es solo premium y solo filtra runas y hechizos; `role: 5` = rol principal. ❓ `role` con campeones multi-rol y significado de `leagueTiers: 8`.

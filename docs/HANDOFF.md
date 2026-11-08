@@ -1,4 +1,24 @@
-# Draftsage — estado para retomar (2026-11-06)
+# Draftsage — estado para retomar (2026-11-08)
+
+## Filtro de regiones y revisión de discrepancias con la web (2026-11-08)
+**Regiones** — ✅ implementado y probado con el harness · ❓ sin probar en el cliente real
+- Ajustes → «Regiones» bajo Parches: `Todas` (por defecto, envía `regions: null` como la web) o `Elegir` (despliega las 15 regiones de la web: BR, EUNE, EUW, JP, KR, LAN, LAS, ME, NA, OCE, SG, RU, TR, TW, VN; el botón resume la elección, p. ej. «EUW +2»). Se guarda en DataStore `draftsage/filters.regions` (solo ids). Cambiarlas vuelve a consultar; la caché de resultados incluye las regiones.
+- Ids sacados del enum del código de coachless.gg (`docs/coachless-api.md` §3.2); solo KR = 4 estaba probado contra la API. ❓ Si las regiones son premium en la API (la web no las bloquea): ante un 403 el servicio reintenta también sin regiones y avisa (`filters-downgraded`).
+- Panel: etiqueta dorada con las regiones si las elegiste. LoLalytics y las estadísticas siguen con todas.
+- **iTero** (consejero de picks): admite UNA región por petición (`region` de draft-picks, códigos `EUW1`, `EUN1`, `NA1`, `KR`, `JP1`, `LA1`, `LA2`, `BR1`, `TR1`, `OC1`, `PH2`, `SG2`, `TH2`, `TW2`, `VN2`, `ME1`, facilitados por el usuario). Si en Ajustes hay exactamente una región elegida, se envía su código (`domain/itero.js: ITERO_REGION_OF, iteroRegion`); con «Todas», varias o RU (no está en la lista de iTero) se sigue enviando `euw1`. Cambiar las regiones vuelve a consultar a iTero. Log `consejero {… "region":"LA1"}`. ❓ En 2026-11-05 `kr` y `euw1` dieron el mismo ranking: puede que la región apenas cambie el resultado.
+- Código: `domain/filters.js` (`REGIONS`, `resolveRegions`, `toggleRegion`), `application/recommendation.js`, `presentation/{settings,panel}.js`, textos es/en. Pruebas: 2 nuevas en `dev/tests/filters.test.mjs` y comprobaciones en `dev/tests/ui/ui.test.cjs` (esa suite se corta antes por el fallo previo del login al arrancar; la fila de regiones se probó aparte con el mismo harness: 9/9).
+- Qué probar: elegir LAN/LAS en Ajustes y mirar en el log `filtros {… "regiones":[5,6]}` y `pasada {"filtros":{… "regions":[5,6]}}`; con cuenta gratuita, ver si sale el aviso de filtro rebajado (= la API las trata como premium).
+
+**Por qué las runas pueden no coincidir con la web** (leído en el código de coachless.gg; detalle en `docs/coachless-api.md` §8b). No es un fallo de la API: el plugin **no muestra la misma página**, la calcula con otro criterio y otros filtros.
+1. **Algoritmo distinto (causa principal).** La web, en Builds, enseña `selectedRunes` de `GetRecommendedBuilds` (página elegida por el servidor; gratuita = solo la build «más popular»). En la pestaña Runes parte de la runa clave **más jugada** y del secundario **más jugado** (`GetSecondaryTreePlaycount`). El plugin, en cambio, elige la runa clave con **mayor WPA** entre las que tienen ≥ 3 % de uso, cada fila con mayor WPA (≥ 10 %) y el secundario por la suma de WPA de sus 2 mejores runas. Con WPA parecidos, ganan opciones menos jugadas.
+2. **Parches.** Web premium: último parche (aunque tenga poca muestra) + 2 anteriores. Plugin: último con ≥ 30 % de muestra + 1 (premium) / 0 (gratuita). Web gratuita: el anterior si el último tiene < 2 M partidas.
+3. **Rango.** Web: Esmeralda+ (o lo que guardaste en el navegador). Plugin: lobby ±1 (p. ej. Platino → Gold–Esmeralda).
+4. **Matchup.** El plugin aplica el rival (premium) a runas clave, filas y hechizos; la web, por defecto, «vs All». La página de Builds de la web ignora el rival siempre.
+5. **Rol.** La web usa `All` (5) salvo `?role=`; el plugin manda la línea asignada.
+6. Menores: los fragmentos salen de la build con esa runa clave o, si no hay, de la primera build (puede ser de otra runa clave); el plugin no usa `GetSecondaryTreePlaycount` ni `GetShardsForKeystoneAndTree`.
+- Para comparar en igualdad: en la web marca los mismos rangos/parches/regiones/rol que el panel (etiquetas de parche y rango) y mira el log `pasada {…}` del plugin.
+- **Decisión pendiente del usuario**: ¿añadir un modo «como la web» (usar `selectedRunes` de la build recomendada cuando no hay matchup ni elección propia, y/o runa clave y secundario más jugados) o mantener el criterio por WPA? No se ha cambiado el algoritmo.
+
 
 ## Actualizaciones firmadas desde GitHub (2026-11-06)
 Los usuarios reciben cambios sin reinstalar. Diseño y modelo de amenazas: `docs/ARCHITECTURE.md` («Actualizaciones firmadas») y `docs/RELEASING.md` (procedimiento).

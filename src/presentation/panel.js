@@ -30,6 +30,7 @@
 import { h, whenReady, openExternal } from './ui.js'
 import { icon } from './icons.js'
 import { tiersLabel } from '../domain/lobby.js'
+import { regionCode } from '../domain/filters.js'
 import { TREES } from '../domain/runes.js'
 import { buildSpellPair } from '../domain/configuration.js'
 import { hasItems, layoutItems, tierLetter } from '../domain/items.js'
@@ -460,6 +461,8 @@ function tagsBlock(state) {
   return h('div', { class: 'ecp-tags' },
     h('span', { class: 'ecp-tag' + (m.patchSource === 'manual' ? ' ecp-gold' : ''), 'data-patch-range': m.patchRange ?? 0, title: t('tag.patch') }, m.patchSpan ?? m.patch),
     h('span', { class: 'ecp-tag' + (m.tierSource === 'manual' ? ' ecp-gold' : ''), 'data-tier-source': m.tierSource ?? 'lobby', title: t(m.tierSource === 'manual' ? 'tag.tierManual' : 'tag.tier') }, tiersLabel(m.tiers, tierNames)),
+    m.regionSource === 'manual' && m.regions?.length > 0 && h('span', { class: 'ecp-tag ecp-gold', 'data-regions': m.regions.join(','), title: t('tag.regions', m.regions.map(regionCode).join(', ')) },
+      m.regions.length <= 2 ? m.regions.map(regionCode).join(' ') : regionCode(m.regions[0]) + ' +' + (m.regions.length - 1)),
     m.source === 'lolalytics' && h('span', { class: 'ecp-tag ecp-gold', 'data-source': 'lolalytics', title: t('tag.lola') }, 'LoLalytics'),
     confidenceTag(m.sample),
     m.matchup && h('span', { class: 'ecp-tag ecp-gold ecp-tag-matchup', title: t('tag.matchup') }, icon('swords', 11)),

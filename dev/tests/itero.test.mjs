@@ -163,3 +163,16 @@ test('nombres ingleses: Data Dragon, validación, reintento tras fallo', async (
   const small = createEnglishNames({ fetchImpl: fakeFetch((u) => (u.endsWith('versions.json') ? jsonOk(['16.22.1']) : jsonOk({ data: { A: { key: '1', name: 'A' } } }))) })
   assert.equal(await small.load(), false)
 })
+
+test('iteroRegion: solo con UNA región elegida (y conocida por iTero) se cambia la región del draft', () => {
+  assert.equal(D.iteroRegion(null), null)            // «todas»
+  assert.equal(D.iteroRegion([]), null)
+  assert.equal(D.iteroRegion([2, 4]), null)          // varias: iTero no admite listas
+  assert.equal(D.iteroRegion([2]), 'EUW1')
+  assert.equal(D.iteroRegion([4]), 'KR')
+  assert.equal(D.iteroRegion([5]), 'LA1'); assert.equal(D.iteroRegion([6]), 'LA2')
+  assert.equal(D.iteroRegion([1]), 'EUN1'); assert.equal(D.iteroRegion([9]), 'OC1'); assert.equal(D.iteroRegion([7]), 'ME1')
+  assert.equal(D.iteroRegion([11]), null)            // Rusia no está en la lista de iTero
+  assert.equal(D.buildRequest({ lane: 'TOP', rankClass: 'GOLD', region: 'LA1' }).region, 'LA1')
+  assert.equal(D.buildRequest({ lane: 'TOP', rankClass: 'GOLD' }).region, 'euw1') // por defecto, sin cambios
+})

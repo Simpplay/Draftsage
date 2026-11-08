@@ -8,11 +8,13 @@
 //  - Parche: el último con muestra suficiente (GetPatches). Premium suma el parche anterior (patchAdditions 1); gratuita 0.
 //    El usuario puede elegir el rango de parches (0..MAX_PATCH_RANGE, solo premium; domain/filters.js).
 //  - Rangos: lobby ±1, nunca por debajo de 3 (Gold); o el rango de Elo que el usuario haya elegido a mano.
+//  - Regiones: todas (`regions: null`, como la web por defecto) o las que el usuario haya elegido (domain/filters.js).
 //  - Rival: el del mismo puesto si el cliente lo informa; si no, entre los rivales revelados (`ctx.enemies`) el campeón
 //    cuyo rol principal (GetRecommendedBuilds con role 5) coincide con el tuyo. Solo premium (sin matchup no hace falta).
 //  - Matchup: solo premium. Si la cuenta no es premium o la muestra del matchup es pequeña, se usa el campeón sin rival
 //    y se avisa en `meta.notices`.
-//  - 403 en un filtro premium NO es error de sesión: se reintenta con patchAdditions 0 y sin matchup, y se avisa.
+//  - 403 en un filtro premium NO es error de sesión: se reintenta con patchAdditions 0, sin matchup y sin regiones, y se avisa.
+//    (❓ no se sabe si el filtro de regiones es solo premium: la web no lo bloquea, pero por si acaso también se quita.)
 //  - Hechizos: domain/spells.js los ajusta al modo de juego y al rol (Aplastar en jungla, ninguno en Arena, sin Aplastar en ARAM…).
 //  - Elección del usuario: `keystoneOverride` (runa clave) y `spellOverride` (pareja de hechizos) mandan sobre la recomendación
 //    si son válidos; el resto de la página (filas, secundario) sigue los datos para esa runa clave.
@@ -24,7 +26,7 @@
 
 import { choosePatch, patchSpanLabel } from '../domain/patch.js'
 import { ROLE_FILL } from '../domain/lobby.js'
-import { resolveAdditions, resolveTiers } from '../domain/filters.js'
+import { resolveAdditions, resolveRegions, resolveTiers } from '../domain/filters.js'
 import { TREE_IDS, treeOfKeystone } from '../domain/runes.js'
 import { buildItemPlan, pickBuild } from '../domain/items.js'
 import { pickKeystone, pickRows, pickSecondary, pickSpell, rankBest, rankKeystones } from '../domain/selection.js'
@@ -49,18 +51,18 @@ export const MIN_NEXT_SHARE = 0.05     // 3.er ítem: al menos el 5 % (está má
  * @property {{keystones:{rune:number,wpa:number,occurrence:number,share:number}[], autoKeystone:number,
  *             spells:{spell:number,wpa:number,occurrence:number,share:number,pair:number[]}[]}} alternatives
  * @property {{keystone:boolean, spells:boolean}} custom   true = lo eligió el usuario (a mano o fijado)
- * @property {{patch:string, patchSpan:string, patchRange:number, patchSource:'auto'|'manual', patchFallback:boolean, tiers:number[], tierSource:'lobby'|'manual', matchup:boolean, opponent:number|null, opponentSource:'position'|'role'|'manual'|'assigned'|null, premium:boolean, sample:number, mode:string|null, notices:string[]}} meta
+ * @property {{patch:string, patchSpan:string, patchRange:number, patchSource:'auto'|'manual', patchFallback:boolean, tiers:number[], tierSource:'lobby'|'manual', regions:number[]|null, regionSource:'all'|'manual', matchup:boolean, opponent:number|null, opponentSource:'position'|'role'|'manual'|'assigned'|null, premium:boolean, sample:number, mode:string|null, notices:string[]}} meta
  */
 
 const aborted = () => ({ ok: false, reason: 'aborted' })
 
 export function createRecommendationService({ client, log, keystoneTrees = () => undefined, cache, getFilters = () => undefined }) {
-  const filtersOf = (ctx, patch, tiers, { additions, matchup }) => ({
+  const filtersOf = (ctx, patch, tiers, { additions, matchup, regions = null }) => ({
     patch: { major: patch.major, patch: patch.patch, patchAdditions: additions },
     championIds: [ctx.championId],
     matchupChampionIds: matchup ? [ctx.opponentChampionId] : null,
     leagueTiers: tiers,
-    regions: null,
+    regions,
     role: ctx.role ?? ROLE_FILL,
   })
 
@@ -184,11 +186,12 @@ export function createRecommendationService({ client, log, keystoneTrees = () =>
     const filters = getFilters()
     const { tiers, manual: tiersManual } = resolveTiers(filters, ctx.lobbyTier)
     const range = resolveAdditions(filters, premium)
+    const { regions } = resolveRegions(filters)
     if (range.limited) notices.push('patch-range-requires-premium')
 
     let opponentSource = ctx.opponentChampionId ? (ctx.opponentSource ?? 'position') : null
     if (!ctx.opponentChampionId && premium && ctx.role !== ROLE_FILL && ctx.enemies?.length) {
-      const f = (id) => filtersOf({ championId: id, role: ROLE_FILL }, patch, tiers, { additions: 0, matchup: false })
+      const f = (id) => filtersOf({ championId: id, role: ROLE_FILL }, patch, tiers, { additions: 0, matchup: false, regions })
       const roles = await Promise.all(ctx.enemies.map((e) => client.championRole(f(e.championId))))
       if (signal?.aborted) return aborted()
       const i = roles.findIndex((r) => r.ok && r.data === ctx.role)
@@ -197,9 +200,9 @@ export function createRecommendationService({ client, log, keystoneTrees = () =>
     const wantsMatchup = !!ctx.opponentChampionId
     if (wantsMatchup && !premium) notices.push('matchup-requires-premium')
 
-    let plan = { additions: range.additions, matchup: wantsMatchup && premium }
+    let plan = { additions: range.additions, matchup: wantsMatchup && premium, regions }
     const key = [
-      patch.label, plan.additions, tiers.join(), ctx.championId, plan.matchup ? ctx.opponentChampionId : 0, ctx.role ?? ROLE_FILL,
+      patch.label, plan.additions, tiers.join(), (regions ?? []).join('+') || 'all', ctx.championId, plan.matchup ? ctx.opponentChampionId : 0, ctx.role ?? ROLE_FILL,
       rulesKey(spellRules(ctx)), ctx.keystoneOverride ?? 0, (ctx.spellOverride ?? []).join('+'),
     ].join('|')
     const cached = cache.get(key)
@@ -209,16 +212,16 @@ export function createRecommendationService({ client, log, keystoneTrees = () =>
       rol: ctx.role ?? ROLE_FILL, modo: ctx.mode ?? null, rangoLobby: ctx.lobbyTier ?? null,
       premium, matchupPedido: wantsMatchup, matchupActivo: plan.matchup,
       parche: patch.label, parcheMuestraBaja: !!patch.fallback, parchesExtra: plan.additions, parchesManual: range.manual,
-      rangos: tiers, rangosManual: tiersManual,
+      rangos: tiers, rangosManual: tiersManual, regiones: regions,
       keystoneOverride: ctx.keystoneOverride ?? null, spellOverride: ctx.spellOverride ?? null,
       avisos: notices, cache: !!cached,
     }))
     if (cached) return { ok: true, data: { ...cached, meta: { ...cached.meta, notices: [...new Set([...cached.meta.notices, ...notices])] } } }
 
     let res = await compute(ctx, patch, tiers, plan, signal)
-    if (res.status === 'forbidden' && (plan.additions > 0 || plan.matchup)) {
-      log.warn('403 con filtros premium; se reintenta sin rango de parches ni matchup')
-      plan = { additions: 0, matchup: false }
+    if (res.status === 'forbidden' && (plan.additions > 0 || plan.matchup || plan.regions)) {
+      log.warn('403 con filtros premium; se reintenta sin rango de parches, matchup ni regiones')
+      plan = { additions: 0, matchup: false, regions: null }
       notices.push('filters-downgraded')
       res = await compute(ctx, patch, tiers, plan, signal)
     }
@@ -240,14 +243,14 @@ export function createRecommendationService({ client, log, keystoneTrees = () =>
       ...res.page,
       meta: {
         patch: patch.label, patchSpan: patchSpanLabel(patch, plan.additions), patchRange: plan.additions, patchSource: range.manual ? 'manual' : 'auto', patchFallback: patch.fallback,
-        tiers, tierSource: tiersManual ? 'manual' : 'lobby', matchup: plan.matchup,
+        tiers, tierSource: tiersManual ? 'manual' : 'lobby', regions: plan.regions, regionSource: plan.regions ? 'manual' : 'all', matchup: plan.matchup,
         opponent: plan.matchup ? ctx.opponentChampionId : null, opponentSource: plan.matchup ? opponentSource : null,
         premium, sample: res.sample, mode: ctx.mode ?? null, notices: [...new Set(notices)],
       },
     }
     log.info('resultado', JSON.stringify({
       keystone: data.keystone.rune, matchup: plan.matchup, rival: data.meta.opponent, muestra: res.sample,
-      parche: data.meta.patchSpan, rangos: tiers, avisos: data.meta.notices,
+      parche: data.meta.patchSpan, rangos: tiers, regiones: plan.regions, avisos: data.meta.notices,
     }))
     cache.set(key, data)
     return { ok: true, data }
