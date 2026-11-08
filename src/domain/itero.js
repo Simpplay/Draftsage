@@ -654,6 +654,31 @@ export function findUnrecognized(req, candidates) {
     .map(([, championName]) => championName)
 }
 // ============================================================
+// Región del draft (campo `region` de draft-picks)
+// ============================================================
+
+/**
+ * Código de iTero por id de región de Coachless (domain/filters.js: REGIONS). Lista de códigos facilitada por el usuario (2026-11-08):
+ * EUW1, EUN1, NA1, KR, JP1, LA1, LA2, BR1, TR1, OC1, PH2, SG2, TH2, TW2, VN2, ME1 (ejemplo de la web: `region: "EUW1"`).
+ * Rusia no figura en esa lista: con RU se usa la región por defecto.
+ */
+export const ITERO_REGION_OF = Object.freeze({
+  0: 'BR1', 1: 'EUN1', 2: 'EUW1', 3: 'JP1', 4: 'KR', 5: 'LA1', 6: 'LA2', 7: 'ME1', 8: 'NA1', 9: 'OC1',
+  10: 'PH2', 12: 'SG2', 13: 'TH2', 14: 'TR1', 15: 'TW2', 16: 'VN2',
+})
+
+/**
+ * Región a enviar a iTero según las regiones elegidas en Ajustes. iTero admite UNA sola región por petición:
+ * solo si el jugador eligió exactamente una (y iTero la conoce) se devuelve su código; con «todas» o varias, null
+ * (= se mantiene el valor por defecto de buildRequest).
+ * @param {number[]|null} regions  ids de Coachless (resolveRegions(...).regions)
+ * @returns {string|null}
+ */
+export function iteroRegion(regions) {
+  return Array.isArray(regions) && regions.length === 1 ? ITERO_REGION_OF[regions[0]] ?? null : null
+}
+
+// ============================================================
 // Maestría del jugador (POST /api/basic-info)
 // ============================================================
 

@@ -11,10 +11,10 @@
 // 'error' con la razón); LoLalytics es opcional (sin él, solo iTero); ningún nombre sin mapear llega a iTero (se omite y se avisa); una
 // consulta solo cuando cambia la composición, con tope por Champion Select.
 
-import { rankClassFor, buildRequest, laneOfRole, supportsMode, nameKey } from '../domain/itero.js'
+import { rankClassFor, buildRequest, laneOfRole, supportsMode, nameKey, iteroRegion } from '../domain/itero.js'
 import { assignLanes, rankPicks } from '../domain/pick-advice.js'
 import { needsShares } from '../domain/enemy-roles.js'
-import { resolveTiers } from '../domain/filters.js'
+import { resolveRegions, resolveTiers } from '../domain/filters.js'
 import { tierParam } from '../domain/lolalytics.js'
 import { loadLaneShares } from './enemy-roles.js'
 
@@ -79,7 +79,9 @@ export function createPickAdvisor({ itero, names, catalog, lola = null, stats = 
       const m = await mastery.load().catch(() => null)
       if (m?.status === 'ready') masteryInfo = { data: { ...m.points, avg: m.avg }, weight: prefs.masteryWeight }
     }
-    const req = buildRequest({ lane, rankClass, side: ctx.side ?? 'Blue', allies: toNames(allyLanes), enemies: toNames(enemyLanes), bans, mastery: masteryInfo })
+    // Región: la elegida en Ajustes si es UNA sola (iTero no admite varias); si no, la de siempre (por defecto de buildRequest).
+    const region = iteroRegion(resolveRegions(getFilters()).regions)
+    const req = buildRequest({ lane, rankClass, side: ctx.side ?? 'Blue', allies: toNames(allyLanes), enemies: toNames(enemyLanes), bans, mastery: masteryInfo, ...(region && { region }) })
 
     const [it, st] = await Promise.all([
       itero.draftPicks(req),
@@ -94,10 +96,10 @@ export function createPickAdvisor({ itero, names, catalog, lola = null, stats = 
       options: { ...(prefs.minPick != null && { minPick: prefs.minPick }) },
     })
     const withMastery = req.userModelWeightings[`t1_${lane}_mastery`] > 0
-    log?.info('consejero', JSON.stringify({ linea: lane, rango: rankClass, lado: req.side, aliados: reveal.allyLanes, rivales: reveal.enemyLanes, bans: bans.length, pool: r.pool, contraste: r.contrasted, maestria: withMastery, top: r.picks.map((p) => p.name) }))
+    log?.info('consejero', JSON.stringify({ linea: lane, rango: rankClass, region: req.region, lado: req.side, aliados: reveal.allyLanes, rivales: reveal.enemyLanes, bans: bans.length, pool: r.pool, contraste: r.contrasted, maestria: withMastery, top: r.picks.map((p) => p.name) }))
     return {
       ok: true,
-      data: { picks: r.picks, rows: r.rows, meta: { lane, rankClass, side: req.side, sideKnown: !!ctx.side, blended: r.blended, contrasted: r.contrasted, mastery: withMastery, pool: r.pool, rival, unrecognized: it.data.unrecognized, ...lanes } },
+      data: { picks: r.picks, rows: r.rows, meta: { lane, rankClass, region: req.region, regionManual: !!region, side: req.side, sideKnown: !!ctx.side, blended: r.blended, contrasted: r.contrasted, mastery: withMastery, pool: r.pool, rival, unrecognized: it.data.unrecognized, ...lanes } },
     }
   }
   return { advise }
@@ -126,7 +128,7 @@ export function createPickAdvisorController({ advisor, source, prefs, getFilters
   }
   const ids = (l) => (l ?? []).map((m) => m.championId + ':' + (m.position ?? '')).join(',')
   const keyOf = (c) => [c.role, c.lobbyTier ?? 0, c.side ?? '', (c.bans ?? []).join(','), ids(c.allies), ids(c.enemies), c.opponentChampionId ?? 0,
-    JSON.stringify(getFilters()?.tiers ?? null), prefs.get().minPick, prefs.get().useMastery ? prefs.get().masteryWeight : 0].join('|')
+    JSON.stringify(getFilters()?.tiers ?? null), JSON.stringify(getFilters()?.regions ?? null), prefs.get().minPick, prefs.get().useMastery ? prefs.get().masteryWeight : 0].join('|')
 
   async function evaluate({ force = false } = {}) {
     const ctx = contextOf(source.getState())

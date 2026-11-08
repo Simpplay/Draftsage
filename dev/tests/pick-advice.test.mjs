@@ -245,3 +245,16 @@ test('preferencias del consejero: apagado por defecto y valores saneados', () =>
   DataStore.set('draftsage/advisor', 'basura'); assert.equal(getAdvisorPrefs().enabled, false)
   DataStore.remove('draftsage/advisor')
 })
+
+test('consejero: la región elegida en Ajustes viaja a iTero solo si es una', async () => {
+  const ctx = { role: 2, lobbyTier: 4, side: 'Blue', mode: 'CLASSIC', allies: [], enemies: [] }
+  const one = mkDeps({ filters: { regions: [5] } })
+  const r = await one.advisor.advise(ctx)
+  assert.ok(r.ok); assert.equal(one.reqs[0].region, 'LA1'); assert.equal(r.data.meta.region, 'LA1'); assert.equal(r.data.meta.regionManual, true)
+  const many = mkDeps({ filters: { regions: [5, 6] } })
+  await many.advisor.advise(ctx)
+  assert.equal(many.reqs[0].region, 'euw1')
+  const all = mkDeps()
+  const r3 = await all.advisor.advise(ctx)
+  assert.equal(all.reqs[0].region, 'euw1'); assert.equal(r3.data.meta.regionManual, false)
+})

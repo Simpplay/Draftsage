@@ -66,7 +66,7 @@ Petición (JSON en el cuerpo; el sitio ni siquiera pone `Content-Type`; no hay `
 
 | Campo | Significado | Valores |
 |---|---|---|
-| `region` | Región del jugador | `euw1`, `kr` aceptados ✅. **No cambia las cifras del ranking** (misma respuesta con `kr` y `euw1`) ✅; probablemente solo importa en `basic-info`. Otros valores de plataforma Riot (`na1`, `eun1`, `la1`, `la2`, `br1`, `jp1`, `oc1`, `tr1`, `ru`…) ❓ sin probar. |
+| `region` | Región del jugador | `euw1`, `kr` aceptados ✅. En la prueba del 2026-11-05 **no cambió las cifras del ranking** (misma respuesta con `kr` y `euw1`) ✅. Códigos que usa la web, según el usuario (2026-11-08): `EUW1`, `EUN1`, `NA1`, `KR`, `JP1`, `LA1`, `LA2`, `BR1`, `TR1`, `OC1`, `PH2`, `SG2`, `TH2`, `TW2`, `VN2`, `ME1` (ejemplo: `{region: "EUW1", rankClass: "GOLD", …}`; Rusia no figura). El plugin envía uno de ellos solo si en Ajustes → Regiones hay **una** elegida (`domain/itero.js: iteroRegion`); si no, `euw1` como antes. ❓ Si la región cambia de verdad el resultado. |
 | `rankClass` | Franja de Elo de los datos | `IRON`, `BRONZE`, `SILVER`, `GOLD`, `PLATINUM`, `EMERALD`, `DIAMOND`, `MASTER+` ✅ (lista tomada del bundle y comprobada con IRON/GOLD/EMERALD/MASTER+). Cualquier otro valor → **HTTP 500** ✅. Es **una sola franja**, no un rango; los datos cambian bastante entre franjas (p. ej. Top: Singed 65,4 % en IRON, Warwick 60,9 % en MASTER+). |
 | `side` | Lado de tu equipo | `Blue` / `Red` ✅. Rojo baja la predicción ~2 puntos (Lissandra 60,1 → 57,9 %). |
 | `lane` | Tu línea | `TOP`, `JUNGLE`, `MIDDLE`, `BOTTOM`, `UTILITY` ✅ |
