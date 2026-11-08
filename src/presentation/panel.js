@@ -27,12 +27,15 @@
 // Sin anclas reconocibles (otra versión del cliente, simulación, partida) sigue siendo el panel flotante de siempre.
 // No hace fetch: lee el estado del controlador (application/champ-select.js) y el catálogo de nombres/iconos.
 
+import { ensureTheme } from './theme.js'
 import { h, whenReady, openExternal } from './ui.js'
+import { fmtN, fmtWpa, known, line, pic, signed, statTip } from './components/common.js'
+import { runePage, runeSummary } from './components/build.js'
+import { draftSummaryBlock, teamContextBlock } from './components/draft.js'
+import { buildDraftSummary } from '../domain/draft-summary.js'
 import { icon } from './icons.js'
 import { tiersLabel } from '../domain/lobby.js'
 import { regionCode } from '../domain/filters.js'
-import { TREES } from '../domain/runes.js'
-import { buildSpellPair } from '../domain/configuration.js'
 import { hasItems, layoutItems, tierLetter } from '../domain/items.js'
 import { trackBuild } from '../domain/live.js'
 import { confidenceLevel, isLowData } from '../domain/confidence.js'
@@ -46,16 +49,16 @@ import { log } from '../shared/logger.js'
 
 const STYLE_ID = 'draftsage-panel-style'
 const CSS = `
-.ecp{position:fixed;z-index:2147483000;width:292px;box-sizing:border-box;background:linear-gradient(#0a1428,#010a13 60px);color:#cdbe91;border:1px solid #785a28;box-shadow:0 0 18px #000;font:13px/1.4 sans-serif;user-select:none;animation:ecp-in .2s ease-out;-webkit-app-region:no-drag}
+.ecp{position:fixed;z-index:2147483000;width:292px;box-sizing:border-box;background:linear-gradient(var(--ds-surface),var(--ds-bg) 60px);color:var(--ds-text);border:1px solid var(--ds-gold-dim);box-shadow:0 0 18px #000;font:13px/1.4 sans-serif;user-select:none;animation:ecp-in .2s ease-out;-webkit-app-region:no-drag}
 .ecp *{-webkit-app-region:no-drag}
-.ecp-head{display:flex;align-items:center;gap:4px;padding:6px 8px;cursor:move;border-bottom:1px solid #3c3c41}
+.ecp-head{display:flex;align-items:center;gap:4px;padding:6px 8px;cursor:move;border-bottom:1px solid var(--ds-border)}
 .ecp-title{flex:1;display:flex;align-items:center;gap:7px;min-width:0}
-.ecp-por{width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid #c8aa6e;background:#1e2328;flex:none;box-sizing:border-box}
-.ecp-por.ecp-foe{border-color:#a8404f;width:26px;height:26px}
-.ecp-vs{color:#a8404f;display:flex}
-.ecp-role{margin-left:2px;padding:1px 7px;border:1px solid #3c3c41;border-radius:9px;font-size:10px;letter-spacing:.08em;color:#a09b8c;background:#010a13}
-.ecp-x{display:flex;align-items:center;justify-content:center;width:22px;height:22px;background:none;border:0;color:#7b7a76;cursor:pointer;padding:0}
-.ecp-x:hover:not(:disabled){color:#f0e6d2}
+.ecp-por{width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid var(--ds-gold);background:var(--ds-surface-2);flex:none;box-sizing:border-box}
+.ecp-por.ecp-foe{border-color:var(--ds-rival);width:26px;height:26px}
+.ecp-vs{color:var(--ds-rival);display:flex}
+.ecp-role{margin-left:2px;padding:1px 7px;border:1px solid var(--ds-border);border-radius:9px;font-size:10px;letter-spacing:.08em;color:var(--ds-meta);background:var(--ds-bg)}
+.ecp-x{display:flex;align-items:center;justify-content:center;width:22px;height:22px;background:none;border:0;color:var(--ds-mute);cursor:pointer;padding:0}
+.ecp-x:hover:not(:disabled){color:var(--ds-text-hi)}
 .ecp-x:disabled{opacity:.3;cursor:default}
 .ecp-up{transform:rotate(180deg)}
 .ecp-body{padding:10px 10px 8px;display:flex;flex-direction:column;gap:9px;max-height:calc(100vh - 150px);overflow-y:auto;scrollbar-width:thin}
@@ -64,9 +67,9 @@ const CSS = `
 .ecp-grow{flex:1}
 .ecp-tree{width:22px;height:22px;flex:none;border-radius:50%;opacity:.85;object-fit:cover}
 .ecp-it{position:relative;display:flex;flex-direction:column;align-items:center;width:40px;text-align:center}
-.ecp-ico{width:34px;height:34px;border-radius:50%;background:#1e2328;border:1px solid #3c3c41;object-fit:cover;box-sizing:border-box;transition:transform .12s}
-.ecp-it:hover .ecp-ico{transform:scale(1.12);border-color:#c8aa6e}
-.ecp-ico.ecp-big{width:44px;height:44px;border:2px solid #c8aa6e;box-shadow:0 0 12px rgba(200,170,110,.45)}
+.ecp-ico{width:34px;height:34px;border-radius:50%;background:var(--ds-surface-2);border:1px solid var(--ds-border);object-fit:cover;box-sizing:border-box;transition:transform .12s}
+.ecp-it:hover .ecp-ico{transform:scale(1.12);border-color:var(--ds-gold)}
+.ecp-ico.ecp-big{width:44px;height:44px;border:2px solid var(--ds-gold);box-shadow:0 0 12px rgba(200,170,110,.45)}
 .ecp-ico.ecp-sq{border-radius:4px}
 .ecp-ico.ecp-sm{width:24px;height:24px}
 .ecp-ico.ecp-xs{width:24px;height:24px}
@@ -76,115 +79,115 @@ const CSS = `
 .ecp-irow{align-items:flex-start}
 .ecp-cell{display:flex;flex-direction:column;align-items:center;min-width:32px}
 .ecp-ico.ecp-itm{width:32px;height:32px;border-radius:4px}
-.ecp-cell:hover .ecp-ico.ecp-itm{transform:scale(1.12);border-color:#c8aa6e}
-.ecp-ico.ecp-itm.ecp-core{border:2px solid #c8aa6e;box-shadow:0 0 8px rgba(200,170,110,.35)}
+.ecp-cell:hover .ecp-ico.ecp-itm{transform:scale(1.12);border-color:var(--ds-gold)}
+.ecp-ico.ecp-itm.ecp-core{border:2px solid var(--ds-gold);box-shadow:0 0 8px rgba(200,170,110,.35)}
 .ecp-game .ecp-ico.ecp-itm{width:40px;height:40px}
 .ecp-game .ecp-cell{min-width:40px}
 @keyframes ecp-glow{0%,100%{box-shadow:0 0 4px rgba(10,200,185,.4)}50%{box-shadow:0 0 12px rgba(10,200,185,.9)}}
 .ecp-cell{position:relative}
-.ecp-cell.ecp-own .ecp-ico.ecp-itm{border-color:#0ac8b9;box-shadow:0 0 6px rgba(10,200,185,.45)}
-.ecp-badge{position:absolute;top:-4px;right:-3px;width:14px;height:14px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#06201f;border:1px solid #0ac8b9;color:#0ac8b9}
-.ecp-prog{width:100%;height:3px;margin-top:2px;background:#1e2328;border-radius:2px;overflow:hidden}
-.ecp-prog i{display:block;height:100%;background:#e0a93a}
-.ecp-cell.ecp-afford .ecp-prog i{background:#0ac8b9}
-.ecp-cell.ecp-afford .ecp-ico.ecp-itm{border-color:#0ac8b9;animation:ecp-glow 1.4s ease-in-out infinite}
-.ecp-miss{font-size:10px;line-height:12px;color:#e0a93a}
-.ecp-ready{display:flex;color:#0ac8b9}
-.ecp-coin{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:bold;color:#e0a93a}
-.ecp-arrow{display:flex;align-items:center;height:32px;color:#5b5a56}
+.ecp-cell.ecp-own .ecp-ico.ecp-itm{border-color:var(--ds-teal);box-shadow:0 0 6px rgba(10,200,185,.45)}
+.ecp-badge{position:absolute;top:-4px;right:-3px;width:14px;height:14px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--ds-teal-bg);border:1px solid var(--ds-teal);color:var(--ds-teal)}
+.ecp-prog{width:100%;height:3px;margin-top:2px;background:var(--ds-surface-2);border-radius:2px;overflow:hidden}
+.ecp-prog i{display:block;height:100%;background:var(--ds-amber)}
+.ecp-cell.ecp-afford .ecp-prog i{background:var(--ds-teal)}
+.ecp-cell.ecp-afford .ecp-ico.ecp-itm{border-color:var(--ds-teal);animation:ecp-glow 1.4s ease-in-out infinite}
+.ecp-miss{font-size:10px;line-height:12px;color:var(--ds-amber)}
+.ecp-ready{display:flex;color:var(--ds-teal)}
+.ecp-coin{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:bold;color:var(--ds-amber)}
+.ecp-arrow{display:flex;align-items:center;height:32px;color:var(--ds-mute-2)}
 .ecp-game .ecp-arrow{height:40px}
 .ecp-items{display:flex;flex-direction:column;gap:7px}
 .ecp-ihead{gap:6px}
 .ecp-tier{display:flex;align-items:center;justify-content:center;width:22px;height:22px;box-sizing:border-box;border-radius:50%;border:2px solid;font:bold 11px/1 sans-serif;flex:none}
-.ecp-tier-S{color:#f0c870;border-color:#f0c870;background:#2a2314}
-.ecp-tier-A{color:#0ac8b9;border-color:#0ac8b9;background:#06201f}
-.ecp-tier-B{color:#a09b8c;border-color:#5b5a56;background:#1e2328}
-.ecp-wr{font-size:12px;font-weight:bold;color:#f0e6d2}
-.ecp-ph{display:flex;align-items:center;justify-content:center;font-size:10px;color:#a09b8c}
-.ecp-w{font-size:10px;line-height:12px;color:#a09b8c;margin-top:1px}
-.ecp-w.ecp-pos{color:#0ac8b9}.ecp-w.ecp-neg{color:#e84057}
-.ecp-keycap{position:absolute;right:0;top:-3px;min-width:14px;padding:0 3px;box-sizing:border-box;text-align:center;font:bold 10px/14px sans-serif;color:#f0e6d2;background:#3b3119;border:1px solid #c8aa6e;border-bottom-width:2px;border-radius:3px}
+.ecp-tier-S{color:var(--ds-gold-hi);border-color:var(--ds-gold-hi);background:var(--ds-gold-bg)}
+.ecp-tier-A{color:var(--ds-teal);border-color:var(--ds-teal);background:var(--ds-teal-bg)}
+.ecp-tier-B{color:var(--ds-meta);border-color:var(--ds-mute-2);background:var(--ds-surface-2)}
+.ecp-wr{font-size:12px;font-weight:bold;color:var(--ds-text-hi)}
+.ecp-ph{display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--ds-meta)}
+.ecp-w{font-size:10px;line-height:12px;color:var(--ds-meta);margin-top:1px}
+.ecp-w.ecp-pos{color:var(--ds-teal)}.ecp-w.ecp-neg{color:var(--ds-red)}
+.ecp-keycap{position:absolute;right:0;top:-3px;min-width:14px;padding:0 3px;box-sizing:border-box;text-align:center;font:bold 10px/14px sans-serif;color:var(--ds-text-hi);background:#3b3119;border:1px solid var(--ds-gold);border-bottom-width:2px;border-radius:3px}
 .ecp-chip{padding:0;margin:0;background:none;border:2px solid transparent;border-radius:50%;cursor:pointer;line-height:0;transition:.12s}
-.ecp-chip:hover{border-color:#785a28}
-.ecp-chip.ecp-on{border-color:#c8aa6e;box-shadow:0 0 8px rgba(200,170,110,.5)}
+.ecp-chip:hover{border-color:var(--ds-gold-dim)}
+.ecp-chip.ecp-on{border-color:var(--ds-gold);box-shadow:0 0 8px rgba(200,170,110,.5)}
 .ecp-chip .ecp-ico{width:28px;height:28px}
-.ecp-lead{color:#a8404f;display:flex}
-.ecp-lead.ecp-mute{color:#5b5a56}
+.ecp-lead{color:var(--ds-rival);display:flex}
+.ecp-lead.ecp-mute{color:var(--ds-mute-2)}
 .ecp-alts{gap:4px;margin:-2px 0}
-.ecp-alt{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:36px;padding:3px 0 1px;background:none;border:1px solid transparent;border-radius:6px;cursor:pointer;line-height:0;color:#7b7a76;transition:.12s}
-.ecp-alt:hover{border-color:#785a28;color:#cdbe91}
-.ecp-alt.ecp-on{border-color:#c8aa6e;background:rgba(200,170,110,.08);cursor:default}
-.ecp-alt[data-auto]::after{content:'';position:absolute;top:1px;right:4px;width:5px;height:5px;border-radius:50%;background:#c8aa6e}
+.ecp-alt{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:36px;padding:3px 0 1px;background:none;border:1px solid transparent;border-radius:6px;cursor:pointer;line-height:0;color:var(--ds-mute);transition:.12s}
+.ecp-alt:hover{border-color:var(--ds-gold-dim);color:var(--ds-text)}
+.ecp-alt.ecp-on{border-color:var(--ds-gold);background:rgba(200,170,110,.08);cursor:default}
+.ecp-alt[data-auto]::after{content:'';position:absolute;top:1px;right:4px;width:5px;height:5px;border-radius:50%;background:var(--ds-gold)}
 .ecp-alt .ecp-w{line-height:11px;margin-top:2px}
 .ecp-spalts{gap:2px}
 .ecp-spalts .ecp-alt{min-width:30px;padding:3px 0}
-.ecp-wr{color:#a09b8c}
+.ecp-wr{color:var(--ds-meta)}
 .ecp-tags{display:flex;flex-wrap:wrap;gap:5px}
-.ecp-tag{display:flex;align-items:center;gap:4px;padding:1px 7px;border:1px solid #2a2a30;border-radius:9px;font-size:10px;color:#7b7a76;background:#0a1428}
-.ecp-tag.ecp-gold{border-color:#785a28;color:#c8aa6e}
-.ecp-tag.ecp-warn{border-color:#8a6a1f;color:#e0a93a;cursor:help}
+.ecp-tag{display:flex;align-items:center;gap:4px;padding:1px 7px;border:1px solid var(--ds-border-soft);border-radius:9px;font-size:10px;color:var(--ds-mute);background:var(--ds-surface)}
+.ecp-tag.ecp-gold{border-color:var(--ds-gold-dim);color:var(--ds-gold)}
+.ecp-tag.ecp-warn{border-color:#8a6a1f;color:var(--ds-amber);cursor:help}
 .ecp-bars{display:inline-flex;align-items:flex-end;gap:1px;height:10px}
-.ecp-bars i{width:3px;background:#3c3c41;border-radius:1px}
+.ecp-bars i{width:3px;background:var(--ds-border);border-radius:1px}
 .ecp-bars i:nth-child(1){height:4px}.ecp-bars i:nth-child(2){height:7px}.ecp-bars i:nth-child(3){height:10px}
-.ecp-lv1 .ecp-bars i.on{background:#e84057}.ecp-lv2 .ecp-bars i.on{background:#e0a93a}.ecp-lv3 .ecp-bars i.on{background:#0ac8b9}
+.ecp-lv1 .ecp-bars i.on{background:var(--ds-red)}.ecp-lv2 .ecp-bars i.on{background:var(--ds-amber)}.ecp-lv3 .ecp-bars i.on{background:var(--ds-teal)}
 .ecp-lv1{border-color:#6b2a35}.ecp-lv2{border-color:#6b5420}
-.ecp-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#1e2328;color:#cdbe91;border:1px solid #785a28;padding:5px 12px;cursor:pointer;font:inherit;transition:.12s}
-.ecp-btn:hover:not(:disabled){border-color:#c8aa6e;color:#f0e6d2}
+.ecp-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:var(--ds-surface-2);color:var(--ds-text);border:1px solid var(--ds-gold-dim);padding:5px 12px;cursor:pointer;font:inherit;transition:.12s}
+.ecp-btn:hover:not(:disabled){border-color:var(--ds-gold);color:var(--ds-text-hi)}
 .ecp-btn:disabled{opacity:.4;cursor:default}
 .ecp-apply{display:flex;gap:6px}
 .ecp-apply .ecp-btn{height:32px}
-.ecp-apply .ecp-main{flex:1;border-color:#c8aa6e;color:#f0e6d2;background:linear-gradient(#2a2314,#17130a);font-weight:bold;letter-spacing:.08em;text-transform:uppercase;font-size:12px}
+.ecp-apply .ecp-main{flex:1;border-color:var(--ds-gold);color:var(--ds-text-hi);background:linear-gradient(var(--ds-gold-bg),#17130a);font-weight:bold;letter-spacing:.08em;text-transform:uppercase;font-size:12px}
 .ecp-apply .ecp-sec{width:36px;padding:0}
-.ecp-btn.ecp-done{border-color:#0ac8b9;color:#0ac8b9;background:#06201f}
+.ecp-btn.ecp-done{border-color:var(--ds-teal);color:var(--ds-teal);background:var(--ds-teal-bg)}
 .ecp-btn.ecp-done .ec-ico{animation:ecp-pop .3s ease-out}
-.ecp-btn.ecp-pinned{border-color:#c8aa6e;color:#f0c870;background:#2a2314}
+.ecp-btn.ecp-pinned{border-color:var(--ds-gold);color:var(--ds-gold-hi);background:var(--ds-gold-bg)}
 .ecp-btn.ecp-pinned .ec-ico{fill:currentColor;animation:ecp-pop .3s ease-out}
-.ecp-spin{width:14px;height:14px;border:2px solid #785a28;border-top-color:#f0e6d2;border-radius:50%;animation:ecp-rot .7s linear infinite;display:inline-block}
-.ecp-msg{display:flex;align-items:center;gap:6px;font-size:11px;color:#e84057;line-height:1.3}
-.ecp-center{display:flex;flex-direction:column;align-items:center;gap:8px;padding:6px 0;color:#a09b8c;text-align:center;font-size:12px}
-.ecp-pulse{color:#c8aa6e;animation:ecp-pulse 1.4s ease-in-out infinite}
-.ecp-sk{width:34px;height:34px;border-radius:50%;background:linear-gradient(90deg,#1e2328,#2b3036,#1e2328);background-size:200% 100%;animation:ecp-shimmer 1.2s linear infinite}
+.ecp-spin{width:14px;height:14px;border:2px solid var(--ds-gold-dim);border-top-color:var(--ds-text-hi);border-radius:50%;animation:ecp-rot .7s linear infinite;display:inline-block}
+.ecp-msg{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ds-red);line-height:1.3}
+.ecp-center{display:flex;flex-direction:column;align-items:center;gap:8px;padding:6px 0;color:var(--ds-meta);text-align:center;font-size:12px}
+.ecp-pulse{color:var(--ds-gold);animation:ecp-pulse 1.4s ease-in-out infinite}
+.ecp-sk{width:34px;height:34px;border-radius:50%;background:linear-gradient(90deg,var(--ds-surface-2),#2b3036,var(--ds-surface-2));background-size:200% 100%;animation:ecp-shimmer 1.2s linear infinite}
 .ecp-sk.ecp-still{animation:none;opacity:.5}
-.ecp-fab{position:fixed;z-index:2147483000;left:10px;bottom:10px;width:30px;height:30px;border-radius:50%;border:1px solid #785a28;background:#010a13;color:#c8aa6e;font:bold 11px sans-serif;cursor:pointer;opacity:.55;transition:.15s;-webkit-app-region:no-drag}
+.ecp-fab{position:fixed;z-index:2147483000;left:10px;bottom:10px;width:30px;height:30px;border-radius:50%;border:1px solid var(--ds-gold-dim);background:var(--ds-bg);color:var(--ds-gold);font:bold 11px sans-serif;cursor:pointer;opacity:.55;transition:.15s;-webkit-app-region:no-drag}
 .ecp-fab:hover{opacity:1;box-shadow:0 0 10px rgba(200,170,110,.5)}
-.ecp-adv{display:flex;flex-direction:column;gap:6px;padding-bottom:9px;border-bottom:1px solid #2a2a30}
+.ecp-adv{display:flex;flex-direction:column;gap:6px;padding-bottom:9px;border-bottom:1px solid var(--ds-border-soft)}
 .ecp-dim{opacity:.4;pointer-events:none;transition:opacity .15s}
 .ecp-pk{position:relative;display:flex;flex-direction:column;align-items:center;width:40px;padding:0;background:none;border:0;cursor:pointer;color:inherit;font:inherit}
 .ecp-pk .ecp-ico{width:36px;height:36px}
-.ecp-pk:hover .ecp-ico{transform:scale(1.08);border-color:#c8aa6e}
-.ecp-pk.ecp-on .ecp-ico{border:2px solid #c8aa6e;box-shadow:0 0 8px rgba(200,170,110,.45)}
-.ecp-badge.ecp-bad{background:#2a2108;border-color:#e0a93a;color:#e0a93a}
+.ecp-pk:hover .ecp-ico{transform:scale(1.08);border-color:var(--ds-gold)}
+.ecp-pk.ecp-on .ecp-ico{border:2px solid var(--ds-gold);box-shadow:0 0 8px rgba(200,170,110,.45)}
+.ecp-badge.ecp-bad{background:#2a2108;border-color:var(--ds-amber);color:var(--ds-amber)}
 .ecp-reasons{display:flex;flex-wrap:wrap;gap:4px;min-height:22px}
-.ecp-ch{display:inline-flex;align-items:center;gap:3px;padding:1px 6px 1px 4px;border:1px solid #2a2a30;border-radius:9px;font-size:11px;color:#a09b8c;background:#0a1428;cursor:help}
+.ecp-ch{display:inline-flex;align-items:center;gap:3px;padding:1px 6px 1px 4px;border:1px solid var(--ds-border-soft);border-radius:9px;font-size:11px;color:var(--ds-meta);background:var(--ds-surface);cursor:help}
 .ecp-ch img{width:16px;height:16px;border-radius:50%;object-fit:cover}
-.ecp-ch.ecp-pos{color:#0ac8b9;border-color:#0b4a46}
-.ecp-ch.ecp-neg{color:#e84057;border-color:#6b2a35}
+.ecp-ch.ecp-pos{color:var(--ds-teal);border-color:#0b4a46}
+.ecp-ch.ecp-neg{color:var(--ds-red);border-color:#6b2a35}
 .ecp-foes{display:flex;flex-direction:column;gap:5px}
 .ecp-foe{display:flex;flex-direction:column;align-items:center;gap:2px}
-.ecp-rb{min-width:22px;height:15px;padding:0 3px;box-sizing:border-box;background:#0a1428;border:1px solid #3c3c41;border-radius:8px;color:#5b5a56;font:bold 9px/13px sans-serif;cursor:pointer;transition:.12s}
-.ecp-rb:hover{border-color:#785a28;color:#cdbe91}
-.ecp-rb.ecp-src-manual{border-color:#c8aa6e;color:#f0c870;background:#2a2314}
-.ecp-rb.ecp-src-position{border-color:#5b5a56;color:#cdbe91}
-.ecp-rb.ecp-src-auto{border-style:dashed;color:#a09b8c}
-.ecp-rolepick{gap:4px;padding:3px 4px;background:#0a1428;border:1px solid #2a2a30;border-radius:6px}
-.ecp-rp{min-width:26px;height:20px;padding:0 4px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;background:#1e2328;border:1px solid #3c3c41;border-radius:4px;color:#a09b8c;font:bold 10px/1 sans-serif;cursor:pointer}
-.ecp-rp:hover{border-color:#c8aa6e;color:#f0e6d2}
-.ecp-rp.ecp-on{border-color:#c8aa6e;color:#f0c870;background:#2a2314}
+.ecp-rb{min-width:22px;height:15px;padding:0 3px;box-sizing:border-box;background:var(--ds-surface);border:1px solid var(--ds-border);border-radius:8px;color:var(--ds-mute-2);font:bold 10px/13px sans-serif;cursor:pointer;transition:.12s}
+.ecp-rb:hover{border-color:var(--ds-gold-dim);color:var(--ds-text)}
+.ecp-rb.ecp-src-manual{border-color:var(--ds-gold);color:var(--ds-gold-hi);background:var(--ds-gold-bg)}
+.ecp-rb.ecp-src-position{border-color:var(--ds-mute-2);color:var(--ds-text)}
+.ecp-rb.ecp-src-auto{border-style:dashed;color:var(--ds-meta)}
+.ecp-rolepick{gap:4px;padding:3px 4px;background:var(--ds-surface);border:1px solid var(--ds-border-soft);border-radius:6px}
+.ecp-rp{min-width:26px;height:20px;padding:0 4px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;background:var(--ds-surface-2);border:1px solid var(--ds-border);border-radius:4px;color:var(--ds-meta);font:bold 10px/1 sans-serif;cursor:pointer}
+.ecp-rp:hover{border-color:var(--ds-gold);color:var(--ds-text-hi)}
+.ecp-rp.ecp-on{border-color:var(--ds-gold);color:var(--ds-gold-hi);background:var(--ds-gold-bg)}
 .ecp-flt{display:flex;flex-direction:column;gap:5px}
-.ecp-fbtn{position:relative;display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:#1e2328;border:1px solid #3c3c41;border-radius:10px;color:#a09b8c;font:inherit;font-size:11px;cursor:pointer;transition:.12s}
-.ecp-fbtn:hover{border-color:#785a28;color:#cdbe91}
-.ecp-fbtn[aria-pressed=true]{border-color:#c8aa6e;color:#f0c870;background:#2a2314}
+.ecp-fbtn{position:relative;display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:var(--ds-surface-2);border:1px solid var(--ds-border);border-radius:10px;color:var(--ds-meta);font:inherit;font-size:11px;cursor:pointer;transition:.12s}
+.ecp-fbtn:hover{border-color:var(--ds-gold-dim);color:var(--ds-text)}
+.ecp-fbtn[aria-pressed=true]{border-color:var(--ds-gold);color:var(--ds-gold-hi);background:var(--ds-gold-bg)}
 .ecp-fbtn[aria-disabled=true]{opacity:.4;cursor:not-allowed}
 .ecp-fbtn[data-inactive]{border-style:dashed}
 .ecp-fgroup{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
-.ecp-fcap{width:54px;flex:none;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#7b7a76}
-.ecp-fcount{display:inline-flex;align-items:center;justify-content:center;min-width:14px;height:14px;padding:0 3px;box-sizing:border-box;border-radius:7px;background:#c8aa6e;color:#1a1408;font:bold 10px/14px sans-serif}
+.ecp-fcap{width:54px;flex:none;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ds-mute)}
+.ecp-fcount{display:inline-flex;align-items:center;justify-content:center;min-width:14px;height:14px;padding:0 3px;box-sizing:border-box;border-radius:7px;background:var(--ds-gold);color:#1a1408;font:bold 10px/14px sans-serif}
 .ecp-sec-t{display:flex;align-items:center;gap:6px}
 .ecp-sec-t .ecp-tag{margin-left:0}
-.ecp.ecp-docked{z-index:2147483200;width:340px;animation:ecp-dock .16s ease-out;box-shadow:0 10px 30px rgba(0,0,0,.85),0 0 0 1px #010a13}
+.ecp.ecp-docked{z-index:2147483200;width:340px;animation:ecp-dock .16s ease-out;box-shadow:0 10px 30px rgba(0,0,0,.85),0 0 0 1px var(--ds-bg)}
 .ecp.ecp-docked .ecp-head{cursor:default}
 .ecp.ecp-docked .ecp-body{max-height:var(--ecp-maxh,70vh)}
-.ecp.ecp-docked.ecp-v-picks{border-top-color:#c8aa6e}.ecp.ecp-docked.ecp-v-build{border-bottom-color:#c8aa6e}
+.ecp.ecp-docked.ecp-v-picks{border-top-color:var(--ds-gold)}.ecp.ecp-docked.ecp-v-build{border-bottom-color:var(--ds-gold)}
 @keyframes ecp-dock{from{opacity:0;transform:translateY(var(--ecp-dy,6px)) scale(.98)}to{opacity:1;transform:none}}
 @keyframes ecp-in{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:none}}
 @keyframes ecp-rot{to{transform:rotate(360deg)}}
@@ -205,93 +208,13 @@ const NOTICE_ICONS = {
   'source-fallback': 'warn',
 }
 
-// Texto de una clave con prefijo (err.network, applyErr.rejected…); si no existe, el genérico.
-const known = (prefix, id) => { const k = prefix + id; const s = t(k); return s === k ? t('err.other') : s }
-
-const fmtWpa = (w) => (w >= 0 ? '+' : '') + w.toFixed(1)
-const fmtN = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + ' M' : n >= 1e3 ? Math.round(n / 1e3) + ' k' : String(n))
-
 function ensureStyle() {
+  ensureTheme()
   if (document.getElementById(STYLE_ID)) return
   const s = document.createElement('style')
   s.id = STYLE_ID
   s.textContent = CSS
   document.head.append(s)
-}
-
-const pic = (info, cls, title) => info.icon
-  ? h('img', { class: cls, src: info.icon, alt: info.name, title: title ?? info.name, draggable: 'false' })
-  : h('div', { class: cls + ' ecp-ph', title: title ?? info.name }, String(info.name).slice(0, 2))
-
-// Tooltip de una estadística: «Nombre · WPA +1.1 · 146 000 partidas · 62 % de uso — pocas partidas…»
-function statTip(name, stat) {
-  if (stat && stat.wpa == null && Number.isFinite(stat.wr)) return t('stat.tipWr', name, stat.wr.toFixed(1), (stat.occurrence ?? 0).toLocaleString(getLang()))
-  if (!stat || stat.wpa == null) return name
-  return t('stat.tip', name, fmtWpa(stat.wpa), stat.occurrence.toLocaleString(getLang())) +
-    (stat.share != null ? t('stat.share', Math.round(stat.share * 100)) : '') +
-    (isLowData(stat) ? ' — ' + t('lowdata') : '')
-}
-
-// Un elemento con icono + WPA (número pequeño). `stat` = { wpa, occurrence } opcional; `key` = tecla del hechizo.
-function item(info, stat, cls = '', key = null) {
-  const hasWpa = stat && stat.wpa != null
-  return h('div', { class: 'ecp-it' }, pic(info, 'ecp-ico ' + cls + (isLowData(stat) ? ' ecp-low' : ''), statTip(info.name, stat)),
-    key && h('span', { class: 'ecp-keycap' }, key),
-    hasWpa && h('div', { class: 'ecp-w ' + (stat.wpa >= 0 ? 'ecp-pos' : 'ecp-neg') }, fmtWpa(stat.wpa)),
-    !hasWpa && stat && Number.isFinite(stat.wr) && h('div', { class: 'ecp-w ecp-wr' }, Math.round(stat.wr) + '%')) // fuentes sin WPA (LoLalytics): win rate
-}
-
-const line = (...children) => h('div', { class: 'ecp-line' }, children)
-
-function treeIcon(id, cat) {
-  const info = cat.rune(id)
-  const name = info.name !== '#' + id ? info.name : TREES[id]?.name ?? ''
-  return info.icon ? h('img', { class: 'ecp-tree', src: info.icon, alt: name, title: name, draggable: 'false' }) : h('div', { class: 'ecp-tree ecp-ph', title: name }, '')
-}
-
-// Otras runas clave: chips con su porcentaje de uso. La elegida lleva marco; la recomendada, un punto.
-function keystoneAlts(d, cat, actions) {
-  const list = d.alternatives?.keystones ?? []
-  if (list.length < 2) return null
-  return h('div', { class: 'ecp-line ecp-alts', 'data-alts': 'keystone', title: t('alt.keystones') },
-    h('span', { class: 'ecp-lead ecp-mute' }, icon('swap', 14)),
-    list.map((k) => {
-      const on = k.rune === d.keystone.rune
-      const auto = k.rune === d.alternatives.autoKeystone
-      const info = cat.rune(k.rune)
-      return h('button', {
-        type: 'button', class: 'ecp-alt' + (on ? ' ecp-on' : ''), 'data-rune': k.rune, 'data-auto': auto ? '' : null,
-        title: statTip(info.name, k) + (auto ? t('alt.auto') : ''), onclick: () => { if (!on) actions.keystone(auto ? null : k.rune) },
-      }, pic(info, 'ecp-ico ecp-xs' + (isLowData(k) ? ' ecp-low' : '')), h('span', { class: 'ecp-w' }, Math.round(k.share * 100) + '%'))
-    }))
-}
-
-// Sustitutos del hechizo intercambiable (ni Destello ni Aplastar en jungla) y, si ya cambiaste algo, volver a la recomendación.
-function spellAlts(d, cat, actions) {
-  const opts = d.alternatives?.spells ?? []
-  if (!opts.length && !d.custom?.spells) return null
-  return h('div', { class: 'ecp-line ecp-spalts', 'data-alts': 'spells', title: t('alt.spells') },
-    d.custom?.spells && h('button', { type: 'button', class: 'ecp-alt', 'data-act': 'spells-reset', title: t('alt.reset'), onclick: () => actions.spells(null) }, icon('refresh', 14)),
-    opts.map((s) => h('button', {
-      type: 'button', class: 'ecp-alt', 'data-spell': s.spell, title: statTip(cat.spell(s.spell).name, s), onclick: () => actions.spells(s.pair),
-    }, pic(cat.spell(s.spell), 'ecp-ico ecp-xs ecp-sq' + (isLowData(s) ? ' ecp-low' : '')))))
-}
-
-function runesBlock(d, cat, flashKey, actions) {
-  const r = (id) => cat.rune(id)
-  const pair = buildSpellPair(d, flashKey)
-  const keys = pair.ok ? ['D', 'F'] : [null, null]
-  const spells = pair.ok ? [pair.spell1Id, pair.spell2Id].map((id) => d.spells.find((s) => s.spell === id)) : d.spells
-  return [
-    line(treeIcon(d.primaryTree, cat), item(r(d.keystone.rune), d.keystone, 'ecp-big'), ...d.primaryPicks.filter(Boolean).map((p) => item(r(p.rune), p))),
-    actions ? keystoneAlts(d, cat, actions) : null,
-    line(
-      d.secondaryTree ? treeIcon(d.secondaryTree, cat) : null,
-      ...d.secondaryPicks.map((p) => item(r(p.rune), p)),
-      h('div', { class: 'ecp-grow' }),
-      ...d.shards.map((id) => h('div', { class: 'ecp-it', style: 'width:28px' }, pic(r(id), 'ecp-ico ecp-sm', r(id).name)))),
-    d.spells.length ? line(...spells.map((s, i) => item(cat.spell(s.spell), s, 'ecp-sq', keys[i])), h('div', { class: 'ecp-grow' }), actions ? spellAlts(d, cat, actions) : null) : null,
-  ]
 }
 
 // ---- Ítems de la build ----
@@ -478,9 +401,9 @@ const skeleton = (still = false) => [
 
 function readyBody(state, cat, actions, ui, flashKey, roles) {
   // En partida: ítems completos arriba, runas de solo lectura (sin alternativas) y nada de aplicar ni rivales.
-  if (state.context?.phase === 'game') return [itemsBlock(state.data, cat, { game: true, live: ui.live }), ...runesBlock(state.data, cat, flashKey, null), tagsBlock(state)]
+  if (state.context?.phase === 'game') return [itemsBlock(state.data, cat, { game: true, live: ui.live }), runeSummary(state.data, cat, flashKey), tagsBlock(state)]
   return [
-    ...runesBlock(state.data, cat, flashKey, actions),
+    runePage(state.data, cat, flashKey, actions, state),
     applyBlock(state, actions, ui),
     itemsBlock(state.data, cat),
     rivalsBlock(state, cat, actions, ui, roles),
@@ -498,7 +421,7 @@ function bodyOf(state, cat, actions, ui, flashKey, roles) {
     case 'error': {
       const auth = state.reason === 'auth'
       return [
-        h('div', { class: 'ecp-center' }, h('span', { style: 'color:#e0a93a' }, icon('warn', 26)), known('err.', state.reason),
+        h('div', { class: 'ecp-center' }, h('span', { style: 'color:var(--ds-amber)' }, icon('warn', 26)), known('err.', state.reason),
           h('button', { class: 'ecp-btn', type: 'button', title: auth ? t('panel.login') : t('panel.retry'), onclick: auth ? actions.login : actions.retry }, icon(auth ? 'user' : 'refresh', 15))),
         rivalsBlock(state, cat, actions, ui, roles),
       ]
@@ -511,7 +434,6 @@ function bodyOf(state, cat, actions, ui, flashKey, roles) {
 // ---- Picks sugeridos: lista de MATCHUP (LoLalytics) + lista de DRAFT (iTero) + filtros ----
 const LANE_ROLE = { TOP: 0, JUNGLE: 1, MIDDLE: 2, BOTTOM: 3, UTILITY: 4 }
 const laneName = (l) => t('role.' + LANE_ROLE[l])
-const signed = (n) => (n >= 0 ? '+' : '') + n.toFixed(1)
 const DMG_ICON = { ad: 'sword', ap: 'spark', balanced: 'check' }
 const CHIP_ICON = { syn: 'users', ctr: 'swords', weak: 'swords', scale: 'trend' }
 
@@ -574,7 +496,7 @@ function advisorBlock(adv, cat, ui, actions, filters, mastery) {
     picks.length
       ? [line(h('span', { class: 'ecp-lead', title: t('adv.tagTip') }, icon('spark', 16)), ...picks.map(cell)),
         h('div', { class: 'ecp-reasons', 'data-reasons': sel.championId }, sel.chips.map((c) => reasonChip(c, m, cat)))]
-      : h('div', { class: 'ecp-msg', style: 'color:#a09b8c', 'data-advisor-empty': '' }, t('adv.none')),
+      : h('div', { class: 'ecp-msg', style: 'color:var(--ds-meta)', 'data-advisor-empty': '' }, t('adv.none')),
     tags)
 }
 
@@ -584,7 +506,7 @@ function matchupBlock(ov, cat, filters, mastery) {
   if (!d) return null
   if (!d.rival) {
     return h('div', { class: 'ecp-adv ecp-mu', 'data-matchup': 'norival' },
-      line(h('span', { class: 'ecp-lead ecp-mute', title: t('mu.noRival') }, icon('swords', 16)), h('span', { class: 'ecp-msg', style: 'color:#7b7a76' }, t('mu.noRivalShort'))))
+      line(h('span', { class: 'ecp-lead ecp-mute', title: t('mu.noRival') }, icon('swords', 16)), h('span', { class: 'ecp-msg', style: 'color:var(--ds-mute)' }, t('mu.noRivalShort'))))
   }
   const picks = filters ? filters.matchupPicks() : d.counters.map((c) => ({ cid: c.cid, wr: c.wr, edge: c.edge, n: c.n, counter: null }))
   const rivalName = cat.champion(d.rival).name
@@ -592,12 +514,14 @@ function matchupBlock(ov, cat, filters, mastery) {
     const info = cat.champion(c.cid)
     return h('div', { class: 'ecp-pk', 'data-mu-pick': c.cid, title: t('mu.pickTip', info.name, c.wr.toFixed(1), rivalName, c.edge != null ? signed(c.edge) : '–', c.n) + masteryTip(mastery, c.cid) },
       pic(info, 'ecp-ico'),
-      h('div', { class: 'ecp-w ' + (c.edge == null || c.edge >= 0 ? 'ecp-pos' : 'ecp-neg') }, c.wr.toFixed(0) + '%'))
+      h('div', { class: 'ecp-w ' + (c.edge == null || c.edge >= 0 ? 'ecp-pos' : 'ecp-neg') }, c.wr.toFixed(0) + '%'),
+      // Ventaja sobre su media en la línea (spec §2.1): un % alto con ventaja ~0 es fuerza general, no un counter.
+      c.edge != null && h('div', { class: 'ecp-w', 'data-edge': c.edge, style: 'color:var(--ds-meta)' }, signed(c.edge)))
   }
   return h('div', { class: 'ecp-adv ecp-mu' + (ov.status === 'loading' ? ' ecp-dim' : ''), 'data-matchup': String(d.rival), title: t('mu.tip', rivalName) },
     picks.length
       ? line(h('span', { class: 'ecp-lead', title: t('mu.tip', rivalName) }, icon('swords', 16)), ...picks.map(cell))
-      : h('div', { class: 'ecp-msg', style: 'color:#a09b8c', 'data-matchup-empty': '' }, icon('swords', 13), t('mu.none')),
+      : h('div', { class: 'ecp-msg', style: 'color:var(--ds-meta)', 'data-matchup-empty': '' }, icon('swords', 13), t('mu.none')),
     h('div', { class: 'ecp-tags' }, h('span', { class: 'ecp-tag ecp-gold', 'data-source': 'lolalytics-mu', title: t('mu.tagTip', rivalName) }, t('mu.tag')),
       d.vsReason ? h('span', { class: 'ecp-tag ecp-warn', title: t('mu.vsReason') }, icon('warn', 11)) : null))
 }
@@ -660,6 +584,7 @@ export async function mountPanel({ controller, catalog, applier, live, overlay, 
   // live: estado de application/live-game.js · advSel: pick del consejero con motivos a la vista · roleOpen: rival cuyo selector de línea está abierto · filtersOpen: barra de filtros desplegada
   const ui = { busy: false, kind: null, msg: null, applied: { runes: null, spells: null }, live: null, advSel: null, roleOpen: null, filtersOpen: prefs.filtersOpen === true }
   let uiKey = null // el aviso de error solo vale para la recomendación a la que se aplicó
+  let locator = null // (cid) => boolean: localizar la ficha en la cuadrícula (lo pone native.js; sin él no hay botón «Localizar»)
 
   // Modo anclado: `on` = hay un Champion Select reconocido (lo decide native.js) · `view` = 'build' | 'picks' | null (cerrado) · `anchor` = elemento del que cuelga.
   const dock = { on: false, view: null, anchor: null, raf: 0, placed: '' }
@@ -708,6 +633,8 @@ export async function mountPanel({ controller, catalog, applier, live, overlay, 
     // Filtros de la selección. Un filtro sin fuente de datos no se puede activar (sí quitar).
     filtersToggle: () => { ui.filtersOpen = !ui.filtersOpen; prefs = setPanelPrefs({ filtersOpen: ui.filtersOpen }); render(controller.getState()) },
     filtersReset: () => filters?.reset(),
+    // Recomendación principal: cambiar de perspectiva (auto / línea / equipo) y localizar una ficha.
+    perspective: (p) => { prefs = setPanelPrefs({ perspective: p }); render(controller.getState()) },
     filterSet: (key, value, disabled) => {
       if (!filters || disabled) return
       if (key === 'classes') filters.toggleClass(value)
@@ -822,11 +749,20 @@ export async function mountPanel({ controller, catalog, applier, live, overlay, 
     ui.live = live?.getState() ?? null
     // Arriba, lo primero que se decide: filtros, picks de matchup (LoLalytics) y picks de draft (iTero). En partida no hay nada que elegir.
     const inGame = state.context?.phase === 'game'
-    const picksTop = inGame || view === 'build' ? [] : [filtersBlock(filters, ui, actions), matchupBlock(overlay?.getState(), catalog, filters, mastery), advisorBlock(advisor?.getState(), catalog, ui, actions, filters, mastery)]
+    const picksTop = inGame || view === 'build' ? [] : [decisionBlock(), teamContextBlock({ cat: catalog, context: state.context, roles: enemyRoles?.getState() }), filtersBlock(filters, ui, actions), matchupBlock(overlay?.getState(), catalog, filters, mastery), advisorBlock(advisor?.getState(), catalog, ui, actions, filters, mastery)]
     // Vista «picks»: solo lo que ayuda a elegir campeón (filtros, listas y rivales). Vista «build»: runas, aplicar, ítems y rivales (cambian el matchup).
     const main = view === 'picks' ? [rivalsBlock(state, catalog, actions, ui, enemyRoles?.getState())] : bodyOf(state, catalog, actions, ui, applier.getSettings().flashKey, enemyRoles?.getState())
     const body = !docked && prefs.collapsed ? null : h('div', { class: 'ecp-body', 'data-view': view }, [...picksTop, ...main])
     root.replaceChildren(head, ...(body ? [body] : []))
+  }
+
+  // Nivel 1 (spec §4.2): recomendación principal y alternativas a partir de las dos listas ya filtradas (sin red: solo lo ya recibido).
+  function decisionBlock() {
+    if (!filters) return null
+    const ov = overlay?.getState(), adv = advisor?.getState()
+    const summary = buildDraftSummary({ lanePicks: filters.matchupPicks(), teamPicks: filters.draftPicks(), perspective: prefs.perspective, masteryOf: (cid) => mastery?.pointsOf(cid) ?? null })
+    return draftSummaryBlock(summary, { cat: catalog, rival: ov?.data?.rival ? catalog.champion(ov.data.rival).name : null, meta: adv?.data?.meta ?? null },
+      { perspective: actions.perspective, locate: locator })
   }
 
   // Aplica la recomendación mostrada. kind: 'all' | 'runes' | 'spells'. Si Aplicar está desactivado, primero se pide aceptar el aviso.
@@ -917,6 +853,8 @@ export async function mountPanel({ controller, catalog, applier, live, overlay, 
     apply: (kind = 'all') => apply(kind),
     /** { busy, kind, done, failed } del botón de aplicar para lo que se ve ahora. */
     status: () => applyStatus(controller.getState()),
+    /** native.js da la forma de localizar una ficha de la cuadrícula: (cid) => boolean. */
+    setLocator(fn) { locator = typeof fn === 'function' ? fn : null; render(controller.getState()) },
     /** Se llama tras cada repintado del panel (aunque esté oculto). Devuelve la función para cancelar. */
     subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn) },
   }

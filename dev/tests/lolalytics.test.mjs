@@ -32,7 +32,7 @@ const standard = (url) => {
 const mkClient = (f, extra = {}) => createLolalyticsClient({ cache: createCache(), fetchImpl: f, ...extra })
 
 test('dominio: fuentes y orden', () => {
-  assert.equal(normalizeSource({ mode: 'raro' }).mode, 'coachless')
+  assert.equal(normalizeSource({ mode: 'raro' }).mode, 'auto') // valor por defecto: iniciar sesión es opcional
   assert.equal(needsLogin('coachless'), true); assert.equal(needsLogin('lolalytics'), false)
   assert.deepEqual(sourceOrder({ mode: 'lolalytics', loggedIn: true, premium: true, wantsMatchup: true }), ['lolalytics'])
   assert.equal(sourceOrder({ mode: 'auto', loggedIn: false, premium: false, wantsMatchup: false })[0], 'lolalytics')

@@ -116,6 +116,33 @@ try {
   ok(await page.$('.ecp-tag[data-source=lolalytics]') !== null && await page.$('.ecp-body .ecp-line') !== null, 'la recomendación principal sigue ahí')
   await page.screenshot({ path: shots + '/advisor-ready.png' })
 
+  // 3b) rediseño (docs/UX-SPEC.md §4): recomendación principal + alternativas con su porqué, motivos con evidencia y sin % de iTero
+  ok(await page.$('[data-draft-summary] [data-primary]') !== null, 'hay una recomendación principal')
+  const why = await page.$$eval('[data-alts=draft] [data-why]', (a) => a.map((e) => e.dataset.why))
+  ok(why.length >= 2 && why.length <= 3 && new Set(why).size === why.length, 'alternativas (2–3) con su porqué distinto: ' + why.join(','))
+  const evs = await page.$$eval('[data-primary] [data-ev]', (a) => a.map((e) => e.dataset.ev))
+  ok(evs.length > 0 && evs.every((e) => ['statistical', 'model', 'heuristic'].includes(e)), 'cada motivo dice si es dato, modelo o regla: ' + evs.join(','))
+  ok(await page.$('[data-primary] .ecd-conf[data-level]') !== null, 'la principal lleva su nivel de confianza')
+  ok(await page.$('[data-primary] [data-locate]') !== null, 'botón Localizar en la principal')
+  const banned = await page.evaluate(() => (window.__lcu.session.bans?.myTeamBans ?? []).concat(window.__lcu.session.bans?.theirTeamBans ?? []))
+  const shown = await page.$$eval('[data-draft-summary] [data-primary], [data-draft-summary] [data-alt]', (a) => a.map((e) => Number(e.dataset.primary ?? e.dataset.alt)))
+  ok(!shown.some((c) => banned.includes(c)), 'ningún campeón baneado en la recomendación: ' + shown.join(','))
+  await page.click('[data-perspective=team]')
+  await page.waitForSelector('[data-draft-summary=team]')
+  const teamPrimary = await page.getAttribute('[data-primary]', 'data-primary')
+  const firstDraft = await page.$eval('.ecp-adv[data-advisor] .ecp-pk', (e) => e.dataset.pick)
+  ok(teamPrimary === firstDraft, 'perspectiva «Equipo»: la principal es la primera de iTero (' + teamPrimary + ')')
+  // Los % de iTero son diferencias con signo (+4 %); un % SIN signo solo puede ser el win rate observado del matchup (LoLalytics).
+  const unsigned = (await page.textContent('[data-primary]')).match(/(^|[^+\-−\d.])\d+(\.\d+)?\s?%/)
+  ok(unsigned === null || (await page.$('[data-primary] [data-reason=lane-matchup]')) !== null, 'sin % absoluto de iTero en la principal: ' + (unsigned?.[0] ?? 'ninguno'))
+  ok(await page.evaluate(() => window.DataStore.get('draftsage/panel').perspective) === 'team', 'la perspectiva se guarda')
+  await page.click('[data-perspective=auto]')
+  await page.waitForSelector('[data-draft-summary=lane]')
+  ok(true, 'vuelve a «Auto» (con rival: línea)')
+  const slots = await page.$$eval('[data-team-context] .ect-foe [data-status]', (a) => a.map((e) => e.dataset.status))
+  ok(slots.length === 5 && slots.some((x) => x !== 'empty'), 'contexto 5+5: cinco huecos rivales con su origen: ' + slots.join(','))
+  ok((await page.$$('[data-team-context] .ect-ally [data-status=self]')).length === 1, 'tu hueco marcado como «tú»')
+
   // 4) la petición: línea, rango, lado, bans, posiciones; sin tu campeón ni datos personales
   const r0 = iteroReqs[0]
   ok(r0.lane === 'BOTTOM' && r0.rankClass === 'EMERALD' && r0.side === 'Red', 'petición: línea BOTTOM, EMERALD, lado rojo (team 2): ' + [r0.lane, r0.rankClass, r0.side])

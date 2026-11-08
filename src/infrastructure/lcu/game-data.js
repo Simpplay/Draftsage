@@ -8,6 +8,9 @@ import { log } from '../../shared/logger.js'
 
 const norm = (s) => String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '')
 
+// Texto del cliente con etiquetas de formato (<b>, <lol-uikit-…>, <br>) → texto plano de una línea, recortado. Nunca se inserta como HTML.
+const plainText = (v) => (typeof v === 'string' ? v.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 240) : '')
+
 export function createGameData({ lcuGet }) {
   const runes = new Map()     // id -> { id, name, icon }
   const spells = new Map()
@@ -29,7 +32,9 @@ export function createGameData({ lcuGet }) {
       lcuGet('/lol-perks/v1/perks', { timeoutMs: 12_000 }),
       lcuGet('/lol-perks/v1/styles', { timeoutMs: 8_000 }),
     ])
-    for (const p of Array.isArray(perks) ? perks : []) runes.set(p.id, { id: p.id, name: p.name, icon: p.iconPath })
+    // `desc` = descripción breve (shortDesc del cliente, con etiquetas de formato): se guarda como texto plano para tooltips y aria-label.
+    // ❓ shortDesc sin verificar en el cliente real de la 16.22 (si falta, solo se pierde la descripción; el nombre sigue).
+    for (const p of Array.isArray(perks) ? perks : []) runes.set(p.id, { id: p.id, name: p.name, icon: p.iconPath, desc: plainText(p.shortDesc) })
     for (const s of Array.isArray(styles) ? styles : []) {
       runes.set(s.id, { id: s.id, name: s.name, icon: s.iconPath })
       const keystones = (s.slots ?? []).find((x) => x.type === 'kKeyStone')?.perks ?? s.slots?.[0]?.perks ?? []
@@ -55,7 +60,7 @@ export function createGameData({ lcuGet }) {
       lcuGet('/lol-game-data/assets/v1/champion-summary.json'),
       lcuGet('/lol-game-data/assets/v1/items.json'),
     ])
-    for (const s of sp ?? []) spells.set(s.id, { id: s.id, name: s.name, icon: s.iconPath })
+    for (const s of sp ?? []) spells.set(s.id, { id: s.id, name: s.name, icon: s.iconPath, desc: plainText(s.description) })
     // `roles` = clases del campeón en minúsculas ('fighter', 'tank', 'mage', 'marksman', 'assassin', 'support'); ❓ sin verificar en el cliente real (si falta, el filtro de clase no encuentra nada).
     for (const c of ch ?? []) if (c.id > 0) champions.set(c.id, { id: c.id, name: c.name, alias: c.alias, icon: c.squarePortraitPath, classes: Array.isArray(c.roles) ? c.roles.map((r) => String(r).toLowerCase()) : [] })
     // ❓ items.json: { id, name, iconPath, categories[], priceTotal, from[] }; «Boots» en categories marca las botas (si no, solo se pierde separarlas de otras filas).

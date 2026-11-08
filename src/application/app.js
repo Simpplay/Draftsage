@@ -87,7 +87,7 @@ const advisor = createPickAdvisorController({
 const enemyRoles = createEnemyRoles({ source: controller, lola: lolaClient, getFilters: getFilterPrefs, log })
 
 // Filtros de la selección (clase, dominio, matchup, meta, fase, daño): deciden qué campeones se ven en las listas y en la cuadrícula.
-const pickFilters = createPickFilters({ catalog, overlay, advisor, mastery, prefs: { get: getPickFilterPrefs, set: setPickFilterPrefs } })
+const pickFilters = createPickFilters({ catalog, overlay, advisor, mastery, prefs: { get: getPickFilterPrefs, set: setPickFilterPrefs }, getContext: () => controller.getState().context })
 
 const applier = createConfigurationApplier({ gateway: createLoadoutGateway(), prefs: { get: getApplyPrefs, set: setApplyPrefs }, log })
 
