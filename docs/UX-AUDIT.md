@@ -8,6 +8,29 @@ respecto a la especificación.
 
 ---
 
+## 0. Estado tras el rediseño (2026-11-08, misma rama)
+
+Hecho después de la auditoría, por fases, sin tocar el loader ni la lógica de recomendación de runas. Decisiones tomadas por defecto (el usuario
+pidió seguir sin parar): se adopta la especificación (texto visible); la Fase 4 se limita a los datos que ya existen (opción c del §6.2);
+«principal + alternativas» sin pesos (propuesta del §6.3).
+
+| Fase | Qué se hizo | Dónde | Pruebas |
+|---|---|---|---|
+| Línea base | Corregidas las 2 pruebas desfasadas (modo `auto` por defecto; login opcional) | `dev/tests/lolalytics.test.mjs`, `dev/tests/ui/ui.test.cjs` | unitarias 176/176, ui 120/120 |
+| Integridad | Las listas MATCHUP y DRAFT excluyen baneados y campeones ya elegidos por otros (regla 8); la ventaja `edge` se ve bajo cada % | `domain/pick-filters.js: unavailableIds`, `application/pick-filters.js` (`getContext`), `presentation/panel.js` | `draft-summary.test.mjs`, advisor UI |
+| 1 · Sistema visual | Tokens comunes (`--ds-*`) en lugar de colores literales en las 5 hojas; foco visible (`:focus-visible`); `prefers-reduced-motion`; nada por debajo de 10 px; piezas compartidas extraídas de `panel.js` | `presentation/theme.js`, `presentation/components/common.js` | todas las suites UI sin cambios de comportamiento |
+| 2 · Build | Página de runas legible: cabecera por árbol, nombre y descripción de la runa clave, nombres de las 3 + 2 runas, de los 3 fragmentos y de los hechizos (con tecla); origen de la página (recomendada / elegida por ti con «volver» / fijada) y alcance (contra X / general); leyenda de las alternativas (% = uso, orden por WPA). En partida, resumen de runas en texto | `presentation/components/build.js` (`runePage`, `runeSummary`), `infrastructure/lcu/game-data.js` (`desc` de runas y hechizos) | ui 124/124 |
+| 3 · Draft | Recomendación principal + 2–3 alternativas con su porqué; motivos con signo (+/−/·) y evidencia («dato», «modelo», «regla»); confianza separada de la puntuación; perspectivas Auto / Línea / Equipo (se guarda); «Localizar» (no elige); contexto 5 + 5 por línea con el origen de cada línea (tú / cliente / elegida / deducida); la tira de la cabecera sigue la perspectiva y marca la principal | `domain/draft-summary.js`, `domain/team-context.js`, `presentation/components/draft.js`, `presentation/native.js` | `draft-summary.test.mjs` 7/7, advisor UI 47/47 |
+| 4 · Composición | Solo con datos reales: sinergia y counter por línea (iTero), escalado, reparto de daño y debilidades como desventajas del candidato («si lo eliges»). **Bloqueado**: frontline, engage, peel, amenazas del rival… (ninguna fuente actual los da; ver §3) | motivos de `domain/draft-summary.js` | — |
+| 5 · Ajustes | Cinco categorías (General, Datos, Consejero, Aplicación, Avanzado plegado) con descripción breve visible por categoría y por control clave; atajos documentados en la propia pantalla; consentimientos intactos | `presentation/settings.js` | ui 124/124 |
+| 6 · Validación | **Pendiente del usuario**: requiere el cliente real (lista en `docs/HANDOFF.md`) | — | — |
+
+Lo que sigue sin hacer de la especificación: nombres visibles de los ítems (siguen en tooltip y `aria-label`), alternativas de runas menores, de
+árbol secundario y de fragmentos (la fuente no las ofrece de forma directa), «elecciones seguras» (§2.7, falta definir la métrica con datos),
+tiempo restante del turno y campeones no poseídos (❓ LCU), análisis de amenazas del rival (sin fuente), pruebas con jugadores (§17.1).
+
+---
+
 ## 1. Línea base de pruebas (2026-11-08, sin cambios de código)
 
 | Suite | Resultado | Nota |
@@ -110,7 +133,7 @@ Correspondencia con los componentes de la especificación (§10.3):
 |---|---|---|
 | Recomendación principal + 2–3 alternativas con su porqué | Dos listas independientes de hasta 5 (MATCHUP y DRAFT) | ⚠ no hay principal ni «por qué esta alternativa»; el jugador combina dos listas |
 | Modos counter de línea / sinergia / counter de composición / automático | Counter de línea = lista MATCHUP; DRAFT de iTero mezcla sinergia y counter | ⚠ no existen como perspectivas; no hay modo automático que pondere según el contexto |
-| No confundir WR alto con ventaja de matchup (spec §2.1) | `edge` se calcula | ⚠ **`matchupPicks()` ordena por `wr` bruto, no por `edge`** (`application/pick-filters.js:79`): un campeón con WR general alto sube aunque su ventaja específica sea nula |
+| No confundir WR alto con ventaja de matchup (spec §2.1) | `edge` se calcula | **Corregido el 2026-11-08 (ver §0):** la lista ordena por win rate **del matchup** (no el general), que es la prioridad 1 de la spec; el hueco real era que `edge` no se veía. Ahora se ve bajo cada % y la recomendación principal distingue «ventaja de matchup» de «fuerza general» |
 | Regla 8: no recomendar baneados / no disponibles | ✅ iTero recibe los bans (`pick-advisor.js:74`) | ⚠ **la lista MATCHUP no excluye baneados ni ya elegidos** (ni aliados ni rivales); ❓ campeones no poseídos no se tienen en cuenta en ninguna lista |
 | Regla 1–2: `result_pred` nunca absoluto, solo relativo | ✅ Δ frente a la mediana | — |
 | Regla 5: posición inferida ≠ confirmada | ✅ se guarda el origen (`rivalSource`, manual/cliente/deducida) | parcial: se distingue en el selector de línea, no en todas las vistas |

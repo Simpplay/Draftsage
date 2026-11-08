@@ -26,7 +26,9 @@ draftsage/
 │   │   ├── lolalytics.js            Raíz de Lolalytics → Recommendation (validar, rango→tier, runas, hechizos, ítems)
 │   │   ├── overlay-stats.js         Win rate por campeón, rival deducido y mejores counters (reglas puras)
 │   │   ├── update.js                Actualizaciones (puro): versiones x.y.z, URLs de jsDelivr, sobre firmado, validación del manifiesto, decideUpdate
-│   │   └── configuration.js         Recomendación → página de runas (9 ids) y pareja de hechizos; nombre «[DS] …»
+│   │   ├── configuration.js         Recomendación → página de runas (9 ids) y pareja de hechizos; nombre «[DS] …»
+│   │   ├── draft-summary.js         Recomendación principal + alternativas con motivos (evidencia: dato/modelo/regla) y confianza; perspectivas auto/línea/equipo
+│   │   └── team-context.js          Los 5 + 5 huecos del draft por línea y cómo se sabe cada línea (tú / cliente / elegida / deducida)
 │   ├── application/                 Casos de uso y flujos
 │   │   ├── loader.js                LOADER: elige código incluido o versión firmada descargada y lo arranca; busca actualizaciones en segundo plano
 │   │   ├── updater.js               Descargar/verificar/guardar versiones firmadas y recuperar la guardada (re-verificada); todo por inyección
@@ -67,7 +69,10 @@ draftsage/
 │   │   ├── icons.js                 Iconos SVG de trazo (createElementNS, sin innerHTML)
 │   │   ├── overlay.js               Capa de etiquetas (win rate/counters) sobre las fichas nativas (`.grid-champion[data-id]`); sin fetch
 │   │   ├── native.js                Interfaz INTEGRADA en Champion Select: botón de runas en la barra de loadout, tira de picks en la cabecera de la cuadrícula, botón DS; reconcilia con el DOM del cliente (docs/champ-select-dom.md)
-│   │   └── panel.js                 Panel: flotante (respaldo/simulación/partida) o popover anclado a native.js; atajo Ctrl+Shift+E
+│   │   ├── panel.js                 Panel: flotante (respaldo/simulación/partida) o popover anclado a native.js; atajo Ctrl+Shift+E
+│   │   ├── theme.js                 Tokens visuales comunes (--ds-*), foco visible y reducción de movimiento (docs/UX-SPEC.md §10)
+│   │   └── components/              Piezas del panel sin estado ni red: common (retrato, cifras, tooltips), build (página de runas legible, resumen
+│   │                                en partida), draft (recomendación principal + alternativas, contexto 5 + 5)
 │   └── shared/                      logger.js (prefijo [draftsage]) · i18n.js + strings.js (textos es/en, t('clave')) · version.js (la reescribe release.mjs)
 ├── dev/                             NO se distribuye
 │   ├── api-probes/                  Scripts Node que sondean la API real (piden credenciales por prompt)
