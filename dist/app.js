@@ -1,4 +1,4 @@
-/* draftsage v1.0.3 — generado por dev/tools/release.mjs; no editar */
+/* draftsage v1.0.4 — generado por dev/tools/release.mjs; no editar */
 
 // src/shared/strings.js
 var es = {
@@ -93,7 +93,7 @@ var es = {
   "err.other": "Error inesperado",
   "notice.matchup-requires-premium": "El matchup requiere cuenta premium: se muestran los datos del campe\xF3n.",
   "notice.matchup-low-sample": "Hay pocas partidas de este matchup: se muestran los datos del campe\xF3n.",
-  "notice.filters-downgraded": "Tu cuenta no admite alg\xFAn filtro (rango de parches o matchup): se us\xF3 uno m\xE1s simple.",
+  "notice.filters-downgraded": "Tu cuenta no admite alg\xFAn filtro (rango de parches, matchup o regiones): se us\xF3 uno m\xE1s simple.",
   "notice.patch-low-sample": "El \xFAltimo parche tiene pocos datos: se usa el anterior.",
   "notice.spells-adjusted": "Hechizos ajustados al modo de juego y al rol.",
   "notice.patch-range-requires-premium": "El rango de parches requiere cuenta premium: se usa solo el parche actual.",
@@ -118,6 +118,7 @@ var es = {
   "tag.patch": "Parche",
   "tag.tier": "Rango de la lobby",
   "tag.tierManual": "Rango de Elo elegido por ti",
+  "tag.regions": "Regiones elegidas por ti: {0}",
   "tag.matchup": "Datos del matchup",
   "tag.sim": "Simulaci\xF3n manual",
   "conf.1": "baja",
@@ -170,6 +171,12 @@ var es = {
   "set.patchCurrentTip": "Solo el \xFAltimo parche con datos suficientes",
   "set.patchPlusTip": "El \xFAltimo parche y los {0} anterior(es) (premium)",
   "set.premiumOnly": "Requiere cuenta premium",
+  "set.regions": "Regiones",
+  "set.regionsAll": "Todas",
+  "set.regionsAllTip": "Todas las regiones (lo mismo que la web de Coachless por defecto)",
+  "set.regionsPick": "Elegir",
+  "set.regionsPickTip": "Elegir regiones concretas: Coachless usa todas las elegidas; iTero, solo si eliges una; LoLalytics usa siempre todas",
+  "set.regionTip": "Incluir o quitar {0}",
   "set.flash": "Destello",
   "set.flashKey": "Destello en la tecla {0}",
   "set.more": "M\xE1s",
@@ -338,7 +345,96 @@ var es = {
   "set.updSrcPackaged": "incluida",
   "upd.updated": "Draftsage se actualiz\xF3 a la versi\xF3n {0}",
   "upd.ready": "Draftsage {0} descargada: se aplicar\xE1 al reiniciar el cliente",
-  "upd.reinstall": "Hay una versi\xF3n nueva de Draftsage que exige reinstalar el plugin"
+  "upd.reinstall": "Hay una versi\xF3n nueva de Draftsage que exige reinstalar el plugin",
+  "build.shards": "Fragmentos",
+  "build.spells": "Hechizos",
+  "build.origin.auto": "Recomendada",
+  "build.origin.autoTip": "P\xE1gina recomendada por Draftsage con los datos de la fuente",
+  "build.origin.custom": "Elegida por ti",
+  "build.origin.customTip": "Cambiaste la runa clave o un hechizo; el resto de la p\xE1gina sigue los datos para esa elecci\xF3n",
+  "build.origin.pinned": "Fijada",
+  "build.origin.pinnedTip": "Tu elecci\xF3n fijada para este campe\xF3n y rol (\u{1F4CC} para quitarla)",
+  "build.reset": "Recomendada",
+  "build.resetTip": "Volver a la p\xE1gina recomendada",
+  "build.scope.matchup": "contra {0}",
+  "build.scope.matchupTip": "Datos espec\xEDficos de este matchup (contra {0})",
+  "build.scope.general": "general",
+  "build.scope.generalTip": "Datos del campe\xF3n en tu rol sin tener en cuenta al rival",
+  "build.altLegend": "% = uso entre {0} partidas \xB7 ordenadas por WPA (aporte a la victoria), no por win rate",
+  "ds.title": "Recomendaci\xF3n",
+  "ds.alts": "Alternativas",
+  "ds.perspective": "Perspectiva de la recomendaci\xF3n",
+  "ds.p.auto": "Auto",
+  "ds.p.lane": "L\xEDnea",
+  "ds.p.team": "Equipo",
+  "ds.p.autoTip": "Autom\xE1tico: si ya se sabe tu rival de l\xEDnea, manda el matchup; si no, el encaje con el equipo",
+  "ds.p.laneTip": "Counter de l\xEDnea: el mejor enfrentamiento contra tu rival directo (LoLalytics)",
+  "ds.p.teamTip": "Encaje con el equipo: sinergia con tus aliados y respuesta a los rivales revelados (iTero)",
+  "ds.p.offTip": "Sin datos para esta perspectiva todav\xEDa",
+  "ds.locate": "Localizar",
+  "ds.locateFor": "Localizar a {0} en la cuadr\xEDcula",
+  "ds.locateTip": "Desplaza la cuadr\xEDcula hasta su ficha y la resalta. No lo elige por ti",
+  "ds.whyFor": "Por qu\xE9 {0}",
+  "ds.yourRival": "tu rival",
+  "ds.games": "{0} partidas",
+  "ds.why.best-team": "mejor encaje con el equipo",
+  "ds.why.best-lane": "mejor matchup",
+  "ds.why.next-lane": "otro buen matchup",
+  "ds.why.next-team": "otra buena opci\xF3n para el equipo",
+  "ds.why.comfort": "tu campe\xF3n",
+  "ds.r.lane": "{0} % contra {1} ({2} sobre su media)",
+  "ds.r.laneNoBase": "{0} % contra {1}",
+  "ds.r.general": "Gana sobre todo por fuerza general: su ventaja en este matchup es peque\xF1a",
+  "ds.r.team": "Encaja con tu equipo ({0} puntos relativos)",
+  "ds.r.teamBad": "Encaja peor que la media con tu equipo ({0} puntos relativos)",
+  "ds.r.syn": "Sinergia con {0} ({1} %)",
+  "ds.r.ctr": "Va bien contra {0} ({1} %)",
+  "ds.r.weak": "D\xE9bil contra {0} ({1} %)",
+  "ds.r.scale": "Mejora al equipo {0}",
+  "ds.r.disagree": "LoLalytics e iTero no coinciden con este campe\xF3n",
+  "ds.r.agree": "Las dos fuentes lo ven bien",
+  "ds.r.comfort": "Lo dominas ({0} puntos de maestr\xEDa)",
+  "ds.ev.statistical": "dato",
+  "ds.ev.statisticalTip": "Estad\xEDstica observada en partidas reales",
+  "ds.ev.model": "modelo",
+  "ds.ev.modelTip": "Predicci\xF3n del modelo de iTero, solo comparable dentro de esta recomendaci\xF3n (no es un win rate)",
+  "ds.ev.heuristic": "regla",
+  "ds.ev.heuristicTip": "Regla de Draftsage a partir de los datos, no una estad\xEDstica",
+  "ds.conf.high": "Muestra suficiente",
+  "ds.conf.highTip": "El dato del matchup se apoya en bastantes partidas",
+  "ds.conf.medium": "Muestra limitada",
+  "ds.conf.mediumTip": "El dato del matchup tiene pocas partidas: t\xF3malo como orientaci\xF3n",
+  "ds.conf.low": "Pocos datos",
+  "ds.conf.lowTip": "Muy pocas partidas: no es una recomendaci\xF3n fuerte",
+  "ds.conf.model": "Predicci\xF3n",
+  "ds.conf.modelTip": "Solo hay la predicci\xF3n del modelo de iTero, sin estad\xEDstica del matchup",
+  "tc.allies": "Tu equipo",
+  "tc.enemies": "Rivales",
+  "tc.slot": "{0}: {1} ({2})",
+  "tc.empty": "{0}: sin campe\xF3n todav\xEDa",
+  "tc.unplaced": "+{0} sin l\xEDnea",
+  "tc.st.self": "t\xFA",
+  "tc.st.confirmed": "l\xEDnea informada por el cliente",
+  "tc.st.manual": "l\xEDnea elegida por ti",
+  "tc.st.inferred": "l\xEDnea deducida por Draftsage, puede no ser la real",
+  "tc.st.empty": "vac\xEDo",
+  "tc.legend": "Borde dorado: t\xFA o elegida por ti \xB7 continuo: la informa el cliente \xB7 discontinuo con \xAB?\xBB: deducida",
+  "set.sec.general": "General",
+  "set.sec.generalDesc": "Qu\xE9 se muestra en Champion Select y en qu\xE9 idioma.",
+  "set.sec.data": "Datos",
+  "set.sec.dataDesc": "De d\xF3nde salen las runas, hechizos e \xEDtems, y qu\xE9 partidas se cuentan.",
+  "set.sec.advisor": "Consejero",
+  "set.sec.advisorDesc": "Sugerencias de campe\xF3n seg\xFAn la composici\xF3n (iTero). Apagado hasta que aceptes: los campeones del draft se env\xEDan a iTero.",
+  "set.sec.apply": "Aplicaci\xF3n",
+  "set.sec.applyDesc": "Poner la p\xE1gina de runas y los hechizos en el cliente. Siempre con un clic tuyo; nunca autom\xE1tico.",
+  "set.sec.advanced": "Avanzado",
+  "set.sec.advancedDesc": "Simulaci\xF3n, diagn\xF3stico de conexi\xF3n y actualizaciones.",
+  "set.d.source": "Auto usa Coachless si has iniciado sesi\xF3n; LoLalytics si no, si pides un matchup sin premium o si Coachless falla.",
+  "set.d.elo": "Auto usa el rango de tu lobby (\xB11, m\xEDnimo Gold). Pulsa rangos para fijar los tuyos.",
+  "set.d.advisor": "Al encenderlo ver\xE1s el aviso de privacidad antes de enviar nada.",
+  "set.d.mastery": "Opcional: tus campeones pesan m\xE1s. Env\xEDa tu Riot ID a iTero (con aviso previo).",
+  "set.d.apply": "Desactivado de inicio. Al activarlo ver\xE1s el aviso de pol\xEDticas de Riot/Pengu.",
+  "set.d.shortcuts": "Atajos: Ctrl+Shift+A aplica lo que ves \xB7 Ctrl+Shift+E abre estos ajustes."
 };
 var en = {
   "common.ok": "OK",
@@ -431,7 +527,7 @@ var en = {
   "err.other": "Unexpected error",
   "notice.matchup-requires-premium": "Matchup data needs a premium account: champion data is shown.",
   "notice.matchup-low-sample": "Few games for this matchup: champion data is shown.",
-  "notice.filters-downgraded": "Your account does not support a filter (patch range or matchup): a simpler one was used.",
+  "notice.filters-downgraded": "Your account does not support a filter (patch range, matchup or regions): a simpler one was used.",
   "notice.patch-low-sample": "The latest patch has little data: the previous one is used.",
   "notice.spells-adjusted": "Spells adjusted to the game mode and role.",
   "notice.patch-range-requires-premium": "Patch ranges need a premium account: only the current patch is used.",
@@ -456,6 +552,7 @@ var en = {
   "tag.patch": "Patch",
   "tag.tier": "Lobby rank",
   "tag.tierManual": "Rank range chosen by you",
+  "tag.regions": "Regions chosen by you: {0}",
   "tag.matchup": "Matchup data",
   "tag.sim": "Manual simulation",
   "conf.1": "low",
@@ -508,6 +605,12 @@ var en = {
   "set.patchCurrentTip": "Only the latest patch with enough data",
   "set.patchPlusTip": "The latest patch and the {0} before it (premium)",
   "set.premiumOnly": "Needs a premium account",
+  "set.regions": "Regions",
+  "set.regionsAll": "All",
+  "set.regionsAllTip": "All regions (same as the Coachless website by default)",
+  "set.regionsPick": "Choose",
+  "set.regionsPickTip": "Choose specific regions: Coachless uses all you pick; iTero, only if you pick one; LoLalytics always uses all",
+  "set.regionTip": "Include or remove {0}",
   "set.flash": "Flash",
   "set.flashKey": "Flash on key {0}",
   "set.more": "More",
@@ -676,7 +779,96 @@ var en = {
   "set.updSrcPackaged": "bundled",
   "upd.updated": "Draftsage updated to version {0}",
   "upd.ready": "Draftsage {0} downloaded: it will apply when you restart the client",
-  "upd.reinstall": "A new Draftsage version requires reinstalling the plugin"
+  "upd.reinstall": "A new Draftsage version requires reinstalling the plugin",
+  "build.shards": "Shards",
+  "build.spells": "Spells",
+  "build.origin.auto": "Recommended",
+  "build.origin.autoTip": "Page recommended by Draftsage from the source data",
+  "build.origin.custom": "Your choice",
+  "build.origin.customTip": "You changed the keystone or a spell; the rest of the page follows the data for that choice",
+  "build.origin.pinned": "Pinned",
+  "build.origin.pinnedTip": "Your pinned choice for this champion and role (\u{1F4CC} to remove it)",
+  "build.reset": "Recommended",
+  "build.resetTip": "Back to the recommended page",
+  "build.scope.matchup": "vs {0}",
+  "build.scope.matchupTip": "Data specific to this matchup (against {0})",
+  "build.scope.general": "general",
+  "build.scope.generalTip": "Data for the champion in your role, regardless of the opponent",
+  "build.altLegend": "% = pick rate among {0} games \xB7 sorted by WPA (win contribution), not by win rate",
+  "ds.title": "Recommendation",
+  "ds.alts": "Alternatives",
+  "ds.perspective": "Recommendation perspective",
+  "ds.p.auto": "Auto",
+  "ds.p.lane": "Lane",
+  "ds.p.team": "Team",
+  "ds.p.autoTip": "Automatic: if your lane opponent is known, the matchup leads; otherwise, team fit",
+  "ds.p.laneTip": "Lane counter: the best head-to-head against your direct opponent (LoLalytics)",
+  "ds.p.teamTip": "Team fit: synergy with your allies and answer to the revealed enemies (iTero)",
+  "ds.p.offTip": "No data for this perspective yet",
+  "ds.locate": "Find",
+  "ds.locateFor": "Find {0} in the grid",
+  "ds.locateTip": "Scrolls the grid to its tile and highlights it. It does not pick it for you",
+  "ds.whyFor": "Why {0}",
+  "ds.yourRival": "your opponent",
+  "ds.games": "{0} games",
+  "ds.why.best-team": "best team fit",
+  "ds.why.best-lane": "best matchup",
+  "ds.why.next-lane": "another good matchup",
+  "ds.why.next-team": "another good team option",
+  "ds.why.comfort": "your champion",
+  "ds.r.lane": "{0} % against {1} ({2} over its average)",
+  "ds.r.laneNoBase": "{0} % against {1}",
+  "ds.r.general": "Wins mostly on general strength: its edge in this matchup is small",
+  "ds.r.team": "Fits your team ({0} relative points)",
+  "ds.r.teamBad": "Fits your team worse than average ({0} relative points)",
+  "ds.r.syn": "Synergy with {0} ({1} %)",
+  "ds.r.ctr": "Does well against {0} ({1} %)",
+  "ds.r.weak": "Weak against {0} ({1} %)",
+  "ds.r.scale": "Improves the team {0}",
+  "ds.r.disagree": "LoLalytics and iTero disagree on this champion",
+  "ds.r.agree": "Both sources rate it well",
+  "ds.r.comfort": "You know it well ({0} mastery points)",
+  "ds.ev.statistical": "data",
+  "ds.ev.statisticalTip": "Statistic observed in real games",
+  "ds.ev.model": "model",
+  "ds.ev.modelTip": "Prediction from the iTero model, only comparable within this recommendation (not a win rate)",
+  "ds.ev.heuristic": "rule",
+  "ds.ev.heuristicTip": "A Draftsage rule built on the data, not a statistic",
+  "ds.conf.high": "Enough data",
+  "ds.conf.highTip": "The matchup figure rests on plenty of games",
+  "ds.conf.medium": "Limited data",
+  "ds.conf.mediumTip": "The matchup figure has few games: take it as a hint",
+  "ds.conf.low": "Little data",
+  "ds.conf.lowTip": "Very few games: not a strong recommendation",
+  "ds.conf.model": "Prediction",
+  "ds.conf.modelTip": "Only the iTero model prediction is available, with no matchup statistic",
+  "tc.allies": "Your team",
+  "tc.enemies": "Enemies",
+  "tc.slot": "{0}: {1} ({2})",
+  "tc.empty": "{0}: no champion yet",
+  "tc.unplaced": "+{0} no lane",
+  "tc.st.self": "you",
+  "tc.st.confirmed": "lane reported by the client",
+  "tc.st.manual": "lane set by you",
+  "tc.st.inferred": "lane inferred by Draftsage, may be wrong",
+  "tc.st.empty": "empty",
+  "tc.legend": "Gold border: you or set by you \xB7 solid: reported by the client \xB7 dashed with \xAB?\xBB: inferred",
+  "set.sec.general": "General",
+  "set.sec.generalDesc": "What is shown in Champion Select and in which language.",
+  "set.sec.data": "Data",
+  "set.sec.dataDesc": "Where runes, spells and items come from, and which games are counted.",
+  "set.sec.advisor": "Advisor",
+  "set.sec.advisorDesc": "Champion suggestions based on team composition (iTero). Off until you accept: the draft's champions are sent to iTero.",
+  "set.sec.apply": "Applying",
+  "set.sec.applyDesc": "Put the rune page and spells into the client. Always with your click; never automatic.",
+  "set.sec.advanced": "Advanced",
+  "set.sec.advancedDesc": "Simulation, connection check and updates.",
+  "set.d.source": "Auto uses Coachless when you are logged in; LoLalytics otherwise, for a matchup without premium, or if Coachless fails.",
+  "set.d.elo": "Auto uses your lobby's rank (\xB11, Gold minimum). Click ranks to set your own.",
+  "set.d.advisor": "Turning it on shows the privacy notice before anything is sent.",
+  "set.d.mastery": "Optional: your champions weigh more. Sends your Riot ID to iTero (with a notice first).",
+  "set.d.apply": "Off by default. Turning it on shows the Riot/Pengu policy notice.",
+  "set.d.shortcuts": "Shortcuts: Ctrl+Shift+A applies what you see \xB7 Ctrl+Shift+E opens these settings."
 };
 var STRINGS = { es, en };
 
@@ -765,8 +957,35 @@ function parseTier(text) {
 var MAX_PATCH_RANGE = 2;
 var DEFAULT_FILTERS = Object.freeze({
   tiers: Object.freeze({ mode: "auto", min: 5, max: 7 }),
-  patches: Object.freeze({ mode: "auto", additions: 1 })
+  patches: Object.freeze({ mode: "auto", additions: 1 }),
+  regions: Object.freeze([])
 });
+var REGIONS = Object.freeze([
+  { id: 0, code: "BR" },
+  { id: 1, code: "EUNE" },
+  { id: 2, code: "EUW" },
+  { id: 3, code: "JP" },
+  { id: 4, code: "KR" },
+  { id: 5, code: "LAN" },
+  { id: 6, code: "LAS" },
+  { id: 7, code: "ME" },
+  { id: 8, code: "NA" },
+  { id: 9, code: "OCE" },
+  { id: 12, code: "SG" },
+  { id: 11, code: "RU" },
+  { id: 14, code: "TR" },
+  { id: 15, code: "TW" },
+  { id: 16, code: "VN" }
+]);
+var REGION_IDS = new Set(REGIONS.map((r) => r.id));
+var regionCode = (id) => {
+  var _a;
+  return ((_a = REGIONS.find((r) => r.id === id)) == null ? void 0 : _a.code) ?? "?";
+};
+function normalizeRegions(raw) {
+  const ids = [...new Set((Array.isArray(raw) ? raw : []).map(Number).filter((x) => REGION_IDS.has(x)))].sort((a, b) => a - b);
+  return ids.length === REGION_IDS.size ? [] : ids;
+}
 var int = (x, fallback) => Number.isFinite(Number(x)) && x !== null && x !== "" ? Math.round(Number(x)) : fallback;
 function normalizeFilters(raw) {
   const t2 = (raw == null ? void 0 : raw.tiers) ?? {};
@@ -777,8 +996,18 @@ function normalizeFilters(raw) {
     patches: {
       mode: p.mode === "manual" ? "manual" : "auto",
       additions: Math.min(MAX_PATCH_RANGE, Math.max(0, int(p.additions, DEFAULT_FILTERS.patches.additions)))
-    }
+    },
+    regions: normalizeRegions(raw == null ? void 0 : raw.regions)
   };
+}
+function resolveRegions(filters) {
+  const ids = normalizeFilters(filters).regions;
+  return ids.length ? { regions: ids, manual: true } : { regions: null, manual: false };
+}
+function toggleRegion(regions, id) {
+  const cur = normalizeRegions(regions);
+  if (!REGION_IDS.has(Number(id))) return cur;
+  return normalizeRegions(cur.includes(Number(id)) ? cur.filter((x) => x !== Number(id)) : [...cur, Number(id)]);
 }
 function resolveTiers(filters, lobbyTier) {
   const f = normalizeFilters(filters).tiers;
@@ -1035,9 +1264,9 @@ function normalizeResponse(raw, lane, { min = 20 } = {}) {
   }
   const candidates = [];
   for (const row of raw) {
-    const candidate = normalizeCandidate(row, lane);
-    if (candidate) {
-      candidates.push(candidate);
+    const candidate2 = normalizeCandidate(row, lane);
+    if (candidate2) {
+      candidates.push(candidate2);
     }
   }
   const hasEnoughCandidates = candidates.length >= min;
@@ -1055,11 +1284,32 @@ function normalizeResponse(raw, lane, { min = 20 } = {}) {
 }
 function findUnrecognized(req, candidates) {
   const candidateNames = new Set(
-    candidates.map((candidate) => KEY(candidate.name))
+    candidates.map((candidate2) => KEY(candidate2.name))
   );
   return Object.entries(req.teamComp).filter(([, championName]) => {
     return candidateNames.has(KEY(championName));
   }).map(([, championName]) => championName);
+}
+var ITERO_REGION_OF = Object.freeze({
+  0: "BR1",
+  1: "EUN1",
+  2: "EUW1",
+  3: "JP1",
+  4: "KR",
+  5: "LA1",
+  6: "LA2",
+  7: "ME1",
+  8: "NA1",
+  9: "OC1",
+  10: "PH2",
+  12: "SG2",
+  13: "TH2",
+  14: "TR1",
+  15: "TW2",
+  16: "VN2"
+});
+function iteroRegion(regions) {
+  return Array.isArray(regions) && regions.length === 1 ? ITERO_REGION_OF[regions[0]] ?? null : null;
 }
 var PLATFORM_OF_REGION = {
   NA: "NA1",
@@ -1302,6 +1552,14 @@ function matches(f, facts, avail = { mastery: true, matchup: true, itero: true, 
   if (f.damage !== "any" && evaluable("damage", avail) && facts.dmg !== f.damage) return false;
   return true;
 }
+function unavailableIds(ctx) {
+  const out = /* @__PURE__ */ new Set();
+  if (!ctx) return out;
+  for (const id of ctx.bans ?? []) if (Number.isInteger(id) && id > 0) out.add(id);
+  for (const p of [...ctx.allies ?? [], ...ctx.enemies ?? []]) if (Number.isInteger(p == null ? void 0 : p.championId) && p.championId > 0) out.add(p.championId);
+  if (ctx.championId) out.delete(ctx.championId);
+  return out;
+}
 
 // src/application/preferences.js
 var KEY2 = "draftsage/panel";
@@ -1496,38 +1754,84 @@ window.draftsage = Object.assign(window.draftsage ?? {}, {
   debug: (on = true) => DataStore.set(DEBUG_KEY, !!on)
 });
 
+// src/presentation/theme.js
+var STYLE_ID = "draftsage-theme";
+var TOKENS = Object.freeze({
+  // Fondos y superficies
+  "bg": "#010a13",
+  "surface": "#0a1428",
+  "surface-2": "#1e2328",
+  "border": "#3c3c41",
+  "border-soft": "#2a2a30",
+  // Dorado (selección y énfasis)
+  "gold-dim": "#785a28",
+  "gold": "#c8aa6e",
+  "gold-hi": "#f0c870",
+  "gold-bg": "#2a2314",
+  // Texto
+  "text": "#cdbe91",
+  "text-hi": "#f0e6d2",
+  "meta": "#a09b8c",
+  "mute": "#7b7a76",
+  "mute-2": "#5b5a56",
+  // Estados
+  "teal": "#0ac8b9",
+  "teal-bg": "#06201f",
+  "red": "#e84057",
+  "rival": "#a8404f",
+  "amber": "#e0a93a"
+});
+var FONT = Object.freeze({ meta: "10px", text: "12px", section: "12px", name: "14px", title: "15px" });
+var ROOTS = [".ecp", ".ecx", ".ec-overlay", ".ecs", ".ecb-layer", ".ecp-fab", ".ecx-launch"];
+var css = () => {
+  const vars = Object.entries(TOKENS).map(([k, v]) => `--ds-${k}:${v}`).join(";");
+  const fs = Object.entries(FONT).map(([k, v]) => `--ds-fs-${k}:${v}`).join(";");
+  const inside = (sel) => ROOTS.map((r) => `${r} ${sel}, ${r}${sel}`).join(",");
+  return `:root{${vars};${fs}}
+${inside(":focus-visible")}{outline:2px solid var(--ds-gold-hi);outline-offset:1px}
+@media (prefers-reduced-motion: reduce){${ROOTS.map((r) => `${r}, ${r} *`).join(",")}{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}}`;
+};
+function ensureTheme(doc = document) {
+  if (doc.getElementById(STYLE_ID)) return;
+  const s = doc.createElement("style");
+  s.id = STYLE_ID;
+  s.textContent = css();
+  (doc.head ?? doc.documentElement).append(s);
+}
+
 // src/presentation/ui.js
-var STYLE_ID = "draftsage-style";
+var STYLE_ID2 = "draftsage-style";
 var T0 = performance.now();
 var sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 var whenReady = (ms = 8e3) => sleep(Math.max(0, ms - (performance.now() - T0)));
 var CSS = `
 .ec-overlay{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:rgba(1,10,19,.72)}
-.ec-modal{box-sizing:border-box;width:min(var(--ec-w,520px),92vw);max-height:90vh;overflow:auto;background:#010a13;color:#cdbe91;border:1px solid #785a28;box-shadow:0 0 24px #000;padding:20px 24px;font-size:14px;line-height:1.5;outline:none}
-.ec-title{font-size:16px;font-weight:bold;margin:0 0 10px;color:#f0e6d2}
+.ec-modal{box-sizing:border-box;width:min(var(--ec-w,520px),92vw);max-height:90vh;overflow:auto;background:var(--ds-bg);color:var(--ds-text);border:1px solid var(--ds-gold-dim);box-shadow:0 0 24px #000;padding:20px 24px;font-size:14px;line-height:1.5;outline:none}
+.ec-title{font-size:16px;font-weight:bold;margin:0 0 10px;color:var(--ds-text-hi)}
 .ec-body p{margin:0 0 8px}
-.ec-box{margin:8px 0;padding:8px 10px;background:#0a1428}
-.ec-status{min-height:20px;margin-top:8px;color:#0ac8b9}
-.ec-status.ec-error{color:#e84057}
+.ec-box{margin:8px 0;padding:8px 10px;background:var(--ds-surface)}
+.ec-status{min-height:20px;margin-top:8px;color:var(--ds-teal)}
+.ec-status.ec-error{color:var(--ds-red)}
 .ec-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
-.ec-btn{background:#1e2328;color:#cdbe91;border:1px solid #785a28;padding:6px 14px;cursor:pointer;font:inherit}
-.ec-btn:hover:not(:disabled){border-color:#c8aa6e;color:#f0e6d2}
+.ec-btn{background:var(--ds-surface-2);color:var(--ds-text);border:1px solid var(--ds-gold-dim);padding:6px 14px;cursor:pointer;font:inherit}
+.ec-btn:hover:not(:disabled){border-color:var(--ds-gold);color:var(--ds-text-hi)}
 .ec-btn:disabled{opacity:.5;cursor:default}
-.ec-btn.ec-primary{border-color:#c8aa6e;color:#f0e6d2}
-.ec-btn.ec-danger{border-color:#e84057;color:#e84057}
+.ec-btn.ec-primary{border-color:var(--ds-gold);color:var(--ds-text-hi)}
+.ec-btn.ec-danger{border-color:var(--ds-red);color:var(--ds-red)}
 .ec-field{display:block;margin:8px 0}
-.ec-field>span{display:block;margin-bottom:2px;font-size:12px;color:#a09b8c}
-.ec-input{box-sizing:border-box;width:100%;padding:6px 8px;background:#1e2328;color:#f0e6d2;border:1px solid #3c3c41;font:inherit}
-.ec-input:focus{outline:none;border-color:#c8aa6e}
+.ec-field>span{display:block;margin-bottom:2px;font-size:12px;color:var(--ds-meta)}
+.ec-input{box-sizing:border-box;width:100%;padding:6px 8px;background:var(--ds-surface-2);color:var(--ds-text-hi);border:1px solid var(--ds-border);font:inherit}
+.ec-input:focus{outline:none;border-color:var(--ds-gold)}
 .ec-check{display:flex;align-items:center;gap:6px;margin:8px 0}
 .ec-menu{display:flex;flex-direction:column;gap:6px;margin-top:6px}
 .ec-menu .ec-btn{text-align:left}
-.ec-menu small{display:block;color:#a09b8c}
+.ec-menu small{display:block;color:var(--ds-meta)}
 `;
 function ensureStyle() {
-  if (document.getElementById(STYLE_ID)) return;
+  ensureTheme();
+  if (document.getElementById(STYLE_ID2)) return;
   const s = document.createElement("style");
-  s.id = STYLE_ID;
+  s.id = STYLE_ID2;
   s.textContent = CSS;
   document.head.append(s);
 }
@@ -1893,65 +2197,73 @@ function icon(name, size = 16, cls = "") {
 }
 
 // src/presentation/settings.js
-var STYLE_ID2 = "draftsage-settings-style";
+var STYLE_ID3 = "draftsage-settings-style";
 var CSS2 = `
 .ecs{display:flex;flex-direction:column;gap:16px;user-select:none}
 .ecs-top{display:flex;align-items:center;gap:8px}
-.ecs-brand{flex:1;display:flex;align-items:center;gap:8px;font:bold 13px sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#f0e6d2}
-.ecs-brand .ec-ico{color:#c8aa6e}
-.ecs-plan{display:flex;align-items:center;gap:6px;padding:3px 11px 3px 8px;border:1px solid #3c3c41;border-radius:12px;font-size:12px;background:#0a1428;color:#a09b8c}
-.ecs-plan[data-plan=premium]{border-color:#c8aa6e;color:#f0c870;box-shadow:0 0 10px rgba(200,170,110,.35)}
+.ecs-brand{flex:1;display:flex;align-items:center;gap:8px;font:bold 13px sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--ds-text-hi)}
+.ecs-brand .ec-ico{color:var(--ds-gold)}
+.ecs-plan{display:flex;align-items:center;gap:6px;padding:3px 11px 3px 8px;border:1px solid var(--ds-border);border-radius:12px;font-size:12px;background:var(--ds-surface);color:var(--ds-meta)}
+.ecs-plan[data-plan=premium]{border-color:var(--ds-gold);color:var(--ds-gold-hi);box-shadow:0 0 10px rgba(200,170,110,.35)}
 .ecs-plan[data-plan=none]{cursor:pointer}
-.ecs-ib{width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;background:#1e2328;border:1px solid #3c3c41;color:#a09b8c;cursor:pointer}
-.ecs-ib:hover{border-color:#c8aa6e;color:#f0e6d2}
-.ecs-power{display:flex;align-items:center;gap:14px;width:100%;box-sizing:border-box;padding:12px 16px;background:linear-gradient(90deg,#0a1428,#010a13);border:1px solid #3c3c41;color:#a09b8c;font:inherit;text-align:left;cursor:pointer;transition:.2s}
-.ecs-power:hover{border-color:#785a28}
-.ecs-power[aria-pressed=true]{border-color:#c8aa6e;color:#f0e6d2;box-shadow:inset 0 0 18px rgba(200,170,110,.18)}
-.ecs-bolt{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#1e2328;color:#5b5a56;border:1px solid #3c3c41;transition:.25s}
-.ecs-power[aria-pressed=true] .ecs-bolt{color:#1a1408;background:radial-gradient(circle,#f0e6d2,#c8aa6e);border-color:#f0e6d2;box-shadow:0 0 16px #c8aa6e}
+.ecs-ib{width:28px;height:28px;display:flex;align-items:center;justify-content:center;padding:0;background:var(--ds-surface-2);border:1px solid var(--ds-border);color:var(--ds-meta);cursor:pointer}
+.ecs-ib:hover{border-color:var(--ds-gold);color:var(--ds-text-hi)}
+.ecs-power{display:flex;align-items:center;gap:14px;width:100%;box-sizing:border-box;padding:12px 16px;background:linear-gradient(90deg,var(--ds-surface),var(--ds-bg));border:1px solid var(--ds-border);color:var(--ds-meta);font:inherit;text-align:left;cursor:pointer;transition:.2s}
+.ecs-power:hover{border-color:var(--ds-gold-dim)}
+.ecs-power[aria-pressed=true]{border-color:var(--ds-gold);color:var(--ds-text-hi);box-shadow:inset 0 0 18px rgba(200,170,110,.18)}
+.ecs-bolt{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--ds-surface-2);color:var(--ds-mute-2);border:1px solid var(--ds-border);transition:.25s}
+.ecs-power[aria-pressed=true] .ecs-bolt{color:#1a1408;background:radial-gradient(circle,var(--ds-text-hi),var(--ds-gold));border-color:var(--ds-text-hi);box-shadow:0 0 16px var(--ds-gold)}
 .ecs-power-t{flex:1;font:bold 14px sans-serif;letter-spacing:.06em;text-transform:uppercase}
-.ecs-switch{width:46px;height:22px;border-radius:11px;background:#1e2328;border:1px solid #3c3c41;position:relative;transition:.25s}
-.ecs-switch::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#5b5a56;transition:.25s}
-.ecs-power[aria-pressed=true] .ecs-switch{border-color:#c8aa6e;background:#2a2112}
-.ecs-power[aria-pressed=true] .ecs-switch::after{left:26px;background:#f0c870;box-shadow:0 0 8px #c8aa6e}
-.ecs-cap{display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#a09b8c}
+.ecs-switch{width:46px;height:22px;border-radius:11px;background:var(--ds-surface-2);border:1px solid var(--ds-border);position:relative;transition:.25s}
+.ecs-switch::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--ds-mute-2);transition:.25s}
+.ecs-power[aria-pressed=true] .ecs-switch{border-color:var(--ds-gold);background:#2a2112}
+.ecs-power[aria-pressed=true] .ecs-switch::after{left:26px;background:var(--ds-gold-hi);box-shadow:0 0 8px var(--ds-gold)}
+.ecs-cap{display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ds-meta)}
 .ecs-seg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.ecs-tile{display:flex;flex-direction:column;align-items:center;gap:5px;padding:12px 6px 9px;background:#0a1428;border:1px solid #3c3c41;color:#7b7a76;font:inherit;cursor:pointer;transition:.15s}
-.ecs-tile:hover{border-color:#785a28;color:#cdbe91}
+.ecs-tile{display:flex;flex-direction:column;align-items:center;gap:5px;padding:12px 6px 9px;background:var(--ds-surface);border:1px solid var(--ds-border);color:var(--ds-mute);font:inherit;cursor:pointer;transition:.15s}
+.ecs-tile:hover{border-color:var(--ds-gold-dim);color:var(--ds-text)}
 .ecs-tile small{font-size:11px;letter-spacing:.06em;text-transform:uppercase}
-.ecs-tile[aria-checked=true]{border-color:#c8aa6e;color:#f0e6d2;background:#17130a;box-shadow:inset 0 0 14px rgba(200,170,110,.22),0 0 10px rgba(200,170,110,.18)}
+.ecs-tile[aria-checked=true]{border-color:var(--ds-gold);color:var(--ds-text-hi);background:#17130a;box-shadow:inset 0 0 14px rgba(200,170,110,.22),0 0 10px rgba(200,170,110,.18)}
 .ecs-keys{display:flex;gap:14px;justify-content:center}
-.ecs-key{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:72px;height:66px;padding:0;background:linear-gradient(#2b2f36,#1a1d22);border:1px solid #3c3c41;border-bottom-width:5px;border-radius:7px;color:#7b7a76;font:bold 22px sans-serif;cursor:pointer;transition:.08s}
+.ecs-key{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:72px;height:66px;padding:0;background:linear-gradient(#2b2f36,#1a1d22);border:1px solid var(--ds-border);border-bottom-width:5px;border-radius:7px;color:var(--ds-mute);font:bold 22px sans-serif;cursor:pointer;transition:.08s}
 .ecs-key img{width:26px;height:26px;border-radius:5px;opacity:.5;pointer-events:none}
-.ecs-key:hover{border-color:#785a28;color:#cdbe91}
-.ecs-key[aria-checked=true]{color:#f0e6d2;border-color:#c8aa6e;background:linear-gradient(#3b3119,#1f1a0c);box-shadow:0 0 16px rgba(200,170,110,.45)}
+.ecs-key:hover{border-color:var(--ds-gold-dim);color:var(--ds-text)}
+.ecs-key[aria-checked=true]{color:var(--ds-text-hi);border-color:var(--ds-gold);background:linear-gradient(#3b3119,#1f1a0c);box-shadow:0 0 16px rgba(200,170,110,.45)}
 .ecs-key[aria-checked=true] img{opacity:1}
 .ecs-key:active{border-bottom-width:2px;transform:translateY(3px)}
 .ecs-off .ecs-seg,.ecs-off .ecs-keys{opacity:.5}
 .ecs-chips{display:flex;gap:6px}
-.ecs-chip{flex:1;min-width:0;padding:8px 2px;background:#0a1428;border:1px solid #3c3c41;color:#7b7a76;font:inherit;font-size:11px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;transition:.15s}
-.ecs-chip:hover{border-color:#785a28;color:#cdbe91}
-.ecs-chip[aria-pressed=true]{border-color:#c8aa6e;color:#f0e6d2;background:#17130a;box-shadow:inset 0 0 12px rgba(200,170,110,.22)}
+.ecs-chip{flex:1;min-width:0;padding:8px 2px;background:var(--ds-surface);border:1px solid var(--ds-border);color:var(--ds-mute);font:inherit;font-size:11px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;transition:.15s}
+.ecs-chip:hover{border-color:var(--ds-gold-dim);color:var(--ds-text)}
+.ecs-chip[aria-pressed=true]{border-color:var(--ds-gold);color:var(--ds-text-hi);background:#17130a;box-shadow:inset 0 0 12px rgba(200,170,110,.22)}
 .ecs-chips-t .ecs-chip{padding:8px 0;font-size:10px;letter-spacing:0;text-transform:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ecs-chips-t .ecs-chip[data-tier=auto]{flex:0 0 46px;text-transform:uppercase}
+.ecs-chips-r{flex-wrap:wrap;margin-top:6px}
+.ecs-chips-r .ecs-chip{flex:0 0 calc(20% - 5px);padding:6px 0;font-size:10px}
 .ecs-chip[aria-disabled=true]{opacity:.35;cursor:not-allowed}
-.ecs-chip[aria-disabled=true]:hover{border-color:#3c3c41;color:#7b7a76}
+.ecs-chip[aria-disabled=true]:hover{border-color:var(--ds-border);color:var(--ds-mute)}
 .ecs-more{display:flex;align-items:center;gap:6px;align-self:center;padding:4px 10px;background:none;border:0;color:#6b6b73;font:inherit;font-size:11px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer}
-.ecs-more:hover{color:#cdbe91}
+.ecs-more:hover{color:var(--ds-text)}
 .ecs-more .ec-ico{transition:transform .2s}
 .ecs-more[aria-expanded=true] .ec-ico{transform:rotate(180deg)}
 .ecs-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:8px}
-.ecs-mini{display:flex;flex-direction:column;align-items:center;gap:4px;padding:9px 2px 6px;background:#0a1428;border:1px solid #2a2a30;color:#7b7a76;font:inherit;cursor:pointer}
+.ecs-mini{display:flex;flex-direction:column;align-items:center;gap:4px;padding:9px 2px 6px;background:var(--ds-surface);border:1px solid var(--ds-border-soft);color:var(--ds-mute);font:inherit;cursor:pointer}
 .ecs-mini small{font-size:10px;letter-spacing:.05em;text-transform:uppercase}
-.ecs-mini:hover{border-color:#785a28;color:#cdbe91}
+.ecs-mini:hover{border-color:var(--ds-gold-dim);color:var(--ds-text)}
 .ecs-mini[aria-pressed=false]{opacity:.6}
 .ecs-pop{animation:ecs-in .18s ease-out}
 @keyframes ecs-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.ecs-sec{display:flex;flex-direction:column;gap:12px;padding-top:12px;border-top:1px solid var(--ds-border-soft)}
+.ecs-sh{display:flex;flex-direction:column;gap:2px}
+.ecs-sh h3{display:flex;align-items:center;gap:7px;margin:0;font:bold 12px sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--ds-gold)}
+.ecs-desc{margin:0;font-size:11px;line-height:1.4;color:var(--ds-meta);letter-spacing:0;text-transform:none}
+.ecs-cap + .ecs-desc{margin:-5px 0 8px}
 `;
 function ensureStyle2() {
-  if (document.getElementById(STYLE_ID2)) return;
+  ensureTheme();
+  if (document.getElementById(STYLE_ID3)) return;
   const s = document.createElement("style");
-  s.id = STYLE_ID2;
+  s.id = STYLE_ID3;
   s.textContent = CSS2;
   document.head.append(s);
 }
@@ -1963,6 +2275,8 @@ function openSettings({ applier: applier2, catalog: catalog2, filters, source, o
   ensureStyle2();
   const box = h("div", { class: "ecs" });
   let more = false;
+  let regionsOpen = false;
+  let regionsAnim = false;
   let handle;
   const go = (fn) => {
     handle.close();
@@ -2055,6 +2369,49 @@ function openSettings({ applier: applier2, catalog: catalog2, filters, source, o
         ))
       )
     );
+    const picked = fl.regions;
+    const regionSummary = !picked.length ? t("set.regionsPick") : picked.length <= 2 ? picked.map(regionCode).join(" ") : regionCode(picked[0]) + " +" + (picked.length - 1);
+    const regionChip = (id, label, tip, pressed, onclick, extra = {}) => h("button", { type: "button", class: "ecs-chip", "data-region": id, "aria-pressed": String(pressed), title: tip, onclick, ...extra }, label);
+    const regions = h(
+      "div",
+      null,
+      h("div", { class: "ecs-cap" }, icon("globe", 13), t("set.regions")),
+      h(
+        "div",
+        { class: "ecs-chips", role: "group" },
+        regionChip("all", t("set.regionsAll"), t("set.regionsAllTip"), !picked.length, () => {
+          filters.set({ regions: [] });
+          render();
+        }),
+        regionChip(
+          "pick",
+          regionSummary,
+          picked.length ? picked.map(regionCode).join(", ") : t("set.regionsPickTip"),
+          picked.length > 0,
+          () => {
+            regionsOpen = !regionsOpen;
+            regionsAnim = regionsOpen;
+            render();
+          },
+          { "aria-expanded": String(regionsOpen) }
+        )
+      ),
+      regionsOpen && h(
+        "div",
+        { class: "ecs-chips ecs-chips-r" + (regionsAnim ? " ecs-pop" : ""), role: "group" },
+        REGIONS.map((r) => regionChip(
+          String(r.id),
+          r.code,
+          t("set.regionTip", r.code),
+          picked.includes(r.id),
+          () => {
+            regionsAnim = false;
+            filters.set({ regions: toggleRegion(picked, r.id) });
+            render();
+          }
+        ))
+      )
+    );
     const premium = !!ses.premium;
     const patchChip = (id, label, tip, pressed, locked, onclick) => h("button", {
       type: "button",
@@ -2113,7 +2470,7 @@ function openSettings({ applier: applier2, catalog: catalog2, filters, source, o
     );
     const sim = isSimulating();
     const mini = (act, ico, label, tip, onclick, pressed) => h("button", { type: "button", class: "ecs-mini", "data-act": act, title: tip, "aria-pressed": pressed == null ? null : String(pressed), onclick }, icon(ico, 20), h("small", null, label));
-    const grid = more && h(
+    const grid = h(
       "div",
       { class: "ecs-grid ecs-pop" },
       mini("simulate", "target", t("set.simulate"), t("set.simulateTip"), () => go(actions.simulate)),
@@ -2121,46 +2478,47 @@ function openSettings({ applier: applier2, catalog: catalog2, filters, source, o
         actions.unsimulate();
         render();
       }),
+      mini("cors", "plug", t("set.conn"), t("set.connTip"), () => go(actions.cors))
+    );
+    const generalMinis = [
+      mini("panel", panelEnabled() ? "eye" : "eyeOff", t("set.panel"), panelEnabled() ? t("set.panelHide") : t("set.panelShow"), () => {
+        actions.togglePanel();
+        render();
+      }, panelEnabled()),
       mini("overlay", "swords", t("set.overlay"), overlay2.isEnabled() ? t("set.overlayOn") : t("set.overlayOff"), () => {
         overlay2.setEnabled(!overlay2.isEnabled());
         window.dispatchEvent(new Event("draftsage:prefs"));
         render();
       }, overlay2.isEnabled()),
-      // Consejero de picks: apagarlo es inmediato; encenderlo pasa por el aviso (los datos del draft viajan a iTero).
-      mini(
-        "advisor",
-        "spark",
-        t("set.advisor"),
-        advisor2.isEnabled() ? t("set.advisorOn") : t("set.advisorOff"),
-        () => {
-          if (advisor2.isEnabled()) {
-            advisor2.setEnabled(false);
-            render();
-          } else go(async () => {
-            await actions.enableAdvisor();
-            actions.reopen();
-          });
-        },
-        advisor2.isEnabled()
-      ),
-      mini("panel", panelEnabled() ? "eye" : "eyeOff", t("set.panel"), panelEnabled() ? t("set.panelHide") : t("set.panelShow"), () => {
-        actions.togglePanel();
-        render();
-      }, panelEnabled()),
-      mini("resetpos", "refresh", t("set.resetPos"), t("set.resetPosTip"), () => actions.resetPanel()),
       mini("lang", "globe", getLang().toUpperCase(), t("set.langTip"), () => {
         actions.toggleLanguage();
         relabel();
       }),
-      mini("cors", "plug", t("set.conn"), t("set.connTip"), () => go(actions.cors))
+      mini("resetpos", "refresh", t("set.resetPos"), t("set.resetPosTip"), () => actions.resetPanel())
+    ];
+    const advisorMini = mini(
+      "advisor",
+      "spark",
+      t("set.advisor"),
+      advisor2.isEnabled() ? t("set.advisorOn") : t("set.advisorOff"),
+      () => {
+        if (advisor2.isEnabled()) {
+          advisor2.setEnabled(false);
+          render();
+        } else go(async () => {
+          await actions.enableAdvisor();
+          actions.reopen();
+        });
+      },
+      advisor2.isEnabled()
     );
     const mOn = mastery2.isEnabled();
     const mW = mastery2.weight();
     const mNearest = Object.keys(MASTERY_WEIGHTS).reduce((a, b) => Math.abs(MASTERY_WEIGHTS[b] - mW) < Math.abs(MASTERY_WEIGHTS[a] - mW) ? b : a);
     const mChip = (id, label, tip, pressed, onclick) => h("button", { type: "button", class: "ecs-chip", "data-mastery": id, "aria-pressed": String(pressed), title: tip, onclick }, label);
-    const masteryRow = more && h(
+    const masteryRow = h(
       "div",
-      { class: "ecs-pop" },
+      null,
       h("div", { class: "ecs-cap" }, icon("user", 13), t("set.mastery")),
       h(
         "div",
@@ -2200,9 +2558,9 @@ function openSettings({ applier: applier2, catalog: catalog2, filters, source, o
         render();
       }
     }, label);
-    const updatesRow = more && h(
+    const updatesRow = h(
       "div",
-      { class: "ecs-pop" },
+      null,
       h("div", { class: "ecs-cap" }, icon("refresh", 13), t("set.updates")),
       h(
         "div",
@@ -2211,20 +2569,24 @@ function openSettings({ applier: applier2, catalog: catalog2, filters, source, o
         uChip("packaged", t("set.updPackaged"), t("set.updPackagedTip"))
       )
     );
+    const sect = (id, ico, children) => h(
+      "section",
+      { class: "ecs-sec", "data-section": id, "aria-label": t("set.sec." + id) },
+      h("div", { class: "ecs-sh" }, h("h3", null, icon(ico, 14), t("set.sec." + id)), h("p", { class: "ecs-desc" }, t("set.sec." + id + "Desc"))),
+      ...children.filter(Boolean)
+    );
+    const desc = (key2) => h("p", { class: "ecs-desc" }, t(key2));
     return [
       top,
-      power,
-      src,
-      h("div", { class: cfg.enabled ? "" : "ecs-off" }, h("div", { class: "ecs", style: "gap:16px" }, target, keys)),
-      elo,
-      patches,
+      sect("general", "eye", [h("div", { class: "ecs-grid" }, generalMinis)]),
+      sect("data", "swap", [src, desc("set.d.source"), elo, desc("set.d.elo"), patches, regions]),
+      sect("advisor", "spark", [h("div", { class: "ecs-grid" }, advisorMini), desc("set.d.advisor"), masteryRow, desc("set.d.mastery")]),
+      sect("apply", "bolt", [power, desc("set.d.apply"), h("div", { class: cfg.enabled ? "" : "ecs-off" }, h("div", { class: "ecs", style: "gap:16px" }, target, keys)), desc("set.d.shortcuts")]),
       h("button", { type: "button", class: "ecs-more", "aria-expanded": String(more), "data-act": "more", title: t("set.moreTip"), onclick: () => {
         more = !more;
         render();
-      } }, icon("chevron", 14), t("set.more")),
-      grid,
-      masteryRow,
-      updatesRow
+      } }, icon("chevron", 14), t("set.sec.advanced")),
+      more && sect("advanced", "gear", [grid, updatesRow])
     ];
   };
   const render = () => box.replaceChildren(...build().filter(Boolean));
@@ -2403,6 +2765,7 @@ async function lcuGet(path, { timeoutMs = 4e3 } = {}) {
 
 // src/infrastructure/lcu/game-data.js
 var norm2 = (s) => String(s ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]/g, "");
+var plainText = (v) => typeof v === "string" ? v.replace(/<br\s*\/?>/gi, " ").replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim().slice(0, 240) : "";
 function createGameData({ lcuGet: lcuGet2 }) {
   const runes = /* @__PURE__ */ new Map();
   const spells = /* @__PURE__ */ new Map();
@@ -2420,7 +2783,7 @@ function createGameData({ lcuGet: lcuGet2 }) {
       lcuGet2("/lol-perks/v1/perks", { timeoutMs: 12e3 }),
       lcuGet2("/lol-perks/v1/styles", { timeoutMs: 8e3 })
     ]);
-    for (const p of Array.isArray(perks) ? perks : []) runes.set(p.id, { id: p.id, name: p.name, icon: p.iconPath });
+    for (const p of Array.isArray(perks) ? perks : []) runes.set(p.id, { id: p.id, name: p.name, icon: p.iconPath, desc: plainText(p.shortDesc) });
     for (const s of Array.isArray(styles) ? styles : []) {
       runes.set(s.id, { id: s.id, name: s.name, icon: s.iconPath });
       const keystones = ((_a = (s.slots ?? []).find((x) => x.type === "kKeyStone")) == null ? void 0 : _a.perks) ?? ((_c = (_b = s.slots) == null ? void 0 : _b[0]) == null ? void 0 : _c.perks) ?? [];
@@ -2444,7 +2807,7 @@ function createGameData({ lcuGet: lcuGet2 }) {
       lcuGet2("/lol-game-data/assets/v1/champion-summary.json"),
       lcuGet2("/lol-game-data/assets/v1/items.json")
     ]);
-    for (const s of sp ?? []) spells.set(s.id, { id: s.id, name: s.name, icon: s.iconPath });
+    for (const s of sp ?? []) spells.set(s.id, { id: s.id, name: s.name, icon: s.iconPath, desc: plainText(s.description) });
     for (const c of ch ?? []) if (c.id > 0) champions.set(c.id, { id: c.id, name: c.name, alias: c.alias, icon: c.squarePortraitPath, classes: Array.isArray(c.roles) ? c.roles.map((r) => String(r).toLowerCase()) : [] });
     for (const i of Array.isArray(it) ? it : []) if ((i == null ? void 0 : i.id) > 0) items.set(i.id, { id: i.id, name: i.name, icon: i.iconPath, boots: Array.isArray(i.categories) && i.categories.includes("Boots"), priceTotal: Number.isFinite(i.priceTotal) ? i.priceTotal : null, from: Array.isArray(i.from) ? i.from : [] });
     loaded = true;
@@ -2539,11 +2902,11 @@ var TIER_LETTERS = ["S", "A", "B"];
 var tierLetter = (tier) => Number.isInteger(tier) ? TIER_LETTERS[tier] ?? null : null;
 var validId = (x) => Number.isInteger(x) && x > 0 ? x : null;
 var statOf = (e) => {
-  const item2 = validId(e == null ? void 0 : e.item);
-  if (!item2) return null;
+  const item = validId(e == null ? void 0 : e.item);
+  if (!item) return null;
   const occurrence = Number.isFinite(e.occurrence) && e.occurrence > 0 ? e.occurrence : 0;
   const wpa = occurrence > 0 && Number.isFinite(e.wpa) ? e.wpa : null;
-  return { item: item2, wpa, occurrence, ...Number.isFinite(e.wr) && { wr: e.wr }, ...e.share != null && { share: e.share }, ...e.highlighted && { highlighted: true } };
+  return { item, wpa, occurrence, ...Number.isFinite(e.wr) && { wr: e.wr }, ...e.share != null && { share: e.share }, ...e.highlighted && { highlighted: true } };
 };
 var stats = (list) => {
   const seen = /* @__PURE__ */ new Set();
@@ -2728,12 +3091,12 @@ var MIN_BOOTS_SHARE = 0.1;
 var MIN_NEXT_SHARE = 0.05;
 var aborted = () => ({ ok: false, reason: "aborted" });
 function createRecommendationService({ client: client2, log: log2, keystoneTrees = () => void 0, cache, getFilters = () => void 0 }) {
-  const filtersOf = (ctx, patch, tiers, { additions, matchup }) => ({
+  const filtersOf = (ctx, patch, tiers, { additions, matchup, regions = null }) => ({
     patch: { major: patch.major, patch: patch.patch, patchAdditions: additions },
     championIds: [ctx.championId],
     matchupChampionIds: matchup ? [ctx.opponentChampionId] : null,
     leagueTiers: tiers,
-    regions: null,
+    regions,
     role: ctx.role ?? ROLE_FILL
   });
   async function compute(ctx, patch, tiers, plan, signal) {
@@ -2837,10 +3200,11 @@ function createRecommendationService({ client: client2, log: log2, keystoneTrees
     const filters = getFilters();
     const { tiers, manual: tiersManual } = resolveTiers(filters, ctx.lobbyTier);
     const range = resolveAdditions(filters, premium);
+    const { regions } = resolveRegions(filters);
     if (range.limited) notices.push("patch-range-requires-premium");
     let opponentSource = ctx.opponentChampionId ? ctx.opponentSource ?? "position" : null;
     if (!ctx.opponentChampionId && premium && ctx.role !== ROLE_FILL && ((_a = ctx.enemies) == null ? void 0 : _a.length)) {
-      const f = (id) => filtersOf({ championId: id, role: ROLE_FILL }, patch, tiers, { additions: 0, matchup: false });
+      const f = (id) => filtersOf({ championId: id, role: ROLE_FILL }, patch, tiers, { additions: 0, matchup: false, regions });
       const roles = await Promise.all(ctx.enemies.map((e) => client2.championRole(f(e.championId))));
       if (signal == null ? void 0 : signal.aborted) return aborted();
       const i = roles.findIndex((r) => r.ok && r.data === ctx.role);
@@ -2851,11 +3215,12 @@ function createRecommendationService({ client: client2, log: log2, keystoneTrees
     }
     const wantsMatchup = !!ctx.opponentChampionId;
     if (wantsMatchup && !premium) notices.push("matchup-requires-premium");
-    let plan = { additions: range.additions, matchup: wantsMatchup && premium };
+    let plan = { additions: range.additions, matchup: wantsMatchup && premium, regions };
     const key2 = [
       patch.label,
       plan.additions,
       tiers.join(),
+      (regions ?? []).join("+") || "all",
       ctx.championId,
       plan.matchup ? ctx.opponentChampionId : 0,
       ctx.role ?? ROLE_FILL,
@@ -2881,6 +3246,7 @@ function createRecommendationService({ client: client2, log: log2, keystoneTrees
       parchesManual: range.manual,
       rangos: tiers,
       rangosManual: tiersManual,
+      regiones: regions,
       keystoneOverride: ctx.keystoneOverride ?? null,
       spellOverride: ctx.spellOverride ?? null,
       avisos: notices,
@@ -2888,9 +3254,9 @@ function createRecommendationService({ client: client2, log: log2, keystoneTrees
     }));
     if (cached) return { ok: true, data: { ...cached, meta: { ...cached.meta, notices: [.../* @__PURE__ */ new Set([...cached.meta.notices, ...notices])] } } };
     let res = await compute(ctx, patch, tiers, plan, signal);
-    if (res.status === "forbidden" && (plan.additions > 0 || plan.matchup)) {
-      log2.warn("403 con filtros premium; se reintenta sin rango de parches ni matchup");
-      plan = { additions: 0, matchup: false };
+    if (res.status === "forbidden" && (plan.additions > 0 || plan.matchup || plan.regions)) {
+      log2.warn("403 con filtros premium; se reintenta sin rango de parches, matchup ni regiones");
+      plan = { additions: 0, matchup: false, regions: null };
       notices.push("filters-downgraded");
       res = await compute(ctx, patch, tiers, plan, signal);
     }
@@ -2915,6 +3281,8 @@ function createRecommendationService({ client: client2, log: log2, keystoneTrees
         patchFallback: patch.fallback,
         tiers,
         tierSource: tiersManual ? "manual" : "lobby",
+        regions: plan.regions,
+        regionSource: plan.regions ? "manual" : "all",
         matchup: plan.matchup,
         opponent: plan.matchup ? ctx.opponentChampionId : null,
         opponentSource: plan.matchup ? opponentSource : null,
@@ -2931,6 +3299,7 @@ function createRecommendationService({ client: client2, log: log2, keystoneTrees
       muestra: res.sample,
       parche: data.meta.patchSpan,
       rangos: tiers,
+      regiones: plan.regions,
       avisos: data.meta.notices
     }));
     cache.set(key2, data);
@@ -3788,7 +4157,8 @@ function createPickAdvisor({ itero, names, catalog: catalog2, lola = null, stats
       const m = await mastery2.load().catch(() => null);
       if ((m == null ? void 0 : m.status) === "ready") masteryInfo = { data: { ...m.points, avg: m.avg }, weight: prefs.masteryWeight };
     }
-    const req = buildRequest({ lane, rankClass, side: ctx.side ?? "Blue", allies: toNames(allyLanes), enemies: toNames(enemyLanes), bans, mastery: masteryInfo });
+    const region = iteroRegion(resolveRegions(getFilters()).regions);
+    const req = buildRequest({ lane, rankClass, side: ctx.side ?? "Blue", allies: toNames(allyLanes), enemies: toNames(enemyLanes), bans, mastery: masteryInfo, ...region && { region } });
     const [it, st] = await Promise.all([
       itero.draftPicks(req),
       stats2 ? stats2.load({ role: ctx.role, lobbyTier: ctx.lobbyTier, enemies, opponentChampionId: rival, opponentSource: "position" }).catch(() => null) : null
@@ -3805,10 +4175,10 @@ function createPickAdvisor({ itero, names, catalog: catalog2, lola = null, stats
       options: { ...prefs.minPick != null && { minPick: prefs.minPick } }
     });
     const withMastery = req.userModelWeightings[`t1_${lane}_mastery`] > 0;
-    log2 == null ? void 0 : log2.info("consejero", JSON.stringify({ linea: lane, rango: rankClass, lado: req.side, aliados: reveal.allyLanes, rivales: reveal.enemyLanes, bans: bans.length, pool: r.pool, contraste: r.contrasted, maestria: withMastery, top: r.picks.map((p) => p.name) }));
+    log2 == null ? void 0 : log2.info("consejero", JSON.stringify({ linea: lane, rango: rankClass, region: req.region, lado: req.side, aliados: reveal.allyLanes, rivales: reveal.enemyLanes, bans: bans.length, pool: r.pool, contraste: r.contrasted, maestria: withMastery, top: r.picks.map((p) => p.name) }));
     return {
       ok: true,
-      data: { picks: r.picks, rows: r.rows, meta: { lane, rankClass, side: req.side, sideKnown: !!ctx.side, blended: r.blended, contrasted: r.contrasted, mastery: withMastery, pool: r.pool, rival, unrecognized: it.data.unrecognized, ...lanes } }
+      data: { picks: r.picks, rows: r.rows, meta: { lane, rankClass, region: req.region, regionManual: !!region, side: req.side, sideKnown: !!ctx.side, blended: r.blended, contrasted: r.contrasted, mastery: withMastery, pool: r.pool, rival, unrecognized: it.data.unrecognized, ...lanes } }
     };
   }
   return { advise };
@@ -3837,7 +4207,7 @@ function createPickAdvisorController({ advisor: advisor2, source, prefs, getFilt
   }
   const ids = (l) => (l ?? []).map((m) => m.championId + ":" + (m.position ?? "")).join(",");
   const keyOf = (c) => {
-    var _a;
+    var _a, _b;
     return [
       c.role,
       c.lobbyTier ?? 0,
@@ -3847,6 +4217,7 @@ function createPickAdvisorController({ advisor: advisor2, source, prefs, getFilt
       ids(c.enemies),
       c.opponentChampionId ?? 0,
       JSON.stringify(((_a = getFilters()) == null ? void 0 : _a.tiers) ?? null),
+      JSON.stringify(((_b = getFilters()) == null ? void 0 : _b.regions) ?? null),
       prefs.get().minPick,
       prefs.get().useMastery ? prefs.get().masteryWeight : 0
     ].join("|");
@@ -4006,7 +4377,7 @@ function createMastery({ identity, itero, source, prefs, log: log2 = null }) {
 
 // src/application/pick-filters.js
 var TOP = 5;
-function createPickFilters({ catalog: catalog2, overlay: overlay2, advisor: advisor2, mastery: mastery2, prefs, top = TOP }) {
+function createPickFilters({ catalog: catalog2, overlay: overlay2, advisor: advisor2, mastery: mastery2, prefs, top = TOP, getContext = () => null }) {
   const listeners = /* @__PURE__ */ new Set();
   const offs = [];
   let advRef = null;
@@ -4068,19 +4439,20 @@ function createPickFilters({ catalog: catalog2, overlay: overlay2, advisor: advi
     set,
     toggleClass: (cls) => set(toggleClass(current3(), cls)),
     reset: () => set({ classes: [], mastery: "any", matchup: "any", meta: "any", phase: "any", damage: "any" }),
-    /** Lista de MATCHUP (LoLalytics): mejor win rate contra el rival, con muestra suficiente, que cumple los filtros. [] sin rival o sin datos. */
+    /** Lista de MATCHUP (LoLalytics): mejor win rate contra el rival, con muestra suficiente, disponible y que cumple los filtros. [] sin rival o sin datos.
+     *  Orden: win rate DEL MATCHUP (no el general); `edge` (ventaja sobre su media en la línea) viaja con cada pick para que la interfaz lo muestre. */
     matchupPicks() {
       const ov = overlayData();
       if (!(ov == null ? void 0 : ov.rival)) return [];
-      const f = current3(), avail = availability();
-      return Object.entries(ov.champions).filter(([, c]) => c.vs && !c.vs.low).map(([cid, c]) => ({ cid: Number(cid), wr: c.vs.wr, edge: c.vs.edge, n: c.vs.n, counter: c.counter })).sort((a, b) => b.wr - a.wr).filter((p) => matches2(p.cid, f, avail)).slice(0, top);
+      const f = current3(), avail = availability(), taken = unavailableIds(getContext());
+      return Object.entries(ov.champions).filter(([cid, c]) => c.vs && !c.vs.low && !taken.has(Number(cid))).map(([cid, c]) => ({ cid: Number(cid), wr: c.vs.wr, edge: c.vs.edge, n: c.vs.n, counter: c.counter })).sort((a, b) => b.wr - a.wr).filter((p) => matches2(p.cid, f, avail)).slice(0, top);
     },
-    /** Lista de DRAFT (iTero): los mejores del consejero (ya ordenados) que cumplen los filtros. [] si el consejero no tiene datos. */
+    /** Lista de DRAFT (iTero): los mejores del consejero (ya ordenados), disponibles y que cumplen los filtros. [] si el consejero no tiene datos. */
     draftPicks() {
       var _a;
       const rows = ((_a = advisor2.getState().data) == null ? void 0 : _a.rows) ?? [];
-      const f = current3(), avail = availability();
-      return rows.filter((r) => matches2(r.championId, f, avail)).slice(0, top);
+      const f = current3(), avail = availability(), taken = unavailableIds(getContext());
+      return rows.filter((r) => !taken.has(r.championId) && matches2(r.championId, f, avail)).slice(0, top);
     },
     subscribe(cb) {
       listeners.add(cb);
@@ -4227,12 +4599,12 @@ function ownedCounts(items) {
 }
 function remainingCost(id, owned, info) {
   const pool = new Map(owned);
-  const go = (item2, depth) => {
-    if ((pool.get(item2) ?? 0) > 0) {
-      pool.set(item2, pool.get(item2) - 1);
+  const go = (item, depth) => {
+    if ((pool.get(item) ?? 0) > 0) {
+      pool.set(item, pool.get(item) - 1);
       return 0;
     }
-    const it = info(item2);
+    const it = info(item);
     if (!it || !Number.isFinite(it.priceTotal) || depth > 6) return null;
     const parts = it.from ?? [];
     if (!parts.length) return it.priceTotal;
@@ -5029,7 +5401,7 @@ var advisor = createPickAdvisorController({
   log
 });
 var enemyRoles = createEnemyRoles({ source: controller, lola: lolaClient, getFilters: getFilterPrefs, log });
-var pickFilters = createPickFilters({ catalog, overlay, advisor, mastery, prefs: { get: getPickFilterPrefs, set: setPickFilterPrefs } });
+var pickFilters = createPickFilters({ catalog, overlay, advisor, mastery, prefs: { get: getPickFilterPrefs, set: setPickFilterPrefs }, getContext: () => controller.getState().context });
 var applier = createConfigurationApplier({ gateway: createLoadoutGateway(), prefs: { get: getApplyPrefs, set: setApplyPrefs }, log });
 var app = {
   catalog,
@@ -5360,19 +5732,591 @@ function confidenceLevel(sample) {
 }
 var isLowData = (stat) => !!stat && Number.isFinite(stat.occurrence) && stat.occurrence > 0 && stat.occurrence < LOW_ITEM_SAMPLE;
 
-// src/presentation/panel.js
-var STYLE_ID3 = "draftsage-panel-style";
+// src/presentation/components/common.js
+var pic = (info, cls, title) => info.icon ? h("img", { class: cls, src: info.icon, alt: info.name, title: title ?? info.name, draggable: "false" }) : h("div", { class: cls + " ecp-ph", title: title ?? info.name, role: "img", "aria-label": info.name }, String(info.name).slice(0, 2));
+var line = (...children) => h("div", { class: "ecp-line" }, children);
+var fmtWpa = (w) => (w >= 0 ? "+" : "") + w.toFixed(1);
+var fmtN = (n) => n >= 1e6 ? (n / 1e6).toFixed(1) + " M" : n >= 1e3 ? Math.round(n / 1e3) + " k" : String(n);
+var signed = (n) => (n >= 0 ? "+" : "") + n.toFixed(1);
+var known = (prefix, id) => {
+  const k = prefix + id;
+  const s = t(k);
+  return s === k ? t("err.other") : s;
+};
+function statTip(name, stat) {
+  if (stat && stat.wpa == null && Number.isFinite(stat.wr)) return t("stat.tipWr", name, stat.wr.toFixed(1), (stat.occurrence ?? 0).toLocaleString(getLang()));
+  if (!stat || stat.wpa == null) return name;
+  return t("stat.tip", name, fmtWpa(stat.wpa), stat.occurrence.toLocaleString(getLang())) + (stat.share != null ? t("stat.share", Math.round(stat.share * 100)) : "") + (isLowData(stat) ? " \u2014 " + t("lowdata") : "");
+}
+
+// src/presentation/components/build.js
+var STYLE_ID4 = "draftsage-build-style";
 var CSS3 = `
-.ecp{position:fixed;z-index:2147483000;width:292px;box-sizing:border-box;background:linear-gradient(#0a1428,#010a13 60px);color:#cdbe91;border:1px solid #785a28;box-shadow:0 0 18px #000;font:13px/1.4 sans-serif;user-select:none;animation:ecp-in .2s ease-out;-webkit-app-region:no-drag}
+.ecr{display:flex;flex-direction:column;gap:6px}
+.ecr-tree{display:flex;flex-direction:column;gap:5px}
+.ecr-th{display:flex;align-items:center;gap:6px;min-height:22px}
+.ecr-tn{font-size:var(--ds-fs-section);font-weight:bold;letter-spacing:.06em;text-transform:uppercase;color:var(--ds-gold)}
+.ecr-th .ecp-tree{width:20px;height:20px}
+.ecr-key{display:flex;align-items:center;gap:8px}
+.ecr-key .ecp-it{width:48px;flex:none}
+.ecr-kt{display:flex;flex-direction:column;min-width:0}
+.ecr-kn{font-size:var(--ds-fs-name);font-weight:bold;color:var(--ds-text-hi);line-height:1.2}
+.ecr-kd{font-size:11px;color:var(--ds-meta);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ecr-grid{display:flex;gap:4px}
+.ecr-grid .ecp-it{flex:1 1 0;width:auto;min-width:0}
+.ecr-n{display:block;max-width:100%;margin-top:2px;font-size:var(--ds-fs-meta);line-height:12px;color:var(--ds-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ecr-shards .ecp-ico{width:24px;height:24px}
+.ecr-spells .ecp-it{flex:0 0 76px}
+.ecr-cap{font-size:var(--ds-fs-meta);color:var(--ds-mute);line-height:1.3}
+.ecr-st{display:inline-flex;align-items:center;gap:4px;margin-left:auto;padding:1px 7px;border:1px solid var(--ds-border-soft);border-radius:9px;font-size:var(--ds-fs-meta);color:var(--ds-meta);background:var(--ds-surface);white-space:nowrap}
+.ecr-st.ecr-custom{border-color:var(--ds-gold-dim);color:var(--ds-gold)}
+.ecr-st.ecr-pinned{border-color:var(--ds-gold);color:var(--ds-gold-hi);background:var(--ds-gold-bg)}
+.ecr-st button{display:inline-flex;align-items:center;gap:3px;padding:0 0 0 4px;margin:0;background:none;border:0;border-left:1px solid var(--ds-gold-dim);color:inherit;font:inherit;cursor:pointer}
+.ecr-st button:hover{color:var(--ds-text-hi)}
+.ecr-scope{color:var(--ds-mute)}
+.ecr-sum{display:flex;flex-direction:column;gap:3px;font-size:11px;line-height:1.35;color:var(--ds-text)}
+.ecr-sum .ecp-line{gap:6px;align-items:flex-start}
+.ecr-sum .ecp-ico{width:22px;height:22px;flex:none}
+.ecr-sum b{color:var(--ds-text-hi)}
+.ecr-sum .ecr-k{color:var(--ds-gold)}
+`;
+function ensureStyle3() {
+  if (document.getElementById(STYLE_ID4)) return;
+  const s = document.createElement("style");
+  s.id = STYLE_ID4;
+  s.textContent = CSS3;
+  document.head.append(s);
+}
+var treeName = (id, cat) => {
+  var _a;
+  const info = cat.rune(id);
+  return info.name !== "#" + id ? info.name : ((_a = TREES[id]) == null ? void 0 : _a.name) ?? "";
+};
+function treeIcon(id, cat) {
+  const info = cat.rune(id);
+  const name = treeName(id, cat);
+  return info.icon ? h("img", { class: "ecp-tree", src: info.icon, alt: name, title: name, draggable: "false" }) : h("div", { class: "ecp-tree ecp-ph", title: name }, "");
+}
+var describe = (info, stat) => [statTip(info.name, stat), info.desc].filter(Boolean).join(" \u2014 ");
+function option(info, stat, { cls = "", key: key2 = null, name = true } = {}) {
+  const hasWpa = stat && stat.wpa != null;
+  const label = describe(info, stat);
+  return h(
+    "div",
+    { class: "ecp-it", role: "group", "aria-label": label },
+    pic(info, "ecp-ico " + cls + (isLowData(stat) ? " ecp-low" : ""), label),
+    key2 && h("span", { class: "ecp-keycap", "aria-hidden": "true" }, key2),
+    name && h("span", { class: "ecr-n" }, info.name),
+    hasWpa && h("div", { class: "ecp-w " + (stat.wpa >= 0 ? "ecp-pos" : "ecp-neg") }, fmtWpa(stat.wpa)),
+    !hasWpa && stat && Number.isFinite(stat.wr) && h("div", { class: "ecp-w ecp-wr" }, Math.round(stat.wr) + "%")
+  );
+}
+function originTag(d, state, cat, actions) {
+  var _a, _b, _c, _d;
+  const custom = !!(((_a = d.custom) == null ? void 0 : _a.keystone) || ((_b = d.custom) == null ? void 0 : _b.spells));
+  const kind = (state == null ? void 0 : state.pinned) ? "pinned" : custom ? "custom" : "auto";
+  const rival = ((_c = d.meta) == null ? void 0 : _c.matchup) && ((_d = d.meta) == null ? void 0 : _d.opponent) ? cat.champion(d.meta.opponent).name : null;
+  const reset = kind === "custom" && actions ? h("button", { type: "button", "data-act": "build-reset", title: t("build.resetTip"), onclick: () => {
+    var _a2;
+    actions.keystone(null);
+    if ((_a2 = d.custom) == null ? void 0 : _a2.spells) actions.spells(null);
+  } }, icon("refresh", 11), t("build.reset")) : null;
+  return h(
+    "span",
+    { class: "ecr-st" + (kind === "auto" ? "" : " ecr-" + kind), "data-origin": kind, title: t("build.origin." + kind + "Tip") },
+    t("build.origin." + kind),
+    h(
+      "span",
+      { class: "ecr-scope", "data-scope": rival ? "matchup" : "general", title: rival ? t("build.scope.matchupTip", rival) : t("build.scope.generalTip") },
+      "\xB7 " + (rival ? t("build.scope.matchup", rival) : t("build.scope.general"))
+    ),
+    reset
+  );
+}
+function keystoneAlts(d, cat, actions) {
+  var _a;
+  const list = ((_a = d.alternatives) == null ? void 0 : _a.keystones) ?? [];
+  if (list.length < 2) return null;
+  const total = list.reduce((s, k) => s + (k.occurrence ?? 0), 0);
+  return [
+    h(
+      "div",
+      { class: "ecp-line ecp-alts", "data-alts": "keystone", role: "group", "aria-label": t("alt.keystones"), title: t("alt.keystones") },
+      h("span", { class: "ecp-lead ecp-mute" }, icon("swap", 14)),
+      list.map((k) => {
+        const on = k.rune === d.keystone.rune;
+        const auto = k.rune === d.alternatives.autoKeystone;
+        const info = cat.rune(k.rune);
+        return h("button", {
+          type: "button",
+          class: "ecp-alt" + (on ? " ecp-on" : ""),
+          "data-rune": k.rune,
+          "data-auto": auto ? "" : null,
+          "aria-pressed": String(on),
+          "aria-label": statTip(info.name, k) + (auto ? t("alt.auto") : ""),
+          title: statTip(info.name, k) + (auto ? t("alt.auto") : ""),
+          onclick: () => {
+            if (!on) actions.keystone(auto ? null : k.rune);
+          }
+        }, pic(info, "ecp-ico ecp-xs" + (isLowData(k) ? " ecp-low" : "")), h("span", { class: "ecp-w" }, Math.round(k.share * 100) + "%"));
+      })
+    ),
+    h("div", { class: "ecr-cap", "data-legend": "keystones" }, t("build.altLegend", fmtN(total)))
+  ];
+}
+function spellAlts(d, cat, actions) {
+  var _a, _b, _c;
+  const opts = ((_a = d.alternatives) == null ? void 0 : _a.spells) ?? [];
+  if (!opts.length && !((_b = d.custom) == null ? void 0 : _b.spells)) return null;
+  return h(
+    "div",
+    { class: "ecp-line ecp-spalts", "data-alts": "spells", role: "group", "aria-label": t("alt.spells"), title: t("alt.spells") },
+    ((_c = d.custom) == null ? void 0 : _c.spells) && h("button", { type: "button", class: "ecp-alt", "data-act": "spells-reset", "aria-label": t("alt.reset"), title: t("alt.reset"), onclick: () => actions.spells(null) }, icon("refresh", 14)),
+    opts.map((s) => h("button", {
+      type: "button",
+      class: "ecp-alt",
+      "data-spell": s.spell,
+      "aria-label": statTip(cat.spell(s.spell).name, s),
+      title: statTip(cat.spell(s.spell).name, s),
+      onclick: () => actions.spells(s.pair)
+    }, pic(cat.spell(s.spell), "ecp-ico ecp-xs ecp-sq" + (isLowData(s) ? " ecp-low" : ""))))
+  );
+}
+var section = (key2, head, ...body) => h("div", { class: "ecr-tree", "data-section": key2 }, h("div", { class: "ecr-th" }, head), ...body);
+function runePage(d, cat, flashKey, actions, state = null) {
+  ensureStyle3();
+  const r = (id) => cat.rune(id);
+  const pair = buildSpellPair(d, flashKey);
+  const keys = pair.ok ? ["D", "F"] : [null, null];
+  const spells = pair.ok ? [pair.spell1Id, pair.spell2Id].map((id) => d.spells.find((s) => s.spell === id)) : d.spells;
+  const ks = r(d.keystone.rune);
+  const minors = d.primaryPicks.filter(Boolean);
+  return h(
+    "div",
+    { class: "ecr", "data-runes": "" },
+    section(
+      "primary",
+      [treeIcon(d.primaryTree, cat), h("span", { class: "ecr-tn" }, treeName(d.primaryTree, cat)), originTag(d, state, cat, actions)],
+      h(
+        "div",
+        { class: "ecr-key" },
+        option(ks, d.keystone, { cls: "ecp-big", name: false }),
+        h("div", { class: "ecr-kt" }, h("span", { class: "ecr-kn", "data-keystone-name": "" }, ks.name), ks.desc ? h("span", { class: "ecr-kd" }, ks.desc) : null)
+      ),
+      minors.length ? h("div", { class: "ecr-grid", "data-row": "primary" }, minors.map((p) => option(r(p.rune), p))) : null,
+      actions ? keystoneAlts(d, cat, actions) : null
+    ),
+    d.secondaryTree ? section(
+      "secondary",
+      [treeIcon(d.secondaryTree, cat), h("span", { class: "ecr-tn" }, treeName(d.secondaryTree, cat))],
+      h("div", { class: "ecr-grid", "data-row": "secondary" }, d.secondaryPicks.map((p) => option(r(p.rune), p)))
+    ) : null,
+    d.shards.length ? section(
+      "shards",
+      [h("span", { class: "ecp-lead ecp-mute" }, icon("spark", 14)), h("span", { class: "ecr-tn" }, t("build.shards"))],
+      h("div", { class: "ecr-grid ecr-shards", "data-row": "shards" }, d.shards.map((id) => option(r(id), null, { cls: "ecp-sm" })))
+    ) : null,
+    d.spells.length ? section(
+      "spells",
+      [h("span", { class: "ecp-lead ecp-mute" }, icon("bolt", 14)), h("span", { class: "ecr-tn" }, t("build.spells"))],
+      h(
+        "div",
+        { class: "ecp-line ecr-grid ecr-spells", "data-row": "spells" },
+        spells.map((s, i) => option(cat.spell(s.spell), s, { cls: "ecp-sq", key: keys[i] })),
+        h("div", { class: "ecp-grow" }),
+        actions ? spellAlts(d, cat, actions) : null
+      )
+    ) : null
+  );
+}
+function runeSummary(d, cat, flashKey) {
+  ensureStyle3();
+  const r = (id) => cat.rune(id);
+  const names = (ids) => ids.map((id) => r(id).name).join(" \xB7 ");
+  const pair = buildSpellPair(d, flashKey);
+  const spells = pair.ok ? [pair.spell1Id, pair.spell2Id] : d.spells.map((s) => s.spell);
+  const keys = pair.ok ? ["D", "F"] : ["", ""];
+  const ks = r(d.keystone.rune);
+  return h(
+    "div",
+    { class: "ecr ecr-sum", "data-runes": "summary" },
+    h(
+      "div",
+      { class: "ecp-line" },
+      pic(ks, "ecp-ico", describe(ks, d.keystone)),
+      h("span", null, h("b", null, ks.name), " \xB7 ", names(d.primaryPicks.filter(Boolean).map((p) => p.rune)))
+    ),
+    d.secondaryTree ? h(
+      "div",
+      { class: "ecp-line" },
+      treeIcon(d.secondaryTree, cat),
+      h("span", null, h("b", null, treeName(d.secondaryTree, cat)), ": ", names(d.secondaryPicks.map((p) => p.rune)))
+    ) : null,
+    h(
+      "div",
+      { class: "ecp-line" },
+      h("span", { class: "ecp-lead ecp-mute" }, icon("spark", 14)),
+      h("span", null, names(d.shards), spells.length ? " \u2014 " : "", ...spells.flatMap((id, i) => [i ? " \xB7 " : "", keys[i] ? h("span", { class: "ecr-k" }, keys[i] + " ") : "", cat.spell(id).name]))
+    )
+  );
+}
+
+// src/domain/draft-summary.js
+var PERSPECTIVES = Object.freeze(["auto", "lane", "team"]);
+var DEFAULT_PERSPECTIVE = "auto";
+var COMFORT_POINTS = 1e4;
+var EDGE_CLEAR = 1;
+var SAMPLE_STEPS = Object.freeze({ medium: 500, high: 2e3 });
+var isNum4 = (v) => typeof v === "number" && Number.isFinite(v);
+var normalizePerspective = (p) => PERSPECTIVES.includes(p) ? p : DEFAULT_PERSPECTIVE;
+function resolvePerspective(requested, { lane, team }) {
+  const p = normalizePerspective(requested);
+  if (p === "lane") return lane ? "lane" : team ? "team" : null;
+  if (p === "team") return team ? "team" : lane ? "lane" : null;
+  return lane ? "lane" : team ? "team" : null;
+}
+function sampleLevel(n) {
+  if (!isNum4(n) || n <= 0) return null;
+  return n >= SAMPLE_STEPS.high ? "high" : n >= SAMPLE_STEPS.medium ? "medium" : "low";
+}
+function laneReasons(m) {
+  if (!m) return [];
+  const out = [];
+  if (isNum4(m.edge)) {
+    const polarity = m.edge >= EDGE_CLEAR ? "positive" : m.edge <= -EDGE_CLEAR ? "negative" : "neutral";
+    out.push({ type: "lane-matchup", polarity, importance: "high", evidence: "statistical", wr: m.wr, edge: m.edge, n: m.n });
+    if (polarity === "neutral" && m.wr > 50) out.push({ type: "general-strength", polarity: "neutral", importance: "medium", evidence: "statistical", wr: m.wr, edge: m.edge });
+  } else {
+    out.push({ type: "lane-matchup", polarity: m.wr > 50 ? "positive" : m.wr < 50 ? "negative" : "neutral", importance: "high", evidence: "statistical", wr: m.wr, edge: null, n: m.n });
+  }
+  return out;
+}
+function teamReasons(p) {
+  if (!p) return [];
+  const out = [{ type: "team-fit", polarity: p.score >= 0 ? "positive" : "negative", importance: "high", evidence: "model", score: p.score }];
+  for (const c of p.chips ?? []) {
+    if (c.kind === "syn") out.push({ type: "ally-synergy", polarity: "positive", importance: "medium", evidence: "model", lane: c.lane, value: c.value });
+    else if (c.kind === "ctr") out.push({ type: "enemy-counter", polarity: "positive", importance: "medium", evidence: "model", lane: c.lane, value: c.value });
+    else if (c.kind === "weak") out.push({ type: "enemy-weakness", polarity: "negative", importance: "medium", evidence: "model", lane: c.lane, value: c.value });
+    else if (c.kind === "scale") out.push({ type: "scaling", polarity: "positive", importance: "low", evidence: "model", phase: c.phase, value: c.value });
+    else if (c.kind === "dmg") out.push({ type: "damage", polarity: "neutral", importance: "low", evidence: "model", value: c.value });
+  }
+  if (p.agree === "conflict") out.push({ type: "sources-disagree", polarity: "negative", importance: "medium", evidence: "heuristic" });
+  return out;
+}
+var RANK = { high: 0, medium: 1, low: 2 };
+var byImportance = (a, b) => RANK[a.importance] - RANK[b.importance];
+function candidate(cid, why, { laneOf, teamOf, masteryOf }) {
+  const m = laneOf(cid), p = teamOf(cid);
+  const pts = masteryOf(cid);
+  const all = [...laneReasons(m), ...teamReasons(p)];
+  if (m && p && p.agree === "agree") all.push({ type: "both-sources", polarity: "positive", importance: "medium", evidence: "heuristic" });
+  if (isNum4(pts) && pts >= COMFORT_POINTS) all.push({ type: "comfort", polarity: "positive", importance: "medium", evidence: "statistical", points: pts });
+  const reasons = all.filter((r) => r.polarity !== "negative").sort(byImportance);
+  const tradeoffs = all.filter((r) => r.polarity === "negative").sort(byImportance);
+  const confidence = m ? { level: sampleLevel(m.n) ?? "low", evidence: "statistical", n: isNum4(m.n) ? m.n : null } : { level: "model", evidence: "model", n: isNum4(p == null ? void 0 : p.games) ? p.games : null };
+  return { cid, why, reasons, tradeoffs, confidence, lane: m ?? null, team: p ?? null, mastery: isNum4(pts) ? pts : null };
+}
+function buildDraftSummary({ lanePicks = [], teamPicks = [], perspective = DEFAULT_PERSPECTIVE, masteryOf = () => null, maxAlternatives = 3 } = {}) {
+  const requested = normalizePerspective(perspective);
+  const available = { lane: lanePicks.length > 0, team: teamPicks.length > 0 };
+  const resolved = resolvePerspective(requested, available);
+  const out = { requested, perspective: resolved, available, primary: null, alternatives: [] };
+  if (!resolved) return out;
+  const laneMap = new Map(lanePicks.map((m) => [m.cid, m]));
+  const teamMap = new Map(teamPicks.map((p) => [p.championId, p]));
+  const ctx = { laneOf: (cid) => laneMap.get(cid) ?? null, teamOf: (cid) => teamMap.get(cid) ?? null, masteryOf: (cid) => {
+    const v = masteryOf(cid);
+    return isNum4(v) ? v : null;
+  } };
+  const own = resolved === "lane" ? lanePicks.map((m) => m.cid) : teamPicks.map((p) => p.championId);
+  const other = resolved === "lane" ? teamPicks.map((p) => p.championId) : lanePicks.map((m) => m.cid);
+  out.primary = candidate(own[0], "primary", ctx);
+  const used = /* @__PURE__ */ new Set([own[0]]);
+  const add = (cid, why) => {
+    if (cid == null || used.has(cid) || out.alternatives.length >= maxAlternatives) return;
+    used.add(cid);
+    out.alternatives.push(candidate(cid, why, ctx));
+  };
+  add(other.find((c) => !used.has(c)), resolved === "lane" ? "best-team" : "best-lane");
+  add(own.find((c) => !used.has(c)), resolved === "lane" ? "next-lane" : "next-team");
+  const comfort = [.../* @__PURE__ */ new Set([...own, ...other])].filter((c) => !used.has(c) && (ctx.masteryOf(c) ?? 0) >= COMFORT_POINTS).sort((a, b) => ctx.masteryOf(b) - ctx.masteryOf(a))[0];
+  add(comfort, "comfort");
+  return out;
+}
+
+// src/domain/team-context.js
+function teamSlots({ me = null, myRole = null, allies = [], enemies = [], enemyRoles: enemyRoles2 = null } = {}) {
+  var _a, _b;
+  const empty = (lane) => ({ lane, cid: null, status: "empty" });
+  const mine = Object.fromEntries(LANES.map((l) => [l, empty(l)]));
+  const theirs = Object.fromEntries(LANES.map((l) => [l, empty(l)]));
+  const unplacedAllies = [], unplacedEnemies = [];
+  const myLane = Number.isInteger(myRole) ? LANES[myRole] ?? null : null;
+  if (myLane) mine[myLane] = { lane: myLane, cid: me && me > 0 ? me : null, status: "self" };
+  for (const a of allies) {
+    if (!((a == null ? void 0 : a.championId) > 0)) continue;
+    const lane = laneOfPosition(a.position);
+    if (lane && mine[lane].status === "empty") mine[lane] = { lane, cid: a.championId, status: "confirmed" };
+    else unplacedAllies.push(a.championId);
+  }
+  const SOURCE = { position: "confirmed", manual: "manual", auto: "inferred" };
+  for (const e of enemies) {
+    if (!((e == null ? void 0 : e.championId) > 0)) continue;
+    const r = (_a = enemyRoles2 == null ? void 0 : enemyRoles2.byChampion) == null ? void 0 : _a[e.championId];
+    const lane = (r == null ? void 0 : r.lane) ?? laneOfPosition(e.position);
+    const status = r ? SOURCE[r.source] ?? "inferred" : "confirmed";
+    if (lane && ((_b = theirs[lane]) == null ? void 0 : _b.status) === "empty") theirs[lane] = { lane, cid: e.championId, status };
+    else unplacedEnemies.push(e.championId);
+  }
+  return { allies: LANES.map((l) => mine[l]), enemies: LANES.map((l) => theirs[l]), unplacedAllies, unplacedEnemies };
+}
+
+// src/presentation/components/draft.js
+var STYLE_ID5 = "draftsage-draft-style";
+var CSS4 = `
+.ecd{display:flex;flex-direction:column;gap:7px;padding-bottom:9px;border-bottom:1px solid var(--ds-border-soft)}
+.ecd-top{display:flex;align-items:center;gap:6px}
+.ecd-cap{font-size:var(--ds-fs-section);font-weight:bold;letter-spacing:.06em;text-transform:uppercase;color:var(--ds-gold)}
+.ecd-seg{display:flex;border:1px solid var(--ds-border);border-radius:10px;overflow:hidden}
+.ecd-seg button{flex:1}
+.ecd-seg button{padding:1px 8px;white-space:nowrap;background:var(--ds-surface-2);border:0;border-left:1px solid var(--ds-border);color:var(--ds-meta);font:inherit;font-size:var(--ds-fs-meta);cursor:pointer}
+.ecd-seg button:first-child{border-left:0}
+.ecd-seg button[aria-pressed=true]{background:var(--ds-gold-bg);color:var(--ds-gold-hi)}
+.ecd-seg button:disabled{opacity:.4;cursor:not-allowed}
+.ecd-main{display:flex;flex-direction:column;gap:5px;padding:7px;border:1px solid var(--ds-gold-dim);border-radius:6px;background:linear-gradient(var(--ds-gold-bg),var(--ds-bg))}
+.ecd-who{display:flex;align-items:center;gap:8px}
+.ecd-who .ecp-ico{width:42px;height:42px;border:2px solid var(--ds-gold)}
+.ecd-name{display:flex;flex-direction:column;min-width:0;flex:1}
+.ecd-name b{font-size:var(--ds-fs-name);color:var(--ds-text-hi);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ecd-sub{font-size:var(--ds-fs-meta);color:var(--ds-meta)}
+.ecd-rs{display:flex;flex-direction:column;gap:2px;margin:0;padding:0;list-style:none}
+.ecd-r{display:flex;align-items:baseline;gap:5px;font-size:12px;line-height:1.35;color:var(--ds-text)}
+.ecd-r i{font-style:normal;font-weight:bold;width:10px;flex:none;text-align:center}
+.ecd-r.ecd-pos i{color:var(--ds-teal)}.ecd-r.ecd-neg i{color:var(--ds-red)}.ecd-r.ecd-neu i{color:var(--ds-meta)}
+.ecd-r .ecd-rt{flex:1;min-width:0}
+.ecd-ev{flex:none;padding:0 5px;border:1px solid var(--ds-border-soft);border-radius:7px;font-size:var(--ds-fs-meta);line-height:13px;color:var(--ds-mute)}
+.ecd-ev[data-ev=model]{border-style:dashed}
+.ecd-ev[data-ev=heuristic]{border-style:dotted}
+.ecd-conf{display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border:1px solid var(--ds-border-soft);border-radius:8px;font-size:var(--ds-fs-meta);color:var(--ds-meta);white-space:nowrap}
+.ecd-conf[data-level=low]{border-color:var(--ds-amber);color:var(--ds-amber)}
+.ecd-conf[data-level=model]{border-style:dashed}
+.ecd-loc{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:3px 10px;background:var(--ds-surface-2);border:1px solid var(--ds-gold-dim);border-radius:4px;color:var(--ds-text);font:inherit;font-size:12px;cursor:pointer}
+.ecd-loc:hover{border-color:var(--ds-gold);color:var(--ds-text-hi)}
+.ecd-loc.ecd-miss{border-color:var(--ds-amber);color:var(--ds-amber)}
+.ecd-loc.ecd-sq{padding:3px 6px}
+.ecd-alts{display:flex;flex-direction:column;gap:4px}
+.ecd-alt{display:flex;align-items:center;gap:7px}
+.ecd-alt .ecp-ico{width:30px;height:30px}
+.ecd-alt .ecd-name b{font-size:12px}
+.ecd-why{font-size:var(--ds-fs-meta);color:var(--ds-gold);letter-spacing:.02em}
+.ect{display:flex;flex-direction:column;gap:3px}
+.ect-row{display:flex;align-items:center;gap:6px}
+.ect-lab{width:64px;flex:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:var(--ds-fs-meta);letter-spacing:.06em;text-transform:uppercase;color:var(--ds-mute)}
+.ect-row.ect-foe .ect-lab{color:var(--ds-rival)}
+.ect-slot{display:flex;flex-direction:column;align-items:center;width:30px}
+.ect-slot .ecp-ico,.ect-slot .ect-void{width:24px;height:24px;border-radius:50%;box-sizing:border-box}
+.ect-void{border:1px dashed var(--ds-border);background:var(--ds-bg)}
+.ect-slot b{font:bold 10px/12px sans-serif;color:var(--ds-mute-2)}
+.ect-slot[data-status=self] .ecp-ico{border:2px solid var(--ds-gold)}
+.ect-slot[data-status=manual] .ecp-ico{border:2px solid var(--ds-gold-dim)}
+.ect-slot[data-status=inferred] .ecp-ico{border:1px dashed var(--ds-meta);opacity:.85}
+.ect-slot[data-status=inferred] b::after{content:'?'}
+.ect-row.ect-foe .ect-slot[data-status=confirmed] .ecp-ico{border-color:var(--ds-rival)}
+.ect-more{font-size:var(--ds-fs-meta);color:var(--ds-meta)}
+`;
+function ensureStyle4() {
+  if (document.getElementById(STYLE_ID5)) return;
+  const s = document.createElement("style");
+  s.id = STYLE_ID5;
+  s.textContent = CSS4;
+  document.head.append(s);
+}
+var LANE_ROLE = { TOP: 0, JUNGLE: 1, MIDDLE: 2, BOTTOM: 3, UTILITY: 4 };
+var pct2 = (v) => (v >= 0 ? "+" : "") + v;
+function whoAt(lane, side, ctx) {
+  var _a, _b;
+  const cid = (_b = (_a = ctx.meta) == null ? void 0 : _a[side]) == null ? void 0 : _b[lane];
+  return cid ? ctx.cat.champion(cid).name : t("role." + LANE_ROLE[lane]);
+}
+function reasonText(r, ctx) {
+  switch (r.type) {
+    case "lane-matchup":
+      return r.edge == null ? t("ds.r.laneNoBase", r.wr.toFixed(1), ctx.rival) : t("ds.r.lane", r.wr.toFixed(1), ctx.rival, signed(r.edge));
+    case "general-strength":
+      return t("ds.r.general");
+    case "team-fit":
+      return t(r.polarity === "negative" ? "ds.r.teamBad" : "ds.r.team", signed(r.score));
+    case "ally-synergy":
+      return t("ds.r.syn", whoAt(r.lane, "allies", ctx), pct2(r.value));
+    case "enemy-counter":
+      return t("ds.r.ctr", whoAt(r.lane, "enemies", ctx), pct2(r.value));
+    case "enemy-weakness":
+      return t("ds.r.weak", whoAt(r.lane, "enemies", ctx), pct2(r.value));
+    case "scaling":
+      return t("ds.r.scale", t("adv.phase." + r.phase));
+    case "damage":
+      return t("adv.dmg." + r.value);
+    case "sources-disagree":
+      return t("ds.r.disagree");
+    case "both-sources":
+      return t("ds.r.agree");
+    case "comfort":
+      return t("ds.r.comfort", r.points.toLocaleString(getLang()));
+    default:
+      return r.type;
+  }
+}
+var SIGN = { positive: "+", negative: "\u2212", neutral: "\xB7" };
+var CLS = { positive: "ecd-pos", negative: "ecd-neg", neutral: "ecd-neu" };
+var reasonItem = (r, ctx) => h(
+  "li",
+  { class: "ecd-r " + CLS[r.polarity], "data-reason": r.type, "data-polarity": r.polarity },
+  h("i", { "aria-hidden": "true" }, SIGN[r.polarity]),
+  h("span", { class: "ecd-rt" }, reasonText(r, ctx)),
+  h("span", { class: "ecd-ev", "data-ev": r.evidence, title: t("ds.ev." + r.evidence + "Tip") }, t("ds.ev." + r.evidence))
+);
+function confTag(c) {
+  const n = c.n != null ? fmtN(c.n) : null;
+  return h(
+    "span",
+    { class: "ecd-conf", "data-level": c.level, title: t("ds.conf." + c.level + "Tip") + (c.n != null ? " \xB7 " + t("ds.games", c.n.toLocaleString(getLang())) : "") },
+    t("ds.conf." + c.level),
+    n && c.level !== "model" ? " \xB7 " + n : null
+  );
+}
+function locateButton(cid, name, actions, compact = false) {
+  if (!actions.locate) return null;
+  const btn = h("button", {
+    type: "button",
+    class: "ecd-loc" + (compact ? " ecd-sq" : ""),
+    "data-locate": cid,
+    "aria-label": t("ds.locateFor", name),
+    title: t("ds.locateTip"),
+    onclick: () => {
+      if (!actions.locate(cid)) {
+        btn.classList.add("ecd-miss");
+        btn.title = t("nat.notInGrid");
+      }
+    }
+  }, icon("target", 13), compact ? null : t("ds.locate"));
+  return btn;
+}
+function primaryCard(c, ctx, actions) {
+  const info = ctx.cat.champion(c.cid);
+  const sources = [c.lane && "LoLalytics", c.team && "iTero"].filter(Boolean).join(" + ");
+  return h(
+    "div",
+    { class: "ecd-main", "data-primary": c.cid },
+    h(
+      "div",
+      { class: "ecd-who" },
+      pic(info, "ecp-ico"),
+      h("div", { class: "ecd-name" }, h("b", null, info.name), h("span", { class: "ecd-sub", "data-sources": sources }, sources)),
+      confTag(c.confidence)
+    ),
+    h(
+      "ul",
+      { class: "ecd-rs", "aria-label": t("ds.whyFor", info.name) },
+      c.reasons.slice(0, 3).map((r) => reasonItem(r, ctx)),
+      c.tradeoffs.slice(0, 1).map((r) => reasonItem(r, ctx))
+    ),
+    h("div", { class: "ecp-line" }, locateButton(c.cid, info.name, actions))
+  );
+}
+function altRow(c, ctx, actions) {
+  const info = ctx.cat.champion(c.cid);
+  const lead = c.reasons[0] ?? c.tradeoffs[0] ?? null;
+  return h(
+    "div",
+    { class: "ecd-alt", "data-alt": c.cid, "data-why": c.why },
+    pic(info, "ecp-ico"),
+    h(
+      "div",
+      { class: "ecd-name" },
+      h("b", null, info.name, " ", h("span", { class: "ecd-why" }, "\u2014 " + t("ds.why." + c.why))),
+      lead ? h("span", { class: "ecd-sub", "data-reason": lead.type }, SIGN[lead.polarity] + " " + reasonText(lead, ctx)) : null
+    ),
+    locateButton(c.cid, info.name, actions, true)
+  );
+}
+function draftSummaryBlock(summary, ctx, actions) {
+  if (!(summary == null ? void 0 : summary.primary)) return null;
+  ensureStyle4();
+  const ctxT = { ...ctx, rival: ctx.rival ?? t("ds.yourRival") };
+  const seg = h(
+    "div",
+    { class: "ecd-seg", role: "group", "aria-label": t("ds.perspective") },
+    PERSPECTIVES.map((p) => {
+      const off = p !== "auto" && !summary.available[p];
+      return h("button", {
+        type: "button",
+        "data-perspective": p,
+        "aria-pressed": String(summary.requested === p),
+        disabled: off ? "disabled" : null,
+        title: off ? t("ds.p.offTip") : t("ds.p." + p + "Tip"),
+        onclick: () => actions.perspective(p)
+      }, t("ds.p." + p));
+    })
+  );
+  return h(
+    "div",
+    { class: "ecd", "data-draft-summary": summary.perspective },
+    h(
+      "div",
+      { class: "ecd-top" },
+      h("span", { class: "ecd-cap" }, t("ds.title")),
+      h("span", { class: "ecd-sub", "data-resolved": summary.perspective, title: t("ds.p." + summary.perspective + "Tip") }, "\xB7 " + t("ds.p." + summary.perspective))
+    ),
+    seg,
+    primaryCard(summary.primary, ctxT, actions),
+    summary.alternatives.length ? h("div", { class: "ecd-alts", "data-alts": "draft" }, h("span", { class: "ecd-cap" }, t("ds.alts")), summary.alternatives.map((c) => altRow(c, ctxT, actions))) : null
+  );
+}
+var ROLE_OF_LANE = { TOP: 0, JUNGLE: 1, MIDDLE: 2, BOTTOM: 3, UTILITY: 4 };
+function teamContextBlock({ cat, context, roles }) {
+  if (!context) return null;
+  const s = teamSlots({ me: context.championId, myRole: context.role, allies: context.allies ?? [], enemies: context.enemies ?? [], enemyRoles: roles });
+  if (![...s.allies, ...s.enemies].some((x) => x.cid && x.status !== "self") && !s.unplacedEnemies.length && !s.unplacedAllies.length) return null;
+  ensureStyle4();
+  const slot = (x) => {
+    const lane = t("role." + ROLE_OF_LANE[x.lane]);
+    const label = x.cid ? t("tc.slot", lane, cat.champion(x.cid).name, t("tc.st." + x.status)) : t("tc.empty", lane);
+    return h(
+      "div",
+      { class: "ect-slot", "data-lane": x.lane, "data-status": x.status, "data-cid": x.cid ?? "", role: "img", "aria-label": label, title: label },
+      x.cid ? pic(cat.champion(x.cid), "ecp-ico", label) : h("div", { class: "ect-void" }),
+      h("b", null, t("role.s." + ROLE_OF_LANE[x.lane]))
+    );
+  };
+  const row = (cls, lab, list, extra) => h(
+    "div",
+    { class: "ect-row " + cls },
+    h("span", { class: "ect-lab" }, lab),
+    list.map(slot),
+    extra.length ? h("span", { class: "ect-more", "data-unplaced": extra.length, title: extra.map((c) => cat.champion(c).name).join(", ") }, t("tc.unplaced", extra.length)) : null
+  );
+  return h(
+    "div",
+    { class: "ect", "data-team-context": "", title: t("tc.legend") },
+    row("ect-ally", t("tc.allies"), s.allies, s.unplacedAllies),
+    row("ect-foe", t("tc.enemies"), s.enemies, s.unplacedEnemies)
+  );
+}
+
+// src/presentation/panel.js
+var STYLE_ID6 = "draftsage-panel-style";
+var CSS5 = `
+.ecp{position:fixed;z-index:2147483000;width:292px;box-sizing:border-box;background:linear-gradient(var(--ds-surface),var(--ds-bg) 60px);color:var(--ds-text);border:1px solid var(--ds-gold-dim);box-shadow:0 0 18px #000;font:13px/1.4 sans-serif;user-select:none;animation:ecp-in .2s ease-out;-webkit-app-region:no-drag}
 .ecp *{-webkit-app-region:no-drag}
-.ecp-head{display:flex;align-items:center;gap:4px;padding:6px 8px;cursor:move;border-bottom:1px solid #3c3c41}
+.ecp-head{display:flex;align-items:center;gap:4px;padding:6px 8px;cursor:move;border-bottom:1px solid var(--ds-border)}
 .ecp-title{flex:1;display:flex;align-items:center;gap:7px;min-width:0}
-.ecp-por{width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid #c8aa6e;background:#1e2328;flex:none;box-sizing:border-box}
-.ecp-por.ecp-foe{border-color:#a8404f;width:26px;height:26px}
-.ecp-vs{color:#a8404f;display:flex}
-.ecp-role{margin-left:2px;padding:1px 7px;border:1px solid #3c3c41;border-radius:9px;font-size:10px;letter-spacing:.08em;color:#a09b8c;background:#010a13}
-.ecp-x{display:flex;align-items:center;justify-content:center;width:22px;height:22px;background:none;border:0;color:#7b7a76;cursor:pointer;padding:0}
-.ecp-x:hover:not(:disabled){color:#f0e6d2}
+.ecp-por{width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid var(--ds-gold);background:var(--ds-surface-2);flex:none;box-sizing:border-box}
+.ecp-por.ecp-foe{border-color:var(--ds-rival);width:26px;height:26px}
+.ecp-vs{color:var(--ds-rival);display:flex}
+.ecp-role{margin-left:2px;padding:1px 7px;border:1px solid var(--ds-border);border-radius:9px;font-size:10px;letter-spacing:.08em;color:var(--ds-meta);background:var(--ds-bg)}
+.ecp-x{display:flex;align-items:center;justify-content:center;width:22px;height:22px;background:none;border:0;color:var(--ds-mute);cursor:pointer;padding:0}
+.ecp-x:hover:not(:disabled){color:var(--ds-text-hi)}
 .ecp-x:disabled{opacity:.3;cursor:default}
 .ecp-up{transform:rotate(180deg)}
 .ecp-body{padding:10px 10px 8px;display:flex;flex-direction:column;gap:9px;max-height:calc(100vh - 150px);overflow-y:auto;scrollbar-width:thin}
@@ -5381,9 +6325,9 @@ var CSS3 = `
 .ecp-grow{flex:1}
 .ecp-tree{width:22px;height:22px;flex:none;border-radius:50%;opacity:.85;object-fit:cover}
 .ecp-it{position:relative;display:flex;flex-direction:column;align-items:center;width:40px;text-align:center}
-.ecp-ico{width:34px;height:34px;border-radius:50%;background:#1e2328;border:1px solid #3c3c41;object-fit:cover;box-sizing:border-box;transition:transform .12s}
-.ecp-it:hover .ecp-ico{transform:scale(1.12);border-color:#c8aa6e}
-.ecp-ico.ecp-big{width:44px;height:44px;border:2px solid #c8aa6e;box-shadow:0 0 12px rgba(200,170,110,.45)}
+.ecp-ico{width:34px;height:34px;border-radius:50%;background:var(--ds-surface-2);border:1px solid var(--ds-border);object-fit:cover;box-sizing:border-box;transition:transform .12s}
+.ecp-it:hover .ecp-ico{transform:scale(1.12);border-color:var(--ds-gold)}
+.ecp-ico.ecp-big{width:44px;height:44px;border:2px solid var(--ds-gold);box-shadow:0 0 12px rgba(200,170,110,.45)}
 .ecp-ico.ecp-sq{border-radius:4px}
 .ecp-ico.ecp-sm{width:24px;height:24px}
 .ecp-ico.ecp-xs{width:24px;height:24px}
@@ -5393,115 +6337,115 @@ var CSS3 = `
 .ecp-irow{align-items:flex-start}
 .ecp-cell{display:flex;flex-direction:column;align-items:center;min-width:32px}
 .ecp-ico.ecp-itm{width:32px;height:32px;border-radius:4px}
-.ecp-cell:hover .ecp-ico.ecp-itm{transform:scale(1.12);border-color:#c8aa6e}
-.ecp-ico.ecp-itm.ecp-core{border:2px solid #c8aa6e;box-shadow:0 0 8px rgba(200,170,110,.35)}
+.ecp-cell:hover .ecp-ico.ecp-itm{transform:scale(1.12);border-color:var(--ds-gold)}
+.ecp-ico.ecp-itm.ecp-core{border:2px solid var(--ds-gold);box-shadow:0 0 8px rgba(200,170,110,.35)}
 .ecp-game .ecp-ico.ecp-itm{width:40px;height:40px}
 .ecp-game .ecp-cell{min-width:40px}
 @keyframes ecp-glow{0%,100%{box-shadow:0 0 4px rgba(10,200,185,.4)}50%{box-shadow:0 0 12px rgba(10,200,185,.9)}}
 .ecp-cell{position:relative}
-.ecp-cell.ecp-own .ecp-ico.ecp-itm{border-color:#0ac8b9;box-shadow:0 0 6px rgba(10,200,185,.45)}
-.ecp-badge{position:absolute;top:-4px;right:-3px;width:14px;height:14px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#06201f;border:1px solid #0ac8b9;color:#0ac8b9}
-.ecp-prog{width:100%;height:3px;margin-top:2px;background:#1e2328;border-radius:2px;overflow:hidden}
-.ecp-prog i{display:block;height:100%;background:#e0a93a}
-.ecp-cell.ecp-afford .ecp-prog i{background:#0ac8b9}
-.ecp-cell.ecp-afford .ecp-ico.ecp-itm{border-color:#0ac8b9;animation:ecp-glow 1.4s ease-in-out infinite}
-.ecp-miss{font-size:10px;line-height:12px;color:#e0a93a}
-.ecp-ready{display:flex;color:#0ac8b9}
-.ecp-coin{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:bold;color:#e0a93a}
-.ecp-arrow{display:flex;align-items:center;height:32px;color:#5b5a56}
+.ecp-cell.ecp-own .ecp-ico.ecp-itm{border-color:var(--ds-teal);box-shadow:0 0 6px rgba(10,200,185,.45)}
+.ecp-badge{position:absolute;top:-4px;right:-3px;width:14px;height:14px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--ds-teal-bg);border:1px solid var(--ds-teal);color:var(--ds-teal)}
+.ecp-prog{width:100%;height:3px;margin-top:2px;background:var(--ds-surface-2);border-radius:2px;overflow:hidden}
+.ecp-prog i{display:block;height:100%;background:var(--ds-amber)}
+.ecp-cell.ecp-afford .ecp-prog i{background:var(--ds-teal)}
+.ecp-cell.ecp-afford .ecp-ico.ecp-itm{border-color:var(--ds-teal);animation:ecp-glow 1.4s ease-in-out infinite}
+.ecp-miss{font-size:10px;line-height:12px;color:var(--ds-amber)}
+.ecp-ready{display:flex;color:var(--ds-teal)}
+.ecp-coin{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:bold;color:var(--ds-amber)}
+.ecp-arrow{display:flex;align-items:center;height:32px;color:var(--ds-mute-2)}
 .ecp-game .ecp-arrow{height:40px}
 .ecp-items{display:flex;flex-direction:column;gap:7px}
 .ecp-ihead{gap:6px}
 .ecp-tier{display:flex;align-items:center;justify-content:center;width:22px;height:22px;box-sizing:border-box;border-radius:50%;border:2px solid;font:bold 11px/1 sans-serif;flex:none}
-.ecp-tier-S{color:#f0c870;border-color:#f0c870;background:#2a2314}
-.ecp-tier-A{color:#0ac8b9;border-color:#0ac8b9;background:#06201f}
-.ecp-tier-B{color:#a09b8c;border-color:#5b5a56;background:#1e2328}
-.ecp-wr{font-size:12px;font-weight:bold;color:#f0e6d2}
-.ecp-ph{display:flex;align-items:center;justify-content:center;font-size:10px;color:#a09b8c}
-.ecp-w{font-size:10px;line-height:12px;color:#a09b8c;margin-top:1px}
-.ecp-w.ecp-pos{color:#0ac8b9}.ecp-w.ecp-neg{color:#e84057}
-.ecp-keycap{position:absolute;right:0;top:-3px;min-width:14px;padding:0 3px;box-sizing:border-box;text-align:center;font:bold 10px/14px sans-serif;color:#f0e6d2;background:#3b3119;border:1px solid #c8aa6e;border-bottom-width:2px;border-radius:3px}
+.ecp-tier-S{color:var(--ds-gold-hi);border-color:var(--ds-gold-hi);background:var(--ds-gold-bg)}
+.ecp-tier-A{color:var(--ds-teal);border-color:var(--ds-teal);background:var(--ds-teal-bg)}
+.ecp-tier-B{color:var(--ds-meta);border-color:var(--ds-mute-2);background:var(--ds-surface-2)}
+.ecp-wr{font-size:12px;font-weight:bold;color:var(--ds-text-hi)}
+.ecp-ph{display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--ds-meta)}
+.ecp-w{font-size:10px;line-height:12px;color:var(--ds-meta);margin-top:1px}
+.ecp-w.ecp-pos{color:var(--ds-teal)}.ecp-w.ecp-neg{color:var(--ds-red)}
+.ecp-keycap{position:absolute;right:0;top:-3px;min-width:14px;padding:0 3px;box-sizing:border-box;text-align:center;font:bold 10px/14px sans-serif;color:var(--ds-text-hi);background:#3b3119;border:1px solid var(--ds-gold);border-bottom-width:2px;border-radius:3px}
 .ecp-chip{padding:0;margin:0;background:none;border:2px solid transparent;border-radius:50%;cursor:pointer;line-height:0;transition:.12s}
-.ecp-chip:hover{border-color:#785a28}
-.ecp-chip.ecp-on{border-color:#c8aa6e;box-shadow:0 0 8px rgba(200,170,110,.5)}
+.ecp-chip:hover{border-color:var(--ds-gold-dim)}
+.ecp-chip.ecp-on{border-color:var(--ds-gold);box-shadow:0 0 8px rgba(200,170,110,.5)}
 .ecp-chip .ecp-ico{width:28px;height:28px}
-.ecp-lead{color:#a8404f;display:flex}
-.ecp-lead.ecp-mute{color:#5b5a56}
+.ecp-lead{color:var(--ds-rival);display:flex}
+.ecp-lead.ecp-mute{color:var(--ds-mute-2)}
 .ecp-alts{gap:4px;margin:-2px 0}
-.ecp-alt{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:36px;padding:3px 0 1px;background:none;border:1px solid transparent;border-radius:6px;cursor:pointer;line-height:0;color:#7b7a76;transition:.12s}
-.ecp-alt:hover{border-color:#785a28;color:#cdbe91}
-.ecp-alt.ecp-on{border-color:#c8aa6e;background:rgba(200,170,110,.08);cursor:default}
-.ecp-alt[data-auto]::after{content:'';position:absolute;top:1px;right:4px;width:5px;height:5px;border-radius:50%;background:#c8aa6e}
+.ecp-alt{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:36px;padding:3px 0 1px;background:none;border:1px solid transparent;border-radius:6px;cursor:pointer;line-height:0;color:var(--ds-mute);transition:.12s}
+.ecp-alt:hover{border-color:var(--ds-gold-dim);color:var(--ds-text)}
+.ecp-alt.ecp-on{border-color:var(--ds-gold);background:rgba(200,170,110,.08);cursor:default}
+.ecp-alt[data-auto]::after{content:'';position:absolute;top:1px;right:4px;width:5px;height:5px;border-radius:50%;background:var(--ds-gold)}
 .ecp-alt .ecp-w{line-height:11px;margin-top:2px}
 .ecp-spalts{gap:2px}
 .ecp-spalts .ecp-alt{min-width:30px;padding:3px 0}
-.ecp-wr{color:#a09b8c}
+.ecp-wr{color:var(--ds-meta)}
 .ecp-tags{display:flex;flex-wrap:wrap;gap:5px}
-.ecp-tag{display:flex;align-items:center;gap:4px;padding:1px 7px;border:1px solid #2a2a30;border-radius:9px;font-size:10px;color:#7b7a76;background:#0a1428}
-.ecp-tag.ecp-gold{border-color:#785a28;color:#c8aa6e}
-.ecp-tag.ecp-warn{border-color:#8a6a1f;color:#e0a93a;cursor:help}
+.ecp-tag{display:flex;align-items:center;gap:4px;padding:1px 7px;border:1px solid var(--ds-border-soft);border-radius:9px;font-size:10px;color:var(--ds-mute);background:var(--ds-surface)}
+.ecp-tag.ecp-gold{border-color:var(--ds-gold-dim);color:var(--ds-gold)}
+.ecp-tag.ecp-warn{border-color:#8a6a1f;color:var(--ds-amber);cursor:help}
 .ecp-bars{display:inline-flex;align-items:flex-end;gap:1px;height:10px}
-.ecp-bars i{width:3px;background:#3c3c41;border-radius:1px}
+.ecp-bars i{width:3px;background:var(--ds-border);border-radius:1px}
 .ecp-bars i:nth-child(1){height:4px}.ecp-bars i:nth-child(2){height:7px}.ecp-bars i:nth-child(3){height:10px}
-.ecp-lv1 .ecp-bars i.on{background:#e84057}.ecp-lv2 .ecp-bars i.on{background:#e0a93a}.ecp-lv3 .ecp-bars i.on{background:#0ac8b9}
+.ecp-lv1 .ecp-bars i.on{background:var(--ds-red)}.ecp-lv2 .ecp-bars i.on{background:var(--ds-amber)}.ecp-lv3 .ecp-bars i.on{background:var(--ds-teal)}
 .ecp-lv1{border-color:#6b2a35}.ecp-lv2{border-color:#6b5420}
-.ecp-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#1e2328;color:#cdbe91;border:1px solid #785a28;padding:5px 12px;cursor:pointer;font:inherit;transition:.12s}
-.ecp-btn:hover:not(:disabled){border-color:#c8aa6e;color:#f0e6d2}
+.ecp-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:var(--ds-surface-2);color:var(--ds-text);border:1px solid var(--ds-gold-dim);padding:5px 12px;cursor:pointer;font:inherit;transition:.12s}
+.ecp-btn:hover:not(:disabled){border-color:var(--ds-gold);color:var(--ds-text-hi)}
 .ecp-btn:disabled{opacity:.4;cursor:default}
 .ecp-apply{display:flex;gap:6px}
 .ecp-apply .ecp-btn{height:32px}
-.ecp-apply .ecp-main{flex:1;border-color:#c8aa6e;color:#f0e6d2;background:linear-gradient(#2a2314,#17130a);font-weight:bold;letter-spacing:.08em;text-transform:uppercase;font-size:12px}
+.ecp-apply .ecp-main{flex:1;border-color:var(--ds-gold);color:var(--ds-text-hi);background:linear-gradient(var(--ds-gold-bg),#17130a);font-weight:bold;letter-spacing:.08em;text-transform:uppercase;font-size:12px}
 .ecp-apply .ecp-sec{width:36px;padding:0}
-.ecp-btn.ecp-done{border-color:#0ac8b9;color:#0ac8b9;background:#06201f}
+.ecp-btn.ecp-done{border-color:var(--ds-teal);color:var(--ds-teal);background:var(--ds-teal-bg)}
 .ecp-btn.ecp-done .ec-ico{animation:ecp-pop .3s ease-out}
-.ecp-btn.ecp-pinned{border-color:#c8aa6e;color:#f0c870;background:#2a2314}
+.ecp-btn.ecp-pinned{border-color:var(--ds-gold);color:var(--ds-gold-hi);background:var(--ds-gold-bg)}
 .ecp-btn.ecp-pinned .ec-ico{fill:currentColor;animation:ecp-pop .3s ease-out}
-.ecp-spin{width:14px;height:14px;border:2px solid #785a28;border-top-color:#f0e6d2;border-radius:50%;animation:ecp-rot .7s linear infinite;display:inline-block}
-.ecp-msg{display:flex;align-items:center;gap:6px;font-size:11px;color:#e84057;line-height:1.3}
-.ecp-center{display:flex;flex-direction:column;align-items:center;gap:8px;padding:6px 0;color:#a09b8c;text-align:center;font-size:12px}
-.ecp-pulse{color:#c8aa6e;animation:ecp-pulse 1.4s ease-in-out infinite}
-.ecp-sk{width:34px;height:34px;border-radius:50%;background:linear-gradient(90deg,#1e2328,#2b3036,#1e2328);background-size:200% 100%;animation:ecp-shimmer 1.2s linear infinite}
+.ecp-spin{width:14px;height:14px;border:2px solid var(--ds-gold-dim);border-top-color:var(--ds-text-hi);border-radius:50%;animation:ecp-rot .7s linear infinite;display:inline-block}
+.ecp-msg{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ds-red);line-height:1.3}
+.ecp-center{display:flex;flex-direction:column;align-items:center;gap:8px;padding:6px 0;color:var(--ds-meta);text-align:center;font-size:12px}
+.ecp-pulse{color:var(--ds-gold);animation:ecp-pulse 1.4s ease-in-out infinite}
+.ecp-sk{width:34px;height:34px;border-radius:50%;background:linear-gradient(90deg,var(--ds-surface-2),#2b3036,var(--ds-surface-2));background-size:200% 100%;animation:ecp-shimmer 1.2s linear infinite}
 .ecp-sk.ecp-still{animation:none;opacity:.5}
-.ecp-fab{position:fixed;z-index:2147483000;left:10px;bottom:10px;width:30px;height:30px;border-radius:50%;border:1px solid #785a28;background:#010a13;color:#c8aa6e;font:bold 11px sans-serif;cursor:pointer;opacity:.55;transition:.15s;-webkit-app-region:no-drag}
+.ecp-fab{position:fixed;z-index:2147483000;left:10px;bottom:10px;width:30px;height:30px;border-radius:50%;border:1px solid var(--ds-gold-dim);background:var(--ds-bg);color:var(--ds-gold);font:bold 11px sans-serif;cursor:pointer;opacity:.55;transition:.15s;-webkit-app-region:no-drag}
 .ecp-fab:hover{opacity:1;box-shadow:0 0 10px rgba(200,170,110,.5)}
-.ecp-adv{display:flex;flex-direction:column;gap:6px;padding-bottom:9px;border-bottom:1px solid #2a2a30}
+.ecp-adv{display:flex;flex-direction:column;gap:6px;padding-bottom:9px;border-bottom:1px solid var(--ds-border-soft)}
 .ecp-dim{opacity:.4;pointer-events:none;transition:opacity .15s}
 .ecp-pk{position:relative;display:flex;flex-direction:column;align-items:center;width:40px;padding:0;background:none;border:0;cursor:pointer;color:inherit;font:inherit}
 .ecp-pk .ecp-ico{width:36px;height:36px}
-.ecp-pk:hover .ecp-ico{transform:scale(1.08);border-color:#c8aa6e}
-.ecp-pk.ecp-on .ecp-ico{border:2px solid #c8aa6e;box-shadow:0 0 8px rgba(200,170,110,.45)}
-.ecp-badge.ecp-bad{background:#2a2108;border-color:#e0a93a;color:#e0a93a}
+.ecp-pk:hover .ecp-ico{transform:scale(1.08);border-color:var(--ds-gold)}
+.ecp-pk.ecp-on .ecp-ico{border:2px solid var(--ds-gold);box-shadow:0 0 8px rgba(200,170,110,.45)}
+.ecp-badge.ecp-bad{background:#2a2108;border-color:var(--ds-amber);color:var(--ds-amber)}
 .ecp-reasons{display:flex;flex-wrap:wrap;gap:4px;min-height:22px}
-.ecp-ch{display:inline-flex;align-items:center;gap:3px;padding:1px 6px 1px 4px;border:1px solid #2a2a30;border-radius:9px;font-size:11px;color:#a09b8c;background:#0a1428;cursor:help}
+.ecp-ch{display:inline-flex;align-items:center;gap:3px;padding:1px 6px 1px 4px;border:1px solid var(--ds-border-soft);border-radius:9px;font-size:11px;color:var(--ds-meta);background:var(--ds-surface);cursor:help}
 .ecp-ch img{width:16px;height:16px;border-radius:50%;object-fit:cover}
-.ecp-ch.ecp-pos{color:#0ac8b9;border-color:#0b4a46}
-.ecp-ch.ecp-neg{color:#e84057;border-color:#6b2a35}
+.ecp-ch.ecp-pos{color:var(--ds-teal);border-color:#0b4a46}
+.ecp-ch.ecp-neg{color:var(--ds-red);border-color:#6b2a35}
 .ecp-foes{display:flex;flex-direction:column;gap:5px}
 .ecp-foe{display:flex;flex-direction:column;align-items:center;gap:2px}
-.ecp-rb{min-width:22px;height:15px;padding:0 3px;box-sizing:border-box;background:#0a1428;border:1px solid #3c3c41;border-radius:8px;color:#5b5a56;font:bold 9px/13px sans-serif;cursor:pointer;transition:.12s}
-.ecp-rb:hover{border-color:#785a28;color:#cdbe91}
-.ecp-rb.ecp-src-manual{border-color:#c8aa6e;color:#f0c870;background:#2a2314}
-.ecp-rb.ecp-src-position{border-color:#5b5a56;color:#cdbe91}
-.ecp-rb.ecp-src-auto{border-style:dashed;color:#a09b8c}
-.ecp-rolepick{gap:4px;padding:3px 4px;background:#0a1428;border:1px solid #2a2a30;border-radius:6px}
-.ecp-rp{min-width:26px;height:20px;padding:0 4px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;background:#1e2328;border:1px solid #3c3c41;border-radius:4px;color:#a09b8c;font:bold 10px/1 sans-serif;cursor:pointer}
-.ecp-rp:hover{border-color:#c8aa6e;color:#f0e6d2}
-.ecp-rp.ecp-on{border-color:#c8aa6e;color:#f0c870;background:#2a2314}
+.ecp-rb{min-width:22px;height:15px;padding:0 3px;box-sizing:border-box;background:var(--ds-surface);border:1px solid var(--ds-border);border-radius:8px;color:var(--ds-mute-2);font:bold 10px/13px sans-serif;cursor:pointer;transition:.12s}
+.ecp-rb:hover{border-color:var(--ds-gold-dim);color:var(--ds-text)}
+.ecp-rb.ecp-src-manual{border-color:var(--ds-gold);color:var(--ds-gold-hi);background:var(--ds-gold-bg)}
+.ecp-rb.ecp-src-position{border-color:var(--ds-mute-2);color:var(--ds-text)}
+.ecp-rb.ecp-src-auto{border-style:dashed;color:var(--ds-meta)}
+.ecp-rolepick{gap:4px;padding:3px 4px;background:var(--ds-surface);border:1px solid var(--ds-border-soft);border-radius:6px}
+.ecp-rp{min-width:26px;height:20px;padding:0 4px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;background:var(--ds-surface-2);border:1px solid var(--ds-border);border-radius:4px;color:var(--ds-meta);font:bold 10px/1 sans-serif;cursor:pointer}
+.ecp-rp:hover{border-color:var(--ds-gold);color:var(--ds-text-hi)}
+.ecp-rp.ecp-on{border-color:var(--ds-gold);color:var(--ds-gold-hi);background:var(--ds-gold-bg)}
 .ecp-flt{display:flex;flex-direction:column;gap:5px}
-.ecp-fbtn{position:relative;display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:#1e2328;border:1px solid #3c3c41;border-radius:10px;color:#a09b8c;font:inherit;font-size:11px;cursor:pointer;transition:.12s}
-.ecp-fbtn:hover{border-color:#785a28;color:#cdbe91}
-.ecp-fbtn[aria-pressed=true]{border-color:#c8aa6e;color:#f0c870;background:#2a2314}
+.ecp-fbtn{position:relative;display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:var(--ds-surface-2);border:1px solid var(--ds-border);border-radius:10px;color:var(--ds-meta);font:inherit;font-size:11px;cursor:pointer;transition:.12s}
+.ecp-fbtn:hover{border-color:var(--ds-gold-dim);color:var(--ds-text)}
+.ecp-fbtn[aria-pressed=true]{border-color:var(--ds-gold);color:var(--ds-gold-hi);background:var(--ds-gold-bg)}
 .ecp-fbtn[aria-disabled=true]{opacity:.4;cursor:not-allowed}
 .ecp-fbtn[data-inactive]{border-style:dashed}
 .ecp-fgroup{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
-.ecp-fcap{width:54px;flex:none;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#7b7a76}
-.ecp-fcount{display:inline-flex;align-items:center;justify-content:center;min-width:14px;height:14px;padding:0 3px;box-sizing:border-box;border-radius:7px;background:#c8aa6e;color:#1a1408;font:bold 10px/14px sans-serif}
+.ecp-fcap{width:54px;flex:none;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ds-mute)}
+.ecp-fcount{display:inline-flex;align-items:center;justify-content:center;min-width:14px;height:14px;padding:0 3px;box-sizing:border-box;border-radius:7px;background:var(--ds-gold);color:#1a1408;font:bold 10px/14px sans-serif}
 .ecp-sec-t{display:flex;align-items:center;gap:6px}
 .ecp-sec-t .ecp-tag{margin-left:0}
-.ecp.ecp-docked{z-index:2147483200;width:340px;animation:ecp-dock .16s ease-out;box-shadow:0 10px 30px rgba(0,0,0,.85),0 0 0 1px #010a13}
+.ecp.ecp-docked{z-index:2147483200;width:340px;animation:ecp-dock .16s ease-out;box-shadow:0 10px 30px rgba(0,0,0,.85),0 0 0 1px var(--ds-bg)}
 .ecp.ecp-docked .ecp-head{cursor:default}
 .ecp.ecp-docked .ecp-body{max-height:var(--ecp-maxh,70vh)}
-.ecp.ecp-docked.ecp-v-picks{border-top-color:#c8aa6e}.ecp.ecp-docked.ecp-v-build{border-bottom-color:#c8aa6e}
+.ecp.ecp-docked.ecp-v-picks{border-top-color:var(--ds-gold)}.ecp.ecp-docked.ecp-v-build{border-bottom-color:var(--ds-gold)}
 @keyframes ecp-dock{from{opacity:0;transform:translateY(var(--ecp-dy,6px)) scale(.98)}to{opacity:1;transform:none}}
 @keyframes ecp-in{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:none}}
 @keyframes ecp-rot{to{transform:rotate(360deg)}}
@@ -5519,102 +6463,13 @@ var NOTICE_ICONS = {
   "lola-tier-fallback": "warn",
   "source-fallback": "warn"
 };
-var known = (prefix, id) => {
-  const k = prefix + id;
-  const s = t(k);
-  return s === k ? t("err.other") : s;
-};
-var fmtWpa = (w) => (w >= 0 ? "+" : "") + w.toFixed(1);
-var fmtN = (n) => n >= 1e6 ? (n / 1e6).toFixed(1) + " M" : n >= 1e3 ? Math.round(n / 1e3) + " k" : String(n);
-function ensureStyle3() {
-  if (document.getElementById(STYLE_ID3)) return;
+function ensureStyle5() {
+  ensureTheme();
+  if (document.getElementById(STYLE_ID6)) return;
   const s = document.createElement("style");
-  s.id = STYLE_ID3;
-  s.textContent = CSS3;
+  s.id = STYLE_ID6;
+  s.textContent = CSS5;
   document.head.append(s);
-}
-var pic = (info, cls, title) => info.icon ? h("img", { class: cls, src: info.icon, alt: info.name, title: title ?? info.name, draggable: "false" }) : h("div", { class: cls + " ecp-ph", title: title ?? info.name }, String(info.name).slice(0, 2));
-function statTip(name, stat) {
-  if (stat && stat.wpa == null && Number.isFinite(stat.wr)) return t("stat.tipWr", name, stat.wr.toFixed(1), (stat.occurrence ?? 0).toLocaleString(getLang()));
-  if (!stat || stat.wpa == null) return name;
-  return t("stat.tip", name, fmtWpa(stat.wpa), stat.occurrence.toLocaleString(getLang())) + (stat.share != null ? t("stat.share", Math.round(stat.share * 100)) : "") + (isLowData(stat) ? " \u2014 " + t("lowdata") : "");
-}
-function item(info, stat, cls = "", key2 = null) {
-  const hasWpa = stat && stat.wpa != null;
-  return h(
-    "div",
-    { class: "ecp-it" },
-    pic(info, "ecp-ico " + cls + (isLowData(stat) ? " ecp-low" : ""), statTip(info.name, stat)),
-    key2 && h("span", { class: "ecp-keycap" }, key2),
-    hasWpa && h("div", { class: "ecp-w " + (stat.wpa >= 0 ? "ecp-pos" : "ecp-neg") }, fmtWpa(stat.wpa)),
-    !hasWpa && stat && Number.isFinite(stat.wr) && h("div", { class: "ecp-w ecp-wr" }, Math.round(stat.wr) + "%")
-  );
-}
-var line = (...children) => h("div", { class: "ecp-line" }, children);
-function treeIcon(id, cat) {
-  var _a;
-  const info = cat.rune(id);
-  const name = info.name !== "#" + id ? info.name : ((_a = TREES[id]) == null ? void 0 : _a.name) ?? "";
-  return info.icon ? h("img", { class: "ecp-tree", src: info.icon, alt: name, title: name, draggable: "false" }) : h("div", { class: "ecp-tree ecp-ph", title: name }, "");
-}
-function keystoneAlts(d, cat, actions) {
-  var _a;
-  const list = ((_a = d.alternatives) == null ? void 0 : _a.keystones) ?? [];
-  if (list.length < 2) return null;
-  return h(
-    "div",
-    { class: "ecp-line ecp-alts", "data-alts": "keystone", title: t("alt.keystones") },
-    h("span", { class: "ecp-lead ecp-mute" }, icon("swap", 14)),
-    list.map((k) => {
-      const on = k.rune === d.keystone.rune;
-      const auto = k.rune === d.alternatives.autoKeystone;
-      const info = cat.rune(k.rune);
-      return h("button", {
-        type: "button",
-        class: "ecp-alt" + (on ? " ecp-on" : ""),
-        "data-rune": k.rune,
-        "data-auto": auto ? "" : null,
-        title: statTip(info.name, k) + (auto ? t("alt.auto") : ""),
-        onclick: () => {
-          if (!on) actions.keystone(auto ? null : k.rune);
-        }
-      }, pic(info, "ecp-ico ecp-xs" + (isLowData(k) ? " ecp-low" : "")), h("span", { class: "ecp-w" }, Math.round(k.share * 100) + "%"));
-    })
-  );
-}
-function spellAlts(d, cat, actions) {
-  var _a, _b, _c;
-  const opts = ((_a = d.alternatives) == null ? void 0 : _a.spells) ?? [];
-  if (!opts.length && !((_b = d.custom) == null ? void 0 : _b.spells)) return null;
-  return h(
-    "div",
-    { class: "ecp-line ecp-spalts", "data-alts": "spells", title: t("alt.spells") },
-    ((_c = d.custom) == null ? void 0 : _c.spells) && h("button", { type: "button", class: "ecp-alt", "data-act": "spells-reset", title: t("alt.reset"), onclick: () => actions.spells(null) }, icon("refresh", 14)),
-    opts.map((s) => h("button", {
-      type: "button",
-      class: "ecp-alt",
-      "data-spell": s.spell,
-      title: statTip(cat.spell(s.spell).name, s),
-      onclick: () => actions.spells(s.pair)
-    }, pic(cat.spell(s.spell), "ecp-ico ecp-xs ecp-sq" + (isLowData(s) ? " ecp-low" : ""))))
-  );
-}
-function runesBlock(d, cat, flashKey, actions) {
-  const r = (id) => cat.rune(id);
-  const pair = buildSpellPair(d, flashKey);
-  const keys = pair.ok ? ["D", "F"] : [null, null];
-  const spells = pair.ok ? [pair.spell1Id, pair.spell2Id].map((id) => d.spells.find((s) => s.spell === id)) : d.spells;
-  return [
-    line(treeIcon(d.primaryTree, cat), item(r(d.keystone.rune), d.keystone, "ecp-big"), ...d.primaryPicks.filter(Boolean).map((p) => item(r(p.rune), p))),
-    actions ? keystoneAlts(d, cat, actions) : null,
-    line(
-      d.secondaryTree ? treeIcon(d.secondaryTree, cat) : null,
-      ...d.secondaryPicks.map((p) => item(r(p.rune), p)),
-      h("div", { class: "ecp-grow" }),
-      ...d.shards.map((id) => h("div", { class: "ecp-it", style: "width:28px" }, pic(r(id), "ecp-ico ecp-sm", r(id).name)))
-    ),
-    d.spells.length ? line(...spells.map((s, i) => item(cat.spell(s.spell), s, "ecp-sq", keys[i])), h("div", { class: "ecp-grow" }), actions ? spellAlts(d, cat, actions) : null) : null
-  ];
 }
 var arrow = () => h("span", { class: "ecp-arrow" }, icon("next", 12));
 function itemCell(id, cat, { stat = null, cls = "", track = null } = {}) {
@@ -5815,7 +6670,7 @@ function confidenceTag(sample) {
   );
 }
 function tagsBlock(state) {
-  var _a, _b;
+  var _a, _b, _c;
   const m = state.data.meta;
   const tierNames = Object.fromEntries([3, 4, 5, 6, 7].map((n) => [n, t("tier." + n)]));
   return h(
@@ -5823,11 +6678,16 @@ function tagsBlock(state) {
     { class: "ecp-tags" },
     h("span", { class: "ecp-tag" + (m.patchSource === "manual" ? " ecp-gold" : ""), "data-patch-range": m.patchRange ?? 0, title: t("tag.patch") }, m.patchSpan ?? m.patch),
     h("span", { class: "ecp-tag" + (m.tierSource === "manual" ? " ecp-gold" : ""), "data-tier-source": m.tierSource ?? "lobby", title: t(m.tierSource === "manual" ? "tag.tierManual" : "tag.tier") }, tiersLabel(m.tiers, tierNames)),
+    m.regionSource === "manual" && ((_a = m.regions) == null ? void 0 : _a.length) > 0 && h(
+      "span",
+      { class: "ecp-tag ecp-gold", "data-regions": m.regions.join(","), title: t("tag.regions", m.regions.map(regionCode).join(", ")) },
+      m.regions.length <= 2 ? m.regions.map(regionCode).join(" ") : regionCode(m.regions[0]) + " +" + (m.regions.length - 1)
+    ),
     m.source === "lolalytics" && h("span", { class: "ecp-tag ecp-gold", "data-source": "lolalytics", title: t("tag.lola") }, "LoLalytics"),
     confidenceTag(m.sample),
     m.matchup && h("span", { class: "ecp-tag ecp-gold ecp-tag-matchup", title: t("tag.matchup") }, icon("swords", 11)),
-    ((_a = state.context) == null ? void 0 : _a.source) === "manual" && h("span", { class: "ecp-tag ecp-gold ecp-tag-sim", title: t("tag.sim") }, icon("target", 11)),
-    ((_b = state.context) == null ? void 0 : _b.phase) === "game" && h("span", { class: "ecp-tag ecp-gold ecp-tag-game", title: t("items.game") }, icon("play", 11)),
+    ((_b = state.context) == null ? void 0 : _b.source) === "manual" && h("span", { class: "ecp-tag ecp-gold ecp-tag-sim", title: t("tag.sim") }, icon("target", 11)),
+    ((_c = state.context) == null ? void 0 : _c.phase) === "game" && h("span", { class: "ecp-tag ecp-gold ecp-tag-game", title: t("items.game") }, icon("play", 11)),
     m.notices.map((n) => NOTICE_ICONS[n] ? h("span", { class: "ecp-tag ecp-warn", title: t("notice." + n) }, icon(NOTICE_ICONS[n], 11)) : null)
   );
 }
@@ -5837,9 +6697,9 @@ var skeleton = (still = false) => [
 ];
 function readyBody(state, cat, actions, ui, flashKey, roles) {
   var _a;
-  if (((_a = state.context) == null ? void 0 : _a.phase) === "game") return [itemsBlock(state.data, cat, { game: true, live: ui.live }), ...runesBlock(state.data, cat, flashKey, null), tagsBlock(state)];
+  if (((_a = state.context) == null ? void 0 : _a.phase) === "game") return [itemsBlock(state.data, cat, { game: true, live: ui.live }), runeSummary(state.data, cat, flashKey), tagsBlock(state)];
   return [
-    ...runesBlock(state.data, cat, flashKey, actions),
+    runePage(state.data, cat, flashKey, actions, state),
     applyBlock(state, actions, ui),
     itemsBlock(state.data, cat),
     rivalsBlock(state, cat, actions, ui, roles),
@@ -5862,7 +6722,7 @@ function bodyOf(state, cat, actions, ui, flashKey, roles) {
         h(
           "div",
           { class: "ecp-center" },
-          h("span", { style: "color:#e0a93a" }, icon("warn", 26)),
+          h("span", { style: "color:var(--ds-amber)" }, icon("warn", 26)),
           known("err.", state.reason),
           h("button", { class: "ecp-btn", type: "button", title: auth ? t("panel.login") : t("panel.retry"), onclick: auth ? actions.login : actions.retry }, icon(auth ? "user" : "refresh", 15))
         ),
@@ -5875,9 +6735,8 @@ function bodyOf(state, cat, actions, ui, flashKey, roles) {
       return [];
   }
 }
-var LANE_ROLE = { TOP: 0, JUNGLE: 1, MIDDLE: 2, BOTTOM: 3, UTILITY: 4 };
-var laneName = (l) => t("role." + LANE_ROLE[l]);
-var signed = (n) => (n >= 0 ? "+" : "") + n.toFixed(1);
+var LANE_ROLE2 = { TOP: 0, JUNGLE: 1, MIDDLE: 2, BOTTOM: 3, UTILITY: 4 };
+var laneName = (l) => t("role." + LANE_ROLE2[l]);
 var DMG_ICON = { ad: "sword", ap: "spark", balanced: "check" };
 var CHIP_ICON = { syn: "users", ctr: "swords", weak: "swords", scale: "trend" };
 function reasonChip(chip, meta, cat) {
@@ -5961,7 +6820,7 @@ function advisorBlock(adv, cat, ui, actions, filters, mastery2) {
     picks.length ? [
       line(h("span", { class: "ecp-lead", title: t("adv.tagTip") }, icon("spark", 16)), ...picks.map(cell)),
       h("div", { class: "ecp-reasons", "data-reasons": sel.championId }, sel.chips.map((c) => reasonChip(c, m, cat)))
-    ] : h("div", { class: "ecp-msg", style: "color:#a09b8c", "data-advisor-empty": "" }, t("adv.none")),
+    ] : h("div", { class: "ecp-msg", style: "color:var(--ds-meta)", "data-advisor-empty": "" }, t("adv.none")),
     tags
   );
 }
@@ -5972,7 +6831,7 @@ function matchupBlock(ov, cat, filters, mastery2) {
     return h(
       "div",
       { class: "ecp-adv ecp-mu", "data-matchup": "norival" },
-      line(h("span", { class: "ecp-lead ecp-mute", title: t("mu.noRival") }, icon("swords", 16)), h("span", { class: "ecp-msg", style: "color:#7b7a76" }, t("mu.noRivalShort")))
+      line(h("span", { class: "ecp-lead ecp-mute", title: t("mu.noRival") }, icon("swords", 16)), h("span", { class: "ecp-msg", style: "color:var(--ds-mute)" }, t("mu.noRivalShort")))
     );
   }
   const picks = filters ? filters.matchupPicks() : d.counters.map((c) => ({ cid: c.cid, wr: c.wr, edge: c.edge, n: c.n, counter: null }));
@@ -5983,13 +6842,15 @@ function matchupBlock(ov, cat, filters, mastery2) {
       "div",
       { class: "ecp-pk", "data-mu-pick": c.cid, title: t("mu.pickTip", info.name, c.wr.toFixed(1), rivalName, c.edge != null ? signed(c.edge) : "\u2013", c.n) + masteryTip(mastery2, c.cid) },
       pic(info, "ecp-ico"),
-      h("div", { class: "ecp-w " + (c.edge == null || c.edge >= 0 ? "ecp-pos" : "ecp-neg") }, c.wr.toFixed(0) + "%")
+      h("div", { class: "ecp-w " + (c.edge == null || c.edge >= 0 ? "ecp-pos" : "ecp-neg") }, c.wr.toFixed(0) + "%"),
+      // Ventaja sobre su media en la línea (spec §2.1): un % alto con ventaja ~0 es fuerza general, no un counter.
+      c.edge != null && h("div", { class: "ecp-w", "data-edge": c.edge, style: "color:var(--ds-meta)" }, signed(c.edge))
     );
   };
   return h(
     "div",
     { class: "ecp-adv ecp-mu" + (ov.status === "loading" ? " ecp-dim" : ""), "data-matchup": String(d.rival), title: t("mu.tip", rivalName) },
-    picks.length ? line(h("span", { class: "ecp-lead", title: t("mu.tip", rivalName) }, icon("swords", 16)), ...picks.map(cell)) : h("div", { class: "ecp-msg", style: "color:#a09b8c", "data-matchup-empty": "" }, icon("swords", 13), t("mu.none")),
+    picks.length ? line(h("span", { class: "ecp-lead", title: t("mu.tip", rivalName) }, icon("swords", 16)), ...picks.map(cell)) : h("div", { class: "ecp-msg", style: "color:var(--ds-meta)", "data-matchup-empty": "" }, icon("swords", 13), t("mu.none")),
     h(
       "div",
       { class: "ecp-tags" },
@@ -6066,13 +6927,14 @@ function webUrl(state, cat) {
 }
 async function mountPanel({ controller: controller2, catalog: catalog2, applier: applier2, live: live2, overlay: overlay2, advisor: advisor2, enemyRoles: enemyRoles2, filters, mastery: mastery2, onEnableApply, onLogin, onMenu }) {
   await whenReady();
-  ensureStyle3();
+  ensureStyle5();
   let lastHidden = null;
   let dismissedKey = null;
   const keyOf = (st) => st.context ? `${st.context.championId}|${st.context.opponentChampionId ?? 0}|${st.context.source ?? ""}|${st.context.phase ?? ""}` : null;
   let prefs = getPanelPrefs();
   const ui = { busy: false, kind: null, msg: null, applied: { runes: null, spells: null }, live: null, advSel: null, roleOpen: null, filtersOpen: prefs.filtersOpen === true };
   let uiKey = null;
+  let locator = null;
   const dock = { on: false, view: null, anchor: null, raf: 0, placed: "" };
   const listeners = /* @__PURE__ */ new Set();
   const root = h("div", { class: "ecp", style: "display:none" });
@@ -6130,6 +6992,11 @@ async function mountPanel({ controller: controller2, catalog: catalog2, applier:
       render(controller2.getState());
     },
     filtersReset: () => filters == null ? void 0 : filters.reset(),
+    // Recomendación principal: cambiar de perspectiva (auto / línea / equipo) y localizar una ficha.
+    perspective: (p) => {
+      prefs = setPanelPrefs({ perspective: p });
+      render(controller2.getState());
+    },
     filterSet: (key2, value, disabled) => {
       if (!filters || disabled) return;
       if (key2 === "classes") filters.toggleClass(value);
@@ -6292,11 +7159,22 @@ async function mountPanel({ controller: controller2, catalog: catalog2, applier:
     }
     ui.live = (live2 == null ? void 0 : live2.getState()) ?? null;
     const inGame = ((_d = state.context) == null ? void 0 : _d.phase) === "game";
-    const picksTop = inGame || view === "build" ? [] : [filtersBlock(filters, ui, actions), matchupBlock(overlay2 == null ? void 0 : overlay2.getState(), catalog2, filters, mastery2), advisorBlock(advisor2 == null ? void 0 : advisor2.getState(), catalog2, ui, actions, filters, mastery2)];
+    const picksTop = inGame || view === "build" ? [] : [decisionBlock(), teamContextBlock({ cat: catalog2, context: state.context, roles: enemyRoles2 == null ? void 0 : enemyRoles2.getState() }), filtersBlock(filters, ui, actions), matchupBlock(overlay2 == null ? void 0 : overlay2.getState(), catalog2, filters, mastery2), advisorBlock(advisor2 == null ? void 0 : advisor2.getState(), catalog2, ui, actions, filters, mastery2)];
     const main = view === "picks" ? [rivalsBlock(state, catalog2, actions, ui, enemyRoles2 == null ? void 0 : enemyRoles2.getState())] : bodyOf(state, catalog2, actions, ui, applier2.getSettings().flashKey, enemyRoles2 == null ? void 0 : enemyRoles2.getState());
     const body = !docked && prefs.collapsed ? null : h("div", { class: "ecp-body", "data-view": view }, [...picksTop, ...main]);
     root.replaceChildren(head, ...body ? [body] : []);
   };
+  function decisionBlock() {
+    var _a, _b;
+    if (!filters) return null;
+    const ov = overlay2 == null ? void 0 : overlay2.getState(), adv = advisor2 == null ? void 0 : advisor2.getState();
+    const summary = buildDraftSummary({ lanePicks: filters.matchupPicks(), teamPicks: filters.draftPicks(), perspective: prefs.perspective, masteryOf: (cid) => (mastery2 == null ? void 0 : mastery2.pointsOf(cid)) ?? null });
+    return draftSummaryBlock(
+      summary,
+      { cat: catalog2, rival: ((_a = ov == null ? void 0 : ov.data) == null ? void 0 : _a.rival) ? catalog2.champion(ov.data.rival).name : null, meta: ((_b = adv == null ? void 0 : adv.data) == null ? void 0 : _b.meta) ?? null },
+      { perspective: actions.perspective, locate: locator }
+    );
+  }
   async function apply(kind) {
     var _a;
     const st = controller2.getState();
@@ -6424,6 +7302,11 @@ async function mountPanel({ controller: controller2, catalog: catalog2, applier:
     apply: (kind = "all") => apply(kind),
     /** { busy, kind, done, failed } del botón de aplicar para lo que se ve ahora. */
     status: () => applyStatus(controller2.getState()),
+    /** native.js da la forma de localizar una ficha de la cuadrícula: (cid) => boolean. */
+    setLocator(fn) {
+      locator = typeof fn === "function" ? fn : null;
+      render(controller2.getState());
+    },
     /** Se llama tras cada repintado del panel (aunque esté oculto). Devuelve la función para cancelar. */
     subscribe(fn) {
       listeners.add(fn);
@@ -6433,26 +7316,27 @@ async function mountPanel({ controller: controller2, catalog: catalog2, applier:
 }
 
 // src/presentation/overlay.js
-var STYLE_ID4 = "draftsage-overlay-style";
+var STYLE_ID7 = "draftsage-overlay-style";
 var ICON_RE = /champion-icons\/(\d+)\.(?:png|jpg|webp)/i;
 var MIN_GRID = 20;
-var CSS4 = `
+var CSS6 = `
 .ecb-layer{position:fixed;inset:0;z-index:2147483000;pointer-events:none}
-.ecb{position:fixed;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:2px;padding:0 3px;height:14px;min-width:30px;border-radius:2px;background:rgba(1,10,19,.88);border:1px solid #3c3c41;color:#cdbe91;font:bold 10px/12px sans-serif;white-space:nowrap}
-.ecb-up{color:#0ac8b9}.ecb-down{color:#e84057}
+.ecb{position:fixed;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:2px;padding:0 3px;height:14px;min-width:30px;border-radius:2px;background:rgba(1,10,19,.88);border:1px solid var(--ds-border);color:var(--ds-text);font:bold 10px/12px sans-serif;white-space:nowrap}
+.ecb-up{color:var(--ds-teal)}.ecb-down{color:var(--ds-red)}
 .ecb-low{opacity:.6;font-style:italic}
-.ecb-top{border-color:#0ac8b9;box-shadow:0 0 6px rgba(10,200,185,.6);color:#f0e6d2}
-.ecb-top b{color:#0ac8b9}
-.ecb-rival{border-color:#e84057;box-shadow:0 0 6px rgba(232,64,87,.6)}
+.ecb-top{border-color:var(--ds-teal);box-shadow:0 0 6px rgba(10,200,185,.6);color:var(--ds-text-hi)}
+.ecb-top b{color:var(--ds-teal)}
+.ecb-rival{border-color:var(--ds-red);box-shadow:0 0 6px rgba(232,64,87,.6)}
 .ecb-veil{position:fixed;box-sizing:border-box;background:rgba(1,10,19,.72);-webkit-backdrop-filter:grayscale(1);backdrop-filter:grayscale(1)}
 `;
 var fmt = (x) => typeof x === "number" ? x.toFixed(1) : "\u2013";
 var sign = (x) => (x >= 0 ? "+" : "") + x.toFixed(1);
-function ensureStyle4() {
-  if (document.getElementById(STYLE_ID4)) return;
+function ensureStyle6() {
+  ensureTheme();
+  if (document.getElementById(STYLE_ID7)) return;
   const s = document.createElement("style");
-  s.id = STYLE_ID4;
-  s.textContent = CSS4;
+  s.id = STYLE_ID7;
+  s.textContent = CSS6;
   document.head.append(s);
 }
 var championIdOf = (el) => {
@@ -6524,7 +7408,7 @@ function badgeOf(c, rival) {
 }
 async function mountOverlay({ overlay: overlay2, catalog: catalog2, getPrefs, filters = null, inSelection = () => false }) {
   await whenReady();
-  ensureStyle4();
+  ensureStyle6();
   const layer = h("div", { class: "ecb-layer", style: "display:none" });
   let scheduled = false;
   let observer = null;
@@ -6599,57 +7483,60 @@ async function mountOverlay({ overlay: overlay2, catalog: catalog2, getPrefs, fi
 }
 
 // src/presentation/native.js
-var STYLE_ID5 = "draftsage-native-style";
+var STYLE_ID8 = "draftsage-native-style";
 var MAX_PICKS = 5;
-var CSS5 = `
-.ecx{box-sizing:border-box;display:inline-flex;align-items:center;gap:6px;vertical-align:middle;font:12px/1.3 sans-serif;color:#cdbe91;user-select:none;-webkit-app-region:no-drag}
+var CSS7 = `
+.ecx{box-sizing:border-box;display:inline-flex;align-items:center;gap:6px;vertical-align:middle;font:12px/1.3 sans-serif;color:var(--ds-text);user-select:none;-webkit-app-region:no-drag}
 .ecx *{-webkit-app-region:no-drag;box-sizing:border-box}
-.ecx button{font:inherit;color:inherit;cursor:pointer;padding:0;margin:0;outline:none}
+.ecx button{font:inherit;color:inherit;cursor:pointer;padding:0;margin:0}
+.ecx button:focus:not(:focus-visible){outline:none}
 .ecx svg{display:block}
 .ecx-loadout{flex:none;margin:0 10px}
-.ecx-key{position:relative;width:38px;height:38px;border-radius:50%;background:#010a13;border:2px solid #785a28;display:flex;align-items:center;justify-content:center;color:#a09b8c;transition:border-color .15s,box-shadow .15s,transform .15s}
-.ecx-key:hover{border-color:#c8aa6e;box-shadow:0 0 10px rgba(200,170,110,.55);transform:scale(1.05)}
-.ecx-key.ecx-open{border-color:#f0e6d2;box-shadow:0 0 12px rgba(240,230,210,.6)}
+.ecx-key{position:relative;width:38px;height:38px;border-radius:50%;background:var(--ds-bg);border:2px solid var(--ds-gold-dim);display:flex;align-items:center;justify-content:center;color:var(--ds-meta);transition:border-color .15s,box-shadow .15s,transform .15s}
+.ecx-key:hover{border-color:var(--ds-gold);box-shadow:0 0 10px rgba(200,170,110,.55);transform:scale(1.05)}
+.ecx-key.ecx-open{border-color:var(--ds-text-hi);box-shadow:0 0 12px rgba(240,230,210,.6)}
 .ecx-key img.ecx-k{width:100%;height:100%;border-radius:50%;object-fit:cover}
-.ecx-key .ecx-tree{position:absolute;right:-5px;bottom:-5px;width:18px;height:18px;border-radius:50%;background:#010a13;border:1px solid #785a28;object-fit:cover}
-.ecx-key .ecx-dot{position:absolute;left:-3px;top:-3px;width:12px;height:12px;border-radius:50%;background:#1e2328;border:1px solid #785a28;display:flex;align-items:center;justify-content:center}
-.ecx-key[data-state=loading]{border-color:#785a28;animation:ecx-pulse 1.2s ease-in-out infinite}
+.ecx-key .ecx-tree{position:absolute;right:-5px;bottom:-5px;width:18px;height:18px;border-radius:50%;background:var(--ds-bg);border:1px solid var(--ds-gold-dim);object-fit:cover}
+.ecx-key .ecx-dot{position:absolute;left:-3px;top:-3px;width:12px;height:12px;border-radius:50%;background:var(--ds-surface-2);border:1px solid var(--ds-gold-dim);display:flex;align-items:center;justify-content:center}
+.ecx-key[data-state=loading]{border-color:var(--ds-gold-dim);animation:ecx-pulse 1.2s ease-in-out infinite}
 .ecx-key[data-state=waiting]{opacity:.7}
-.ecx-key[data-state=error]{border-color:#8a6a1f;color:#e0a93a}
+.ecx-key[data-state=error]{border-color:#8a6a1f;color:var(--ds-amber)}
 .ecx-key.ecx-pop{animation:ecx-pop .6s ease-out}
-.ecx-ap{width:28px;height:28px;border-radius:50%;background:linear-gradient(#2a2314,#17130a);border:1px solid #c8aa6e;color:#f0e6d2;display:flex;align-items:center;justify-content:center;transition:.15s}
+.ecx-ap{width:28px;height:28px;border-radius:50%;background:linear-gradient(var(--ds-gold-bg),#17130a);border:1px solid var(--ds-gold);color:var(--ds-text-hi);display:flex;align-items:center;justify-content:center;transition:.15s}
 .ecx-ap:hover:not(:disabled){box-shadow:0 0 10px rgba(200,170,110,.6);transform:scale(1.08)}
-.ecx-ap:disabled{opacity:.35;cursor:default;border-color:#5b5a56}
-.ecx-ap.ecx-done{border-color:#0ac8b9;color:#0ac8b9;background:#06201f}
-.ecx-ap.ecx-fail{border-color:#e0a93a;color:#e0a93a}
+.ecx-ap:disabled{opacity:.35;cursor:default;border-color:var(--ds-mute-2)}
+.ecx-ap.ecx-done{border-color:var(--ds-teal);color:var(--ds-teal);background:var(--ds-teal-bg)}
+.ecx-ap.ecx-fail{border-color:var(--ds-amber);color:var(--ds-amber)}
 .ecx-ap.ecx-done svg{animation:ecx-pop .3s ease-out}
-.ecx-spin{width:14px;height:14px;border:2px solid #785a28;border-top-color:#f0e6d2;border-radius:50%;animation:ecx-rot .7s linear infinite;display:inline-block}
+.ecx-spin{width:14px;height:14px;border:2px solid var(--ds-gold-dim);border-top-color:var(--ds-text-hi);border-radius:50%;animation:ecx-rot .7s linear infinite;display:inline-block}
 .ecx-picks{flex:0 1 auto;min-width:0;max-width:100%;margin:0 8px;gap:4px;overflow:hidden}
-.ecx-ib{flex:none;position:relative;width:26px;height:26px;border-radius:50%;background:#010a13;border:1px solid #785a28;color:#c8aa6e;display:flex;align-items:center;justify-content:center;transition:.15s}
-.ecx-ib:hover{border-color:#c8aa6e;color:#f0e6d2;box-shadow:0 0 8px rgba(200,170,110,.5)}
-.ecx-ib.ecx-open{border-color:#f0e6d2;color:#f0e6d2}
-.ecx-ib .ecx-n{position:absolute;right:-5px;top:-5px;min-width:14px;height:14px;padding:0 3px;border-radius:7px;background:#c8aa6e;color:#1a1408;font:bold 10px/14px sans-serif;text-align:center}
+.ecx-ib{flex:none;position:relative;width:26px;height:26px;border-radius:50%;background:var(--ds-bg);border:1px solid var(--ds-gold-dim);color:var(--ds-gold);display:flex;align-items:center;justify-content:center;transition:.15s}
+.ecx-ib:hover{border-color:var(--ds-gold);color:var(--ds-text-hi);box-shadow:0 0 8px rgba(200,170,110,.5)}
+.ecx-ib.ecx-open{border-color:var(--ds-text-hi);color:var(--ds-text-hi)}
+.ecx-ib .ecx-n{position:absolute;right:-5px;top:-5px;min-width:14px;height:14px;padding:0 3px;border-radius:7px;background:var(--ds-gold);color:#1a1408;font:bold 10px/14px sans-serif;text-align:center}
 .ecx-pk{flex:none;position:relative;display:flex;flex-direction:column;align-items:center;width:30px;background:none;border:0}
-.ecx-pk img{width:26px;height:26px;border-radius:50%;object-fit:cover;border:1px solid #3c3c41;background:#1e2328;transition:.12s}
-.ecx-pk:hover img{border-color:#c8aa6e;transform:scale(1.12)}
-.ecx-pk b{display:block;margin-top:1px;font:bold 9px/10px sans-serif;color:#a09b8c}
-.ecx-pk b.ecx-pos{color:#0ac8b9}.ecx-pk b.ecx-neg{color:#e84057}
+.ecx-pk img{width:26px;height:26px;border-radius:50%;object-fit:cover;border:1px solid var(--ds-border);background:var(--ds-surface-2);transition:.12s}
+.ecx-pk:hover img{border-color:var(--ds-gold);transform:scale(1.12)}
+.ecx-pk b{display:block;margin-top:1px;font:bold 10px/11px sans-serif;color:var(--ds-meta)}
+.ecx-pk b.ecx-pos{color:var(--ds-teal)}.ecx-pk b.ecx-neg{color:var(--ds-red)}
+.ecx-pk.ecx-top img{border:2px solid var(--ds-gold);box-shadow:0 0 6px rgba(200,170,110,.55)}
 .ecx-pk.ecx-shake{animation:ecx-shake .35s}
-.ecx-hint{flex:0 1 auto;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:11px;color:#7b7a76}
-.ecx-launch{position:fixed;right:14px;bottom:14px;z-index:2147483100;pointer-events:auto;cursor:pointer;justify-content:center;width:34px;height:34px;border-radius:50%;background:#010a13;border:1px solid #785a28;color:#c8aa6e;font:bold 11px/1 sans-serif;transition:.15s}
-.ecx-launch:hover{border-color:#c8aa6e;color:#f0e6d2;box-shadow:0 0 10px rgba(200,170,110,.5)}
-.grid-champion.ecx-flash .grid-champion-hitbox{animation:ecx-flash .5s ease-in-out 3;box-shadow:inset 0 0 0 2px #f0c870,0 0 14px #f0c870}
+.ecx-hint{flex:0 1 auto;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:11px;color:var(--ds-mute)}
+.ecx-launch{position:fixed;right:14px;bottom:14px;z-index:2147483100;pointer-events:auto;cursor:pointer;justify-content:center;width:34px;height:34px;border-radius:50%;background:var(--ds-bg);border:1px solid var(--ds-gold-dim);color:var(--ds-gold);font:bold 11px/1 sans-serif;transition:.15s}
+.ecx-launch:hover{border-color:var(--ds-gold);color:var(--ds-text-hi);box-shadow:0 0 10px rgba(200,170,110,.5)}
+.grid-champion.ecx-flash .grid-champion-hitbox{animation:ecx-flash .5s ease-in-out 3;box-shadow:inset 0 0 0 2px var(--ds-gold-hi),0 0 14px var(--ds-gold-hi)}
 @keyframes ecx-pulse{0%,100%{box-shadow:0 0 0 rgba(200,170,110,0)}50%{box-shadow:0 0 12px rgba(200,170,110,.7)}}
 @keyframes ecx-pop{0%{transform:scale(.7)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
 @keyframes ecx-rot{to{transform:rotate(360deg)}}
 @keyframes ecx-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
 @keyframes ecx-flash{0%,100%{filter:none}50%{filter:brightness(1.7)}}
 `;
-function ensureStyle5() {
-  if (document.getElementById(STYLE_ID5)) return;
+function ensureStyle7() {
+  ensureTheme();
+  if (document.getElementById(STYLE_ID8)) return;
   const s = document.createElement("style");
-  s.id = STYLE_ID5;
-  s.textContent = CSS5;
+  s.id = STYLE_ID8;
+  s.textContent = CSS7;
   document.head.append(s);
 }
 function isShown(el) {
@@ -6687,8 +7574,9 @@ function flashTile(id, root = document) {
   return true;
 }
 async function mountNative({ panel, controller: controller2, catalog: catalog2, overlay: overlay2, advisor: advisor2, filters, onMenu, root = document }) {
+  var _a;
   await whenReady();
-  ensureStyle5();
+  ensureStyle7();
   const el = {
     loadout: h("div", { class: "ecx ecx-loadout", "data-ecx": "loadout" }),
     picks: h("div", { class: "ecx ecx-picks", "data-ecx": "picks" }),
@@ -6701,13 +7589,13 @@ async function mountNative({ panel, controller: controller2, catalog: catalog2, 
   let popTimer = 0;
   let lastKey = "";
   function paintLoadout(st) {
-    var _a, _b, _c, _d, _e;
+    var _a2, _b, _c, _d, _e;
     const d = st.status === "ready" ? st.data : st.status === "loading" ? st.stale : null;
     const ps = panel.status();
     const state = st.status === "ready" ? "ready" : st.status === "loading" ? d ? "ready" : "loading" : st.status;
     const open = panel.view() === "build";
     const key2 = d ? `${d.keystone.rune}|${d.secondaryTree ?? ""}` : "";
-    const s = JSON.stringify([state, key2, st.status === "loading" && !!d, open, ps.busy, ps.done, ps.failed, (_a = st.context) == null ? void 0 : _a.championId, ((_b = st.context) == null ? void 0 : _b.opponentChampionId) ?? 0, ((_c = catalog2.isLoaded) == null ? void 0 : _c.call(catalog2)) ?? true]);
+    const s = JSON.stringify([state, key2, st.status === "loading" && !!d, open, ps.busy, ps.done, ps.failed, (_a2 = st.context) == null ? void 0 : _a2.championId, ((_b = st.context) == null ? void 0 : _b.opponentChampionId) ?? 0, ((_c = catalog2.isLoaded) == null ? void 0 : _c.call(catalog2)) ?? true]);
     if (s === sig.loadout) return;
     sig.loadout = s;
     const champ = ((_d = st.context) == null ? void 0 : _d.championId) ? catalog2.champion(st.context.championId).name : "";
@@ -6771,9 +7659,13 @@ ${t("panel.retry")}`;
   }
   const signed2 = (n) => (n >= 0 ? "+" : "") + n.toFixed(1);
   function picksModel() {
-    var _a;
+    var _a2, _b;
     const ov = overlay2 == null ? void 0 : overlay2.getState();
-    if ((_a = ov == null ? void 0 : ov.data) == null ? void 0 : _a.rival) {
+    const adv0 = advisor2 == null ? void 0 : advisor2.getState();
+    const lane = !!((_a2 = ov == null ? void 0 : ov.data) == null ? void 0 : _a2.rival) && (filters ? filters.matchupPicks().length > 0 : ov.data.counters.length > 0);
+    const team = !!(adv0 == null ? void 0 : adv0.data) && (filters ? filters.draftPicks().length > 0 : adv0.data.picks.length > 0);
+    const p = resolvePerspective(getPanelPrefs().perspective, { lane, team });
+    if (p === "lane" || !p && ((_b = ov == null ? void 0 : ov.data) == null ? void 0 : _b.rival)) {
       const list = (filters ? filters.matchupPicks() : ov.data.counters.map((c) => ({ cid: c.cid, wr: c.wr, edge: c.edge, n: c.n }))).slice(0, MAX_PICKS);
       const rival = catalog2.champion(ov.data.rival).name;
       return {
@@ -6782,21 +7674,21 @@ ${t("panel.retry")}`;
         items: list.map((c) => ({ cid: c.cid, label: Math.round(c.wr) + "%", good: c.edge == null || c.edge >= 0, tip: t("mu.pickTip", catalog2.champion(c.cid).name, c.wr.toFixed(1), rival, c.edge != null ? signed2(c.edge) : "\u2013", c.n) }))
       };
     }
-    const adv = advisor2 == null ? void 0 : advisor2.getState();
+    const adv = adv0;
     if (adv == null ? void 0 : adv.data) {
       const list = (filters ? filters.draftPicks() : adv.data.picks).slice(0, MAX_PICKS);
       return {
         mode: "draft",
         tip: t("nat.picksDraft"),
-        items: list.map((p) => ({ cid: p.championId, label: signed2(p.score), good: p.score >= 0, tip: pickTip(p, catalog2.champion(p.championId), adv.data.meta, catalog2, null) }))
+        items: list.map((p2) => ({ cid: p2.championId, label: signed2(p2.score), good: p2.score >= 0, tip: pickTip(p2, catalog2.champion(p2.championId), adv.data.meta, catalog2, null) }))
       };
     }
     return { mode: "none", tip: t("nat.picksNone"), items: [] };
   }
   function paintPicks() {
-    var _a, _b;
+    var _a2, _b;
     const m = picksModel();
-    const n = ((_a = filters == null ? void 0 : filters.activeCount) == null ? void 0 : _a.call(filters)) ?? 0;
+    const n = ((_a2 = filters == null ? void 0 : filters.activeCount) == null ? void 0 : _a2.call(filters)) ?? 0;
     const open = panel.view() === "picks";
     const s = JSON.stringify([m.mode, m.items.map((i) => [i.cid, i.label]), n, open, ((_b = catalog2.isLoaded) == null ? void 0 : _b.call(catalog2)) ?? true]);
     if (s === sig.picks) return;
@@ -6808,15 +7700,17 @@ ${t("panel.retry")}`;
       icon(m.mode === "matchup" ? "target" : "spark", 15),
       n > 0 && h("span", { class: "ecx-n", "data-count": n }, n)
     );
-    const cells = m.items.map((i) => {
+    const cells = m.items.map((i, k) => {
       const info = catalog2.champion(i.cid);
       const btn = h(
         "button",
         {
           type: "button",
-          class: "ecx-pk",
+          class: "ecx-pk" + (k === 0 ? " ecx-top" : ""),
           "data-pick": i.cid,
-          title: i.tip + "\n" + t("nat.find"),
+          "data-primary": k === 0 ? "" : null,
+          "aria-label": (k === 0 ? t("ds.title") + ": " : "") + info.name + " \u2014 " + i.label,
+          title: (k === 0 ? t("ds.title") + " \u2014 " : "") + i.tip + "\n" + t("nat.find"),
           onclick: () => {
             if (!flashTile(i.cid, root)) {
               btn.classList.add("ecx-shake");
@@ -6825,7 +7719,7 @@ ${t("panel.retry")}`;
             }
           }
         },
-        info.icon ? h("img", { src: info.icon, alt: info.name, draggable: "false" }) : h("div", { style: "width:26px;height:26px;border-radius:50%;background:#1e2328" }),
+        info.icon ? h("img", { src: info.icon, alt: info.name, draggable: "false" }) : h("div", { style: "width:26px;height:26px;border-radius:50%;background:var(--ds-surface-2)" }),
         h("b", { class: i.good ? "ecx-pos" : "ecx-neg" }, i.label)
       );
       return btn;
@@ -6879,6 +7773,7 @@ ${t("panel.retry")}`;
   const schedule = () => {
     if (!timer) timer = setTimeout(sync, 80);
   };
+  (_a = panel.setLocator) == null ? void 0 : _a.call(panel, (cid) => flashTile(cid, root));
   const offs = [controller2.subscribe(schedule), panel.subscribe(schedule), overlay2 == null ? void 0 : overlay2.subscribe(schedule), advisor2 == null ? void 0 : advisor2.subscribe(schedule), filters == null ? void 0 : filters.subscribe(schedule)].filter(Boolean);
   addEventListener("draftsage:prefs", schedule);
   addEventListener("resize", schedule);
@@ -6887,9 +7782,9 @@ ${t("panel.retry")}`;
   let observer = null;
   if (typeof MutationObserver !== "undefined" && root.body) {
     observer = new MutationObserver((recs) => {
-      var _a, _b;
+      var _a2, _b;
       if (controller2.getState().status === "idle" && !docked) return;
-      for (const r of recs) if (!(r.target.nodeType === 1 && ((_b = (_a = r.target).closest) == null ? void 0 : _b.call(_a, ".ecx, .ecp")))) {
+      for (const r of recs) if (!(r.target.nodeType === 1 && ((_b = (_a2 = r.target).closest) == null ? void 0 : _b.call(_a2, ".ecx, .ecp")))) {
         schedule();
         return;
       }
@@ -6929,8 +7824,8 @@ window.draftsage = Object.assign(window.draftsage ?? {}, {
   // Estadísticas sobre los campeones de Champion Select: estado, diagnóstico de la detección de la cuadrícula y selector manual.
   overlayState: () => app.overlay.getState(),
   overlayProbe: () => probeGrid(),
-  overlaySelector: (css = "") => {
-    setOverlayPrefs({ selector: css });
+  overlaySelector: (css2 = "") => {
+    setOverlayPrefs({ selector: css2 });
     return getOverlayPrefs();
   },
   // Interfaz integrada en Champion Select: qué anclas del DOM del cliente encuentra y si se ven (para informar si no aparece).
