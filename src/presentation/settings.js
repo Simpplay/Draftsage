@@ -233,7 +233,18 @@ export function openSettings({ applier, catalog, filters, source, overlay, advis
       h('div', { class: 'ecs-cap' }, icon('refresh', 13), t('set.updates')),
       h('div', { class: 'ecs-chips', role: 'group', title: t('set.updatesTip', uBuild.version, t(uBuild.source === 'remote' ? 'set.updSrcRemote' : 'set.updSrcPackaged')) },
         uChip('auto', t('set.updAuto'), t('set.updAutoTip')),
-        uChip('packaged', t('set.updPackaged'), t('set.updPackagedTip'))))
+        uChip('packaged', t('set.updPackaged'), t('set.updPackagedTip'))),
+      h('div', { style: 'margin-top: 8px;' },
+        h('button', {
+          type: 'button',
+          class: 'ecs-chip',
+          onclick: () => {
+            if (typeof window.restartClient === 'function') {
+              window.restartClient()
+            }
+          }
+        }, t('set.restartClient'))
+      ))
 
     // Cinco categorías (docs/UX-SPEC.md §13), cada una con una descripción breve VISIBLE (el detalle sigue en el tooltip de cada control).
     // «Avanzado» va plegado: casi nunca se toca. Los consentimientos (Aplicar, consejero, maestría) siguen pasando por su aviso.
