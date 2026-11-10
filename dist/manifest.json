@@ -1,4 +1,4 @@
 {
-  "payload": "{\"schema\":1,\"name\":\"draftsage\",\"version\":\"1.0.4\",\"minLoader\":1,\"createdAt\":\"2026-11-09T00:12:54.758Z\",\"files\":{\"app.js\":{\"sha256\":\"bd866dcbe563e66e168bfb904f414a04fe7b8883dd50575d04840d7d832c6b8f\",\"size\":370961}}}",
-  "signature": "ap6DJmbWoW2C74AxK3EeOwp+uYR/NUE+mGOEjOsM6tKt4G2fn3LxY8IeFlCJs2feg5N6ntpQwzv33bvvbmQLHg=="
+  "payload": "{\"schema\":1,\"name\":\"draftsage\",\"version\":\"1.0.5\",\"minLoader\":1,\"createdAt\":\"2026-11-10T02:54:58.699Z\",\"files\":{\"app.js\":{\"sha256\":\"57ec34131a23782a22d13a80180bdd4c3f514548b130d321e844908eb55d66ed\",\"size\":371383}}}",
+  "signature": "N/EiqTvkUrAiTO9iPZTD66je5bzuoM6cXfxaonCmONMMSwjjhm1FLlwBzq5jFXXOFga98plB853H5OI0Hr0b9Q=="
 }

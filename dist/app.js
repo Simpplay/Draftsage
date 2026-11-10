@@ -1,4 +1,4 @@
-/* draftsage v1.0.4 — generado por dev/tools/release.mjs; no editar */
+/* draftsage v1.0.5 — generado por dev/tools/release.mjs; no editar */
 
 // src/shared/strings.js
 var es = {
@@ -336,6 +336,7 @@ var es = {
   "set.masteryWeightTip": "Peso de tu maestr\xEDa: {0}",
   "set.updates": "Actualizaciones",
   "set.updatesTip": "Versi\xF3n {0} ({1}). \xABAuto\xBB descarga versiones firmadas y las usa al reiniciar el cliente.",
+  "set.restartClient": "Reiniciar cliente",
   "set.updAuto": "Auto",
   "set.updAutoTip": "Descarga versiones nuevas (verificadas con firma) y las usa en el siguiente arranque",
   "set.updPackaged": "Solo incluida",
@@ -770,6 +771,7 @@ var en = {
   "set.masteryWeightTip": "Mastery weight: {0}",
   "set.updates": "Updates",
   "set.updatesTip": 'Version {0} ({1}). "Auto" downloads signed versions and uses them after restarting the client.',
+  "set.restartClient": "Restart client",
   "set.updAuto": "Auto",
   "set.updAutoTip": "Downloads new versions (signature-verified) and uses them on the next start",
   "set.updPackaged": "Bundled only",
@@ -2567,6 +2569,19 @@ function openSettings({ applier: applier2, catalog: catalog2, filters, source, o
         { class: "ecs-chips", role: "group", title: t("set.updatesTip", uBuild.version, t(uBuild.source === "remote" ? "set.updSrcRemote" : "set.updSrcPackaged")) },
         uChip("auto", t("set.updAuto"), t("set.updAutoTip")),
         uChip("packaged", t("set.updPackaged"), t("set.updPackagedTip"))
+      ),
+      h(
+        "div",
+        { style: "margin-top: 8px;" },
+        h("button", {
+          type: "button",
+          class: "ecs-chip",
+          onclick: () => {
+            if (typeof window.restartClient === "function") {
+              window.restartClient();
+            }
+          }
+        }, t("set.restartClient"))
       )
     );
     const sect = (id, ico, children) => h(
