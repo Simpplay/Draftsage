@@ -1,4 +1,11 @@
-# Draftsage — estado para retomar (2026-11-08)
+# Draftsage — estado para retomar (2026-11-22)
+
+## Clash: scouting y recomendación de bans (2026-11-22) — 🔎 investigación cerrada · ⏳ nada implementado
+- **Especificación completa por fases independientes:** `docs/CLASH-BANS.md` (endpoints `lol-clash` verificados en el cliente 16.23, formas de respuesta, secuencia de baneos del draft de Clash, DOM del modal de scouting, modelo de decisión, incógnitas abiertas, fixtures). **Ideas de otros sitios para que el usuario decida:** `docs/IDEAS-EXTERNAS.md` (no se ha decidido nada).
+- **Bug existente descubierto (Fase 0):** en Clash `session.bans` viene vacío; los baneos solo están en `session.actions`. `champ-select-provider.js` (~línea 83) construye `bans` solo con `session.bans`, así que en Clash el consejero de iTero y las listas no excluyen baneados. Corregir con un parser de `actions` (`domain/draft-actions.js`).
+- **Hallazgos clave:** el rival se obtiene de `tournament-summary` → `bracket/{id}` → `roster/{id}` (rival con `position: FILL`, sin líneas); datos por jugador: `ranked/v2/tiers` (rango actual), `scouting/champions` (top 5 maestría y temporada; **no respeta el orden de `puuids`**), `champion-mastery/{puuid}` (193 campeones con `lastPlayTime`), `roster/{id}/stats` (`playerChampionIds` de los 10 jugadores por partida); `theirTeam` está oculto en el draft; 5 baneos por equipo (3 + picks + 2); el lado de pick solo sale en el DOM del modal.
+- **Pendiente del usuario:** decidir alcance (ver §5 de `CLASH-BANS.md`), revisar políticas de Riot sobre herramientas de draft antes de distribuir, y valorar las ideas de `IDEAS-EXTERNAS.md`. **Sin commitear**: `dev/api-probes/clash-devtools-probe.js`, `docs/CLASH-BANS.md`, `docs/IDEAS-EXTERNAS.md` y este cambio del HANDOFF están sin seguimiento/modificados en la rama `claude/sharp-davinci-na9oht`.
+- Sondeo de apoyo (solo lectura, para pegar en DevTools del cliente): `dev/api-probes/clash-devtools-probe.js`.
 
 ## Rediseño de UX/UI (2026-11-08) — ✅ fases 0–5 con el harness · ❓ sin probar en el cliente real
 Especificación: `docs/UX-SPEC.md`. Auditoría, decisiones y estado por fase: `docs/UX-AUDIT.md` (§0 = resumen de lo hecho).
