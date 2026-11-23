@@ -1,6 +1,6 @@
 # Clash: scouting y recomendación de bans — investigación y especificación por fases
 
-Estado (2026-11-22): **investigación cerrada, nada implementado**. Este documento reúne lo descubierto y deja cada fase lista para implementarse por separado.
+Estado (2026-11-23): **fases 0–3 implementadas** (ver `docs/HANDOFF.md`; sin probar en el cliente real); fases 4 y 5 pendientes. Lo demás de este documento sigue siendo la especificación. Este documento reúne lo descubierto y deja cada fase lista para implementarse por separado.
 Todo lo marcado ✅ se **verificó en el cliente real** (LeagueClient 16.23, Pengu 1.1.6) con `dev/api-probes/clash-devtools-probe.js` y consultas manuales; ❓ = sin verificar.
 Las capturas originales contenían nombres, puuids y summonerIds reales de terceros: **no se copian aquí ni en los fixtures** (anonimizar siempre).
 

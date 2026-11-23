@@ -40,7 +40,7 @@ export const TOKENS = Object.freeze({
 export const FONT = Object.freeze({ meta: '10px', text: '12px', section: '12px', name: '14px', title: '15px' })
 
 // Contenedores raíz de la interfaz del plugin (para limitar el foco y la reducción de movimiento a lo nuestro).
-const ROOTS = ['.ecp', '.ecx', '.ec-overlay', '.ecs', '.ecb-layer', '.ecp-fab', '.ecx-launch']
+const ROOTS = ['.ecp', '.ecx', '.ec-overlay', '.ecs', '.ecb-layer', '.ecc', '.ecp-fab', '.ecx-launch']
 
 const css = () => {
   const vars = Object.entries(TOKENS).map(([k, v]) => `--ds-${k}:${v}`).join(';')

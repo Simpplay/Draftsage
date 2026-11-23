@@ -171,6 +171,7 @@ export function mainMenu() {
     filters: app.filters,
     source: app.source,
     overlay: app.overlay,
+    bans: app.bans,
     advisor: app.advisor,
     mastery: {
       isEnabled: () => getAdvisorPrefs().useMastery,

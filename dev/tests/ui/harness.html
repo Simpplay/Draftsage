@@ -28,6 +28,7 @@ window.fetch = async (url, init = {}) => {
   if (url.startsWith('/lol-')) {
     await new Promise((r) => setTimeout(r, 20))
     const method = (init.method || 'GET').toUpperCase()
+    if (window.__lcuExtra) { const x = window.__lcuExtra(url); if (x !== undefined) return j(x) } // rutas extra de cada prueba (p. ej. Clash)
     if (method !== 'GET') window.__writes.push({ method, url, body })
     if (url === '/lol-perks/v1/pages' && method === 'GET') return j(window.__pages)
     if (url === '/lol-perks/v1/pages' && method === 'POST') { const p = { ...body, id: 50 + window.__pages.length, isEditable: true }; window.__pages.push(p); return j(p) }

@@ -148,3 +148,16 @@ export function setOverlayPrefs(patch) {
   try { DataStore.set(OVERLAY_KEY, next) } catch {}
   return next
 }
+
+// Clash: ayuda para decidir bans en el modal de scouting (application/ban-advisor.js). Solo LCU + LoLalytics; no envía nada a terceros.
+const CLASH_KEY = 'draftsage/clash'
+const cleanClash = (o) => ({ enabled: o?.enabled !== false })
+
+export function getClashPrefs() {
+  try { return cleanClash(DataStore.get(CLASH_KEY, {})) } catch { return { enabled: true } }
+}
+export function setClashPrefs(patch) {
+  const next = cleanClash({ ...getClashPrefs(), ...patch })
+  try { DataStore.set(CLASH_KEY, next) } catch {}
+  return next
+}
