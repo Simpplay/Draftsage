@@ -18,6 +18,7 @@
 import { log } from '../../shared/logger.js'
 import { lobbyTierFromRaw, rawTierFromLcu, roleFromPosition } from '../../domain/lobby.js'
 import { sideOfTeam } from '../../domain/itero.js'
+import { allBans } from '../../domain/draft-actions.js'
 
 const GAME_PHASES = new Set(['GameStart', 'InProgress', 'Reconnect'])
 // Todo lo que el consejero de picks necesita ver cambiar: aliados (con su posición), rivales, bans y lado.
@@ -80,7 +81,8 @@ export function createChampSelectProvider({ lcuGet, activeMs = 1000, idleMs = 25
     const [lobbyTier, q] = await Promise.all([lobbyTierOf(session), queueOf()])
     // Lado (myTeam[].team: 1 azul, 2 rojo ❓) y bans de ambos equipos (ids; 0 = sin ban todavía): solo los usa el consejero de picks.
     const side = sideOfTeam(me.team)
-    const bans = [...(session.bans?.myTeamBans ?? []), ...(session.bans?.theirTeamBans ?? [])].filter((id) => Number.isInteger(id) && id > 0)
+    // En Clash `session.bans` viene vacío: los baneos hechos se leen también de `actions` (domain/draft-actions.js).
+    const bans = allBans(session)
     // enemies = todos los rivales ya revelados (aunque el cliente no informe su posición); allies = tus compañeros.
     return {
       championId, ...(opponent && { opponentChampionId: opponent }), role: roleFromPosition(position), ...(lobbyTier && { lobbyTier }), ...(q && { mode: q.mode }),

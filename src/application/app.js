@@ -8,19 +8,21 @@ import { createSourceRouter } from './sources.js'
 import { createLolalyticsSource } from './lolalytics-source.js'
 import { createChampionStats, createOverlayController } from './overlay.js'
 import { createPickAdvisor, createPickAdvisorController } from './pick-advisor.js'
+import { createBanAdvisor, createBanAdvisorController } from './ban-advisor.js'
 import { createEnemyRoles } from './enemy-roles.js'
 import { createMastery } from './mastery.js'
 import { createPickFilters } from './pick-filters.js'
 import { createConfigurationApplier } from './configuration.js'
 import { createLiveGame } from './live-game.js'
 import { contextFromSnapshot } from '../domain/live.js'
-import { getApplyPrefs, setApplyPrefs, getFilterPrefs, setFilterPrefs, getSourcePrefs, setSourcePrefs, getOverlayPrefs, setOverlayPrefs, getAdvisorPrefs, setAdvisorPrefs, getPickFilterPrefs, setPickFilterPrefs, pins } from './preferences.js'
+import { getApplyPrefs, setApplyPrefs, getFilterPrefs, setFilterPrefs, getSourcePrefs, setSourcePrefs, getOverlayPrefs, setOverlayPrefs, getAdvisorPrefs, setAdvisorPrefs, getClashPrefs, setClashPrefs, getPickFilterPrefs, setPickFilterPrefs, pins } from './preferences.js'
 import { needsLogin } from '../domain/sources.js'
 import { createCoachlessClient } from '../infrastructure/coachless/client.js'
 import { createCache } from '../infrastructure/coachless/cache.js'
 import { createLolalyticsClient } from '../infrastructure/lolalytics/client.js'
 import { createIteroClient } from '../infrastructure/itero/client.js'
 import { createEnglishNames } from '../infrastructure/ddragon/names.js'
+import { createClashProvider } from '../infrastructure/lcu/clash-provider.js'
 import { createChampSelectProvider } from '../infrastructure/lcu/champ-select-provider.js'
 import { lcuGet } from '../infrastructure/lcu/lcu-client.js'
 import { createIdentity } from '../infrastructure/lcu/identity.js'
@@ -83,6 +85,12 @@ const advisor = createPickAdvisorController({
   source: controller, prefs: { get: getAdvisorPrefs, set: setAdvisorPrefs }, getFilters: getFilterPrefs, debounceMs: 600, maxQueries: 12, log,
 })
 
+// Clash: bans recomendados en el modal de scouting (scouting del LCU + meta de LoLalytics). Solo muestra; no envía nada a terceros.
+const bans = createBanAdvisorController({
+  advisor: createBanAdvisor({ clash: createClashProvider({ lcuGet, log }), lola: lolaClient, getFilters: getFilterPrefs, log }),
+  prefs: { get: getClashPrefs, set: setClashPrefs }, log,
+})
+
 // Línea de cada rival: la que elige el jugador en el panel o la que deduce el plugin (cuota de línea de LoLalytics).
 const enemyRoles = createEnemyRoles({ source: controller, lola: lolaClient, getFilters: getFilterPrefs, log })
 
@@ -112,6 +120,8 @@ export const app = {
   advisor: Object.assign(advisor, { iteroStatus: () => iteroClient.status() }),
   /** Maestría del jugador (opcional, apagada por defecto) y filtros de la selección. */
   mastery,
+  /** Clash: recomendación de bans en el scouting del rival. */
+  bans,
   enemyRoles,
   pickFilters,
   /** Al cerrar sesión o cambiar de cuenta: nada de lo cacheado debe pasar a otra cuenta (puede variar el plan). */

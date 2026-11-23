@@ -100,7 +100,7 @@ const TARGETS = [
  *          actions:{login:Function, logout:Function, simulate:Function, cors:Function, enableApply:()=>Promise<boolean>, enableAdvisor:()=>Promise<boolean>,
  *                   enableMastery:()=>Promise<boolean>, resetPanel:Function, reopen:Function, unsimulate:Function, togglePanel:Function}}} deps
  */
-export function openSettings({ applier, catalog, filters, source, overlay, advisor, mastery, getSession, isSimulating, panelEnabled, updates, actions }) {
+export function openSettings({ applier, catalog, filters, source, overlay, bans, advisor, mastery, getSession, isSimulating, panelEnabled, updates, actions }) {
   ensureStyle()
   const box = h('div', { class: 'ecs' })
   let more = false
@@ -205,6 +205,7 @@ export function openSettings({ applier, catalog, filters, source, overlay, advis
     const generalMinis = [
       mini('panel', panelEnabled() ? 'eye' : 'eyeOff', t('set.panel'), panelEnabled() ? t('set.panelHide') : t('set.panelShow'), () => { actions.togglePanel(); render() }, panelEnabled()),
       mini('overlay', 'swords', t('set.overlay'), overlay.isEnabled() ? t('set.overlayOn') : t('set.overlayOff'), () => { overlay.setEnabled(!overlay.isEnabled()); window.dispatchEvent(new Event('draftsage:prefs')); render() }, overlay.isEnabled()),
+      mini('clash', 'shield', t('set.clash'), bans.isEnabled() ? t('set.clashOn') : t('set.clashOff'), () => { bans.setEnabled(!bans.isEnabled()); window.dispatchEvent(new Event('draftsage:prefs')); render() }, bans.isEnabled()),
       mini('lang', 'globe', getLang().toUpperCase(), t('set.langTip'), () => { actions.toggleLanguage(); relabel() }),
       mini('resetpos', 'refresh', t('set.resetPos'), t('set.resetPosTip'), () => actions.resetPanel()),
     ]

@@ -8,6 +8,7 @@ import { enableApplyFlow, loginMenu, mainMenu, resetPanelPosition, simulateMenu 
 import { mountPanel } from '../presentation/panel.js'
 import { mountOverlay, probeGrid } from '../presentation/overlay.js'
 import { mountNative, probeNative } from '../presentation/native.js'
+import { mountScouting } from '../presentation/components/scouting.js'
 import { notify } from '../presentation/ui.js'
 import { getUpdatePrefs, setUpdatePrefs } from './update-prefs.js'
 import { t } from '../shared/i18n.js'
@@ -37,6 +38,8 @@ window.draftsage = Object.assign(window.draftsage ?? {}, {
   enemyRoles: () => app.enemyRoles.getState(),
   masteryState: () => { const { points, ...rest } = app.mastery.getState(); return { ...rest, campeones: points ? Object.keys(points).length : 0 } },
   pickFilters: () => app.pickFilters.get(),
+  // Clash: estado de la recomendación de bans (sin nombres ni ids de jugadores en el log).
+  clashState: () => { const { data, ...rest } = app.bans.getState(); return { ...rest, bans: data?.bans?.length ?? 0, jugadores: data?.players?.length ?? 0, parcial: data?.partial } },
 })
 
 // Avisos de actualización. `window.draftsage.build()` y el evento `draftsage:update` los pone el loader (application/loader.js).
@@ -72,6 +75,10 @@ export async function start() {
     .catch((e) => log.error('no se pudo montar el panel:', e))
   mountOverlay({ overlay: app.overlay, catalog: app.catalog, getPrefs: getOverlayPrefs, filters: app.pickFilters, inSelection: () => { const st = app.controller.getState(); return st.status !== 'idle' && !!st.context && st.context.phase !== 'game' } })
     .catch((e) => log.error('no se pudo montar las estadísticas de la selección:', e))
+
+  // Clash: bloque de bans recomendados junto al modal de scouting del rival (no hace nada fuera de esa pantalla).
+  mountScouting({ bans: app.bans, catalog: app.catalog })
+    .catch((e) => log.error('no se pudo montar el scouting de Clash:', e))
 
   if (await restoreSession()) {
     log.info('sesión recuperada')
