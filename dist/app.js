@@ -1,4 +1,4 @@
-/* draftsage v1.0.6 — generado por dev/tools/release.mjs; no editar */
+/* draftsage v1.0.7 — generado por dev/tools/release.mjs; no editar */
 
 // src/shared/strings.js
 var es = {
@@ -75,6 +75,42 @@ var es = {
   "set.overlay": "Estad\xEDsticas",
   "set.overlayOn": "Win rate y counters sobre cada campe\xF3n: activado",
   "set.overlayOff": "Win rate y counters sobre cada campe\xF3n: desactivado",
+  "set.clash": "Clash",
+  "set.clashOn": "Bans recomendados en el scouting de Clash: activado",
+  "set.clashOff": "Bans recomendados en el scouting de Clash: desactivado",
+  "clash.title": "Bans recomendados",
+  "clash.vs": "contra {0}",
+  "clash.loading": "Analizando al rival\u2026",
+  "clash.fold": "Plegar",
+  "clash.unfold": "Desplegar",
+  "clash.err.no-tournament": "No hay torneo de Clash activo",
+  "clash.err.no-bracket": "No se pudo leer el bracket",
+  "clash.err.no-opponent": "A\xFAn no hay rival definido",
+  "clash.err.no-roster": "No se encontr\xF3 ese equipo en tu bracket",
+  "clash.err.no-players": "No se pudo leer a los jugadores",
+  "clash.err.error": "No se pudo analizar al rival",
+  "clash.partial": "Faltan datos: {0}",
+  "clash.part.ranks": "rangos",
+  "clash.part.scouting": "temporada",
+  "clash.part.mastery": "maestr\xEDa",
+  "clash.part.stats": "partidas de Clash",
+  "clash.nometa": "Sin datos del meta (LoLalytics): fiabilidad limitada",
+  "clash.tag.one-trick": "One-trick",
+  "clash.tag.overlap": "Varios lo juegan",
+  "clash.tag.high-ban-rate": "Muy baneado",
+  "clash.tag.low-sample": "Pocas partidas",
+  "clash.rel.high": "Fiabilidad alta",
+  "clash.rel.medium": "Fiabilidad media",
+  "clash.rel.low": "Fiabilidad baja",
+  "clash.oneTrick": "One-trick de {0}",
+  "clash.ev.season": "{0} partidas de temporada ({1} victorias)",
+  "clash.ev.clash": "{0} partidas en este Clash ({1} victorias)",
+  "clash.ev.mastery": "{0} puntos de maestr\xEDa, nivel {1}",
+  "clash.ev.days": "jugado hace {0} d",
+  "clash.ev.stale": "sin fecha reciente",
+  "clash.ev.model": "Estimado {0}% de victorias \xB7 pierde {1} pts si se lo baneas \xB7 uso probable {2}%",
+  "clash.top.tip": "{0}: {1}",
+  "clash.footer": "Solo informativo: Draftsage no banea por ti.",
   "ov.wr": "Win rate {0} % \xB7 nota {1}",
   "ov.pr": "Uso {0} %",
   "ov.vs": "Contra el rival: {0} % ({1} sobre su media) \xB7 {2} partidas",
@@ -510,6 +546,42 @@ var en = {
   "set.overlay": "Stats",
   "set.overlayOn": "Win rate and counters over each champion: on",
   "set.overlayOff": "Win rate and counters over each champion: off",
+  "set.clash": "Clash",
+  "set.clashOn": "Recommended bans in Clash scouting: on",
+  "set.clashOff": "Recommended bans in Clash scouting: off",
+  "clash.title": "Recommended bans",
+  "clash.vs": "vs {0}",
+  "clash.loading": "Analysing the opponent\u2026",
+  "clash.fold": "Fold",
+  "clash.unfold": "Unfold",
+  "clash.err.no-tournament": "No active Clash tournament",
+  "clash.err.no-bracket": "Could not read the bracket",
+  "clash.err.no-opponent": "No opponent decided yet",
+  "clash.err.no-roster": "That team is not in your bracket",
+  "clash.err.no-players": "Could not read the players",
+  "clash.err.error": "Could not analyse the opponent",
+  "clash.partial": "Missing data: {0}",
+  "clash.part.ranks": "ranks",
+  "clash.part.scouting": "season",
+  "clash.part.mastery": "mastery",
+  "clash.part.stats": "Clash games",
+  "clash.nometa": "No meta data (LoLalytics): limited reliability",
+  "clash.tag.one-trick": "One-trick",
+  "clash.tag.overlap": "Several play it",
+  "clash.tag.high-ban-rate": "Often banned",
+  "clash.tag.low-sample": "Few games",
+  "clash.rel.high": "High reliability",
+  "clash.rel.medium": "Medium reliability",
+  "clash.rel.low": "Low reliability",
+  "clash.oneTrick": "{0} one-trick",
+  "clash.ev.season": "{0} season games ({1} wins)",
+  "clash.ev.clash": "{0} games in this Clash ({1} wins)",
+  "clash.ev.mastery": "{0} mastery points, level {1}",
+  "clash.ev.days": "played {0} d ago",
+  "clash.ev.stale": "no recent date",
+  "clash.ev.model": "Estimated {0}% win rate \xB7 loses {1} pts if banned \xB7 likely use {2}%",
+  "clash.top.tip": "{0}: {1}",
+  "clash.footer": "Informational only: Draftsage does not ban for you.",
   "ov.wr": "Win rate {0} % \xB7 grade {1}",
   "ov.pr": "Pick rate {0} %",
   "ov.vs": "Vs. the opponent: {0} % ({1} over their average) \xB7 {2} games",
@@ -1121,7 +1193,7 @@ function buildRequest({
   side = "Blue",
   allies = {},
   enemies = {},
-  bans = [],
+  bans: bans2 = [],
   region = "euw1",
   mastery: mastery2 = null
 }) {
@@ -1134,7 +1206,7 @@ function buildRequest({
       teamComp[`t2_${currentLane}_champion`] = enemies[currentLane];
     }
   }
-  const normalizedBans = [...new Set(bans)].filter(Boolean).sort();
+  const normalizedBans = [...new Set(bans2)].filter(Boolean).sort();
   const weight = clamp01(mastery2 == null ? void 0 : mastery2.weight);
   const useMastery = weight > 0 && !!(mastery2 == null ? void 0 : mastery2.data) && Object.keys(mastery2.data).length > 0;
   return {
@@ -1350,17 +1422,17 @@ function normalizeBasicInfo(raw) {
   if (!mastery2 || typeof mastery2 !== "object" || Array.isArray(mastery2)) return null;
   const points = {};
   let count = 0;
-  let sum = 0;
+  let sum2 = 0;
   for (const [key2, value] of Object.entries(mastery2)) {
     if (!/^\d+$/.test(key2)) continue;
     const n = num(value);
     if (n == null || n < 0) continue;
     points[key2] = n;
-    sum += n;
+    sum2 += n;
     count++;
   }
   const avgRaw = num(mastery2.avg);
-  return { points, avg: avgRaw ?? (count ? Math.round(sum / count) : 0), count };
+  return { points, avg: avgRaw ?? (count ? Math.round(sum2 / count) : 0), count };
 }
 
 // src/domain/pick-advice.js
@@ -1733,6 +1805,23 @@ function setOverlayPrefs(patch) {
   }
   return next;
 }
+var CLASH_KEY = "draftsage/clash";
+var cleanClash = (o) => ({ enabled: (o == null ? void 0 : o.enabled) !== false });
+function getClashPrefs() {
+  try {
+    return cleanClash(DataStore.get(CLASH_KEY, {}));
+  } catch {
+    return { enabled: true };
+  }
+}
+function setClashPrefs(patch) {
+  const next = cleanClash({ ...getClashPrefs(), ...patch });
+  try {
+    DataStore.set(CLASH_KEY, next);
+  } catch {
+  }
+  return next;
+}
 
 // src/shared/logger.js
 var TAG = "[draftsage]";
@@ -1784,7 +1873,7 @@ var TOKENS = Object.freeze({
   "amber": "#e0a93a"
 });
 var FONT = Object.freeze({ meta: "10px", text: "12px", section: "12px", name: "14px", title: "15px" });
-var ROOTS = [".ecp", ".ecx", ".ec-overlay", ".ecs", ".ecb-layer", ".ecp-fab", ".ecx-launch"];
+var ROOTS = [".ecp", ".ecx", ".ec-overlay", ".ecs", ".ecb-layer", ".ecc", ".ecp-fab", ".ecx-launch"];
 var css = () => {
   const vars = Object.entries(TOKENS).map(([k, v]) => `--ds-${k}:${v}`).join(";");
   const fs = Object.entries(FONT).map(([k, v]) => `--ds-fs-${k}:${v}`).join(";");
@@ -2273,7 +2362,7 @@ var TARGETS = [
   { id: "own", ico: "page", label: "set.own", tip: "set.ownTip" },
   { id: "current", ico: "swap", label: "set.current", tip: "set.currentTip" }
 ];
-function openSettings({ applier: applier2, catalog: catalog2, filters, source, overlay: overlay2, advisor: advisor2, mastery: mastery2, getSession, isSimulating, panelEnabled, updates, actions }) {
+function openSettings({ applier: applier2, catalog: catalog2, filters, source, overlay: overlay2, bans: bans2, advisor: advisor2, mastery: mastery2, getSession, isSimulating, panelEnabled, updates, actions }) {
   ensureStyle2();
   const box = h("div", { class: "ecs" });
   let more = false;
@@ -2492,6 +2581,11 @@ function openSettings({ applier: applier2, catalog: catalog2, filters, source, o
         window.dispatchEvent(new Event("draftsage:prefs"));
         render();
       }, overlay2.isEnabled()),
+      mini("clash", "shield", t("set.clash"), bans2.isEnabled() ? t("set.clashOn") : t("set.clashOff"), () => {
+        bans2.setEnabled(!bans2.isEnabled());
+        window.dispatchEvent(new Event("draftsage:prefs"));
+        render();
+      }, bans2.isEnabled()),
       mini("lang", "globe", getLang().toUpperCase(), t("set.langTip"), () => {
         actions.toggleLanguage();
         relabel();
@@ -2850,10 +2944,10 @@ function createGameData({ lcuGet: lcuGet2 }) {
     runeTrees: () => runeTrees,
     /** Busca un campeón por nombre o alias (sin tildes ni mayúsculas): nombre exacto, alias exacto y por último prefijo. */
     findChampion(query) {
-      const q = norm2(query);
-      if (!q) return null;
+      const q2 = norm2(query);
+      if (!q2) return null;
       const all = [...champions.values()];
-      return all.find((c) => norm2(c.name) === q) ?? all.find((c) => norm2(c.alias) === q) ?? all.find((c) => norm2(c.name).startsWith(q)) ?? null;
+      return all.find((c) => norm2(c.name) === q2) ?? all.find((c) => norm2(c.alias) === q2) ?? all.find((c) => norm2(c.name).startsWith(q2)) ?? null;
     }
   };
 }
@@ -2940,21 +3034,21 @@ function pickBuild(builds, keystone) {
   const list = (builds ?? []).filter((b) => b && typeof b === "object");
   if (!list.length) return null;
   const rank = (a, b) => (a.tier ?? 99) - (b.tier ?? 99) || (b.occurrence ?? 0) - (a.occurrence ?? 0);
-  const same = list.filter((b) => b.keystone === keystone).sort(rank);
-  if (same.length) return { build: same[0], keystoneMatch: true };
+  const same2 = list.filter((b) => b.keystone === keystone).sort(rank);
+  if (same2.length) return { build: same2[0], keystoneMatch: true };
   return { build: [...list].sort(rank)[0], keystoneMatch: false };
 }
 function buildItemPlan(build, { keystoneMatch = true, boots = [], next = [] } = {}) {
   if (!build) return null;
   const block = (type) => (build.itemBlocks ?? []).filter((b) => (b == null ? void 0 : b.type) === type).flatMap((b) => b.items ?? []);
-  const uniq = (ids) => [...new Set((ids ?? []).map(validId).filter(Boolean))];
+  const uniq2 = (ids) => [...new Set((ids ?? []).map(validId).filter(Boolean))];
   const plan = {
     tier: Number.isInteger(build.tier) ? build.tier : null,
     winrate: Number.isFinite(build.winrate) ? build.winrate : null,
     games: Number.isFinite(build.occurrence) && build.occurrence > 0 ? build.occurrence : 0,
     keystoneMatch,
-    starters: uniq(build.starterIds).slice(0, LIMITS.starters),
-    core: uniq([build.firstItemId, build.secondItemId]),
+    starters: uniq2(build.starterIds).slice(0, LIMITS.starters),
+    core: uniq2([build.firstItemId, build.secondItemId]),
     path: stats(block(BLOCK.CORE)),
     early: stats(block(BLOCK.EARLY)).sort(byUse),
     options: stats(block(BLOCK.OPTIONS)).sort(byUse),
@@ -4165,7 +4259,7 @@ function createPickAdvisor({ itero, names, catalog: catalog2, lola = null, stats
       }
       return out;
     };
-    const bans = (ctx.bans ?? []).map(nameOf).filter(Boolean);
+    const bans2 = (ctx.bans ?? []).map(nameOf).filter(Boolean);
     const prefs = getPrefs();
     let masteryInfo = null;
     if (mastery2 == null ? void 0 : mastery2.isEnabled()) {
@@ -4173,7 +4267,7 @@ function createPickAdvisor({ itero, names, catalog: catalog2, lola = null, stats
       if ((m == null ? void 0 : m.status) === "ready") masteryInfo = { data: { ...m.points, avg: m.avg }, weight: prefs.masteryWeight };
     }
     const region = iteroRegion(resolveRegions(getFilters()).regions);
-    const req = buildRequest({ lane, rankClass, side: ctx.side ?? "Blue", allies: toNames(allyLanes), enemies: toNames(enemyLanes), bans, mastery: masteryInfo, ...region && { region } });
+    const req = buildRequest({ lane, rankClass, side: ctx.side ?? "Blue", allies: toNames(allyLanes), enemies: toNames(enemyLanes), bans: bans2, mastery: masteryInfo, ...region && { region } });
     const [it, st] = await Promise.all([
       itero.draftPicks(req),
       stats2 ? stats2.load({ role: ctx.role, lobbyTier: ctx.lobbyTier, enemies, opponentChampionId: rival, opponentSource: "position" }).catch(() => null) : null
@@ -4186,11 +4280,11 @@ function createPickAdvisor({ itero, names, catalog: catalog2, lola = null, stats
       idOf,
       stats: (st == null ? void 0 : st.ok) ? st.data : null,
       reveal,
-      banned: bans,
+      banned: bans2,
       options: { ...prefs.minPick != null && { minPick: prefs.minPick } }
     });
     const withMastery = req.userModelWeightings[`t1_${lane}_mastery`] > 0;
-    log2 == null ? void 0 : log2.info("consejero", JSON.stringify({ linea: lane, rango: rankClass, region: req.region, lado: req.side, aliados: reveal.allyLanes, rivales: reveal.enemyLanes, bans: bans.length, pool: r.pool, contraste: r.contrasted, maestria: withMastery, top: r.picks.map((p) => p.name) }));
+    log2 == null ? void 0 : log2.info("consejero", JSON.stringify({ linea: lane, rango: rankClass, region: req.region, lado: req.side, aliados: reveal.allyLanes, rivales: reveal.enemyLanes, bans: bans2.length, pool: r.pool, contraste: r.contrasted, maestria: withMastery, top: r.picks.map((p) => p.name) }));
     return {
       ok: true,
       data: { picks: r.picks, rows: r.rows, meta: { lane, rankClass, region: req.region, regionManual: !!region, side: req.side, sideKnown: !!ctx.side, blended: r.blended, contrasted: r.contrasted, mastery: withMastery, pool: r.pool, rival, unrecognized: it.data.unrecognized, ...lanes } }
@@ -4303,6 +4397,351 @@ function createPickAdvisorController({ advisor: advisor2, source, prefs, getFilt
     configure(patch) {
       prefs.set(patch);
       return evaluate({ force: true });
+    }
+  };
+}
+
+// src/domain/ban-advice.js
+var MODEL = {
+  k: 10,
+  // partidas «virtuales» al win rate del meta para encoger muestras pequeñas (1 partida al 100 % no vale 100 %)
+  recencyDays: 45,
+  // solo cuentan campeones jugados en los últimos N días
+  minPoints: 3e3,
+  // y con al menos estos puntos de maestría
+  famBonus: 3,
+  // puntos de win rate que puede aportar la familiaridad (el campeón con más puntos del jugador)
+  poolSize: 8,
+  // campeones considerados por jugador (los de más puntos recientes)
+  defaultWr: 50,
+  // win rate medio supuesto cuando no hay meta
+  minSeasonGames: 5,
+  // partidas de temporada para fiarse del dato
+  oneTrickShare: 0.5,
+  // u ≥ esto → «one-trick»…
+  oneTrickMinPool: 3,
+  // …pero solo si hay al menos estos campeones disponibles (con 1–2 es «datos escasos», no un one-trick)
+  overlapShare: 0.15,
+  // u ≥ esto en ≥ 2 jugadores → «solapamiento»
+  highBanRate: 10,
+  // % de ban del meta para la etiqueta «muy baneado»
+  limit: 10
+};
+var DAY = 864e5;
+var r3 = (x) => Math.round(x * 1e3) / 1e3;
+var sum = (a) => a.reduce((s, x) => s + x, 0);
+function analyze(ctx) {
+  const M = { ...MODEL, ...ctx.model ?? {} };
+  const now = Number.isFinite(ctx.now) ? ctx.now : Date.now();
+  const gone = new Set(ctx.unavailable ?? []);
+  const meta = ctx.meta ?? (() => null);
+  const base = (cid) => {
+    var _a;
+    const w = (_a = meta(cid)) == null ? void 0 : _a.wr;
+    return Number.isFinite(w) ? w : M.defaultWr;
+  };
+  return (ctx.players ?? []).map((p, playerIdx) => {
+    let stale = false;
+    let pts = (p.pool ?? []).filter((m) => m.lastPlay != null && m.lastPlay >= now - M.recencyDays * DAY && m.points >= M.minPoints);
+    if (!pts.length) {
+      pts = (p.topMasteries ?? []).map((m) => ({ ...m, lastPlay: null }));
+      stale = true;
+    }
+    pts = [...pts].sort((a, b) => b.points - a.points).slice(0, M.poolSize);
+    const points = new Map(pts.map((m) => [m.cid, m]));
+    const season = /* @__PURE__ */ new Map();
+    const add = (cid, games, wins, from) => {
+      const e = season.get(cid) ?? { games: 0, wins: 0, clash: 0, clashWins: 0 };
+      e.games += games;
+      e.wins += wins;
+      if (from === "clash") {
+        e.clash += games;
+        e.clashWins += wins;
+      }
+      season.set(cid, e);
+    };
+    for (const s of p.seasonChamps ?? []) add(s.cid, s.games, s.wins, "season");
+    for (const c of p.clashPicks ?? []) add(c.cid, 1, c.win ? 1 : 0, "clash");
+    const cids = [.../* @__PURE__ */ new Set([...points.keys(), ...season.keys()])].filter((c) => !gone.has(c));
+    const maxPts = Math.max(0, ...[...points.values()].map((m) => m.points));
+    const sumPts = sum(cids.map((c) => {
+      var _a;
+      return ((_a = points.get(c)) == null ? void 0 : _a.points) ?? 0;
+    }));
+    const sumGames = sum(cids.map((c) => {
+      var _a;
+      return ((_a = season.get(c)) == null ? void 0 : _a.games) ?? 0;
+    }));
+    const raw = cids.map((c) => {
+      var _a, _b;
+      const parts = [];
+      if (sumPts > 0) parts.push((((_a = points.get(c)) == null ? void 0 : _a.points) ?? 0) / sumPts);
+      if (sumGames > 0) parts.push((((_b = season.get(c)) == null ? void 0 : _b.games) ?? 0) / sumGames);
+      return parts.length ? sum(parts) / parts.length : 0;
+    });
+    const total = sum(raw);
+    const rows = cids.map((cid, i) => {
+      var _a;
+      const s = season.get(cid);
+      const b = base(cid);
+      const shrunk = s ? (s.wins + M.k * b / 100) / (s.games + M.k) * 100 : b;
+      const fam = maxPts > 0 ? M.famBonus * Math.min(1, (((_a = points.get(cid)) == null ? void 0 : _a.points) ?? 0) / maxPts) : 0;
+      return { cid, usage: total > 0 ? raw[i] / total : 0, strength: shrunk + fam, shrunk, fam, season: s ?? null, mastery: points.get(cid) ?? null };
+    });
+    for (const r of rows) {
+      const alt = Math.max(M.defaultWr, ...rows.filter((o) => o.cid !== r.cid).map((o) => o.strength));
+      r.drop = Math.max(0, r.strength - alt);
+    }
+    return { playerIdx, rows, stale, hasPool: (p.pool ?? []).length > 0 };
+  });
+}
+var evidenceOf = (r, stale, now) => {
+  var _a, _b, _c;
+  const ev = [];
+  if (((_a = r.season) == null ? void 0 : _a.games) - ((_b = r.season) == null ? void 0 : _b.clash) > 0) ev.push({ kind: "dato", key: "season", games: r.season.games - r.season.clash, wins: r.season.wins - r.season.clashWins });
+  if (((_c = r.season) == null ? void 0 : _c.clash) > 0) ev.push({ kind: "dato", key: "clash", games: r.season.clash, wins: r.season.clashWins });
+  if (r.mastery) ev.push({ kind: "dato", key: "mastery", points: r.mastery.points, level: r.mastery.level, days: r.mastery.lastPlay != null ? Math.max(0, Math.round((now - r.mastery.lastPlay) / DAY)) : null, stale });
+  ev.push({ kind: "modelo", key: "strength", wr: r3(r.strength), shrunk: r3(r.shrunk), drop: r3(r.drop) });
+  return ev;
+};
+function rankBans(ctx) {
+  var _a;
+  const M = { ...MODEL, ...ctx.model ?? {} };
+  const now = Number.isFinite(ctx.now) ? ctx.now : Date.now();
+  const meta = ctx.meta ?? (() => null);
+  const byChamp = /* @__PURE__ */ new Map();
+  for (const pl of analyze(ctx)) {
+    for (const r of pl.rows) {
+      if (r.usage <= 0) continue;
+      const e = byChamp.get(r.cid) ?? [];
+      e.push({ pl, r });
+      byChamp.set(r.cid, e);
+    }
+  }
+  const out = [];
+  for (const [cid, list] of byChamp) {
+    const value = sum(list.map(({ r }) => r.usage * r.drop));
+    const tags = [];
+    if (list.some(({ r, pl }) => r.usage >= M.oneTrickShare && pl.rows.length >= M.oneTrickMinPool)) tags.push("one-trick");
+    if (list.filter(({ r }) => r.usage >= M.overlapShare).length >= 2) tags.push("overlap");
+    const m = meta(cid);
+    if (Number.isFinite(m == null ? void 0 : m.br) && m.br >= M.highBanRate) tags.push("high-ban-rate");
+    const top = [...list].sort((a, b) => b.r.usage * b.r.drop - a.r.usage * a.r.drop)[0];
+    const games = ((_a = top.r.season) == null ? void 0 : _a.games) ?? 0;
+    let reliability = games >= M.minSeasonGames && !top.pl.stale ? "high" : games > 0 || top.r.mastery && !top.pl.stale ? "medium" : "low";
+    if (!m && reliability === "high") reliability = "medium";
+    if (games > 0 && games < M.minSeasonGames) tags.push("low-sample");
+    out.push({
+      championId: cid,
+      value: r3(value),
+      reliability,
+      tags,
+      perPlayer: list.map(({ pl, r }) => ({ playerIdx: pl.playerIdx, drop: r3(r.drop), usage: r3(r.usage), strength: r3(r.strength), evidence: evidenceOf(r, pl.stale, now) })).sort((a, b) => b.usage * b.drop - a.usage * a.drop),
+      _br: Number.isFinite(m == null ? void 0 : m.br) ? m.br : 0
+    });
+  }
+  out.sort((a, b) => b.value - a.value || b._br - a._br || a.championId - b.championId);
+  return out.slice(0, M.limit).map(({ _br, ...x }) => x);
+}
+function playerProfiles(ctx) {
+  const M = { ...MODEL, ...ctx.model ?? {} };
+  return analyze({ ...ctx, unavailable: [] }).map((pl) => {
+    const rows = [...pl.rows].sort((a, b) => b.usage - a.usage || a.cid - b.cid);
+    const games = sum(rows.map((r) => {
+      var _a;
+      return ((_a = r.season) == null ? void 0 : _a.games) ?? 0;
+    }));
+    const reliability = !rows.length ? "low" : games >= M.minSeasonGames * 3 && !pl.stale ? "high" : games > 0 || !pl.stale ? "medium" : "low";
+    return {
+      playerIdx: pl.playerIdx,
+      reliability,
+      oneTrick: rows[0] && rows[0].usage >= M.oneTrickShare && rows.length >= M.oneTrickMinPool ? rows[0].cid : null,
+      top: rows.slice(0, 3).map((r) => {
+        var _a, _b, _c;
+        return { cid: r.cid, usage: r3(r.usage), games: ((_a = r.season) == null ? void 0 : _a.games) ?? 0, wins: ((_b = r.season) == null ? void 0 : _b.wins) ?? 0, points: ((_c = r.mastery) == null ? void 0 : _c.points) ?? null };
+      })
+    };
+  });
+}
+
+// src/domain/clash.js
+var isNum4 = (v) => typeof v === "number" && Number.isFinite(v);
+var isChamp = (v) => Number.isInteger(v) && v > 0;
+var same = (a, b) => a != null && b != null && String(a) === String(b);
+var arr = (x) => Array.isArray(x) ? x : [];
+function findMyEntry(summary) {
+  const list = arr(summary).filter((e) => e && e.bracketId != null && e.rosterId != null);
+  return list.find((e) => e.state === "SCOUTING" || e.state === "IN_GAME") ?? list[0] ?? null;
+}
+function findOpponent(bracket, myRosterId) {
+  const pending = arr(bracket == null ? void 0 : bracket.matches).filter((m2) => m2 && (same(m2.rosterId1, myRosterId) || same(m2.rosterId2, myRosterId)) && !(m2.winnerId > 0) && m2.status !== "COMPLETED").sort((a, b) => (a.round ?? 0) - (b.round ?? 0) || (a.order ?? 0) - (b.order ?? 0));
+  const m = pending[0];
+  if (!m) return null;
+  const other = same(m.rosterId1, myRosterId) ? m.rosterId2 : m.rosterId1;
+  if (!(Number(other) > 0)) return null;
+  const r = arr(bracket.rosters).find((x) => same(x.rosterId, other));
+  return { rosterId: other, shortName: String((r == null ? void 0 : r.shortName) ?? ""), name: String((r == null ? void 0 : r.name) ?? ""), round: Number.isFinite(m.round) ? m.round : null };
+}
+var norm3 = (s) => String(s ?? "").trim().toLowerCase();
+function rosterByTag(bracket, tag) {
+  const t2 = norm3(tag);
+  if (!t2) return null;
+  const hits = arr(bracket == null ? void 0 : bracket.rosters).filter((r2) => norm3(r2 == null ? void 0 : r2.shortName) === t2);
+  if (hits.length !== 1) return null;
+  const r = hits[0];
+  return { rosterId: r.rosterId, shortName: String(r.shortName), name: String(r.name ?? "") };
+}
+function normalizeScouting(list) {
+  const out = /* @__PURE__ */ new Map();
+  for (const p of arr(list)) {
+    if (!p || p.playerId == null) continue;
+    out.set(String(p.playerId), {
+      topMasteries: arr(p.topMasteries).filter((m) => isChamp(m == null ? void 0 : m.championId)).map((m) => ({ cid: m.championId, level: isNum4(m.championLevel) ? m.championLevel : 0, points: isNum4(m.championPoints) ? m.championPoints : 0 })),
+      seasonChamps: arr(p.topSeasonChampions).filter((m) => isChamp(m == null ? void 0 : m.championId) && isNum4(m.gameCount) && m.gameCount > 0).map((m) => ({ cid: m.championId, games: m.gameCount, wins: Math.min(m.gameCount, isNum4(m.winCount) ? m.winCount : 0) })),
+      totalMasteryScore: isNum4(p.totalMasteryScore) ? p.totalMasteryScore : null
+    });
+  }
+  return out;
+}
+function normalizeMastery(list) {
+  return arr(list).filter((m) => isChamp(m == null ? void 0 : m.championId) && isNum4(m.championPoints) && m.championPoints > 0).map((m) => ({ cid: m.championId, level: isNum4(m.championLevel) ? m.championLevel : 0, points: m.championPoints, lastPlay: isNum4(m.lastPlayTime) && m.lastPlayTime > 0 ? m.lastPlayTime : null }));
+}
+function normalizeTiers(list) {
+  const out = /* @__PURE__ */ new Map();
+  for (const p of arr(list)) {
+    if (!p || p.summonerId == null) continue;
+    const get = (q2) => {
+      const t2 = arr(p.achievedTiers).find((x) => (x == null ? void 0 : x.queueType) === q2);
+      return (t2 == null ? void 0 : t2.tier) ? { tier: String(t2.tier).toUpperCase(), division: t2.division ?? null } : null;
+    };
+    out.set(String(p.summonerId), { solo: get("RANKED_SOLO_5x5"), flex: get("RANKED_FLEX_SR") });
+  }
+  return out;
+}
+function clashPicks(stats2, summonerIds, { ownRoster = true } = {}) {
+  const ids = new Set(arr(summonerIds).map(String));
+  const out = [];
+  for (const per of arr(stats2 == null ? void 0 : stats2.periodStats)) {
+    for (const m of arr(per == null ? void 0 : per.matchStats)) {
+      for (const [sid, cid] of Object.entries((m == null ? void 0 : m.playerChampionIds) ?? {})) {
+        if (ids.has(String(sid)) && isChamp(cid)) out.push({ summonerId: String(sid), cid, win: ownRoster ? !!m.win : !m.win });
+      }
+    }
+  }
+  return out;
+}
+function averageTier(ranks) {
+  const raws = arr(ranks).map((r) => {
+    var _a;
+    return rawTierFromLcu((_a = (r == null ? void 0 : r.solo) ?? (r == null ? void 0 : r.flex)) == null ? void 0 : _a.tier);
+  }).filter((x) => x != null);
+  return lobbyTierFromRaw(raws);
+}
+
+// src/application/ban-advisor.js
+function createBanAdvisor({ clash, lola = null, getFilters = () => void 0, now = () => Date.now(), log: log2 = null }) {
+  async function loadMeta(lobbyTier) {
+    if (!lola) return null;
+    try {
+      const { tiers } = resolveTiers(getFilters(), lobbyTier);
+      const tp = tierParam(tiers);
+      const lists = await Promise.all(LANES2.map((lane) => lola.tierlist({ lane, tier: tp.param })));
+      const best = /* @__PURE__ */ new Map();
+      for (const l of lists) {
+        if (!(l == null ? void 0 : l.ok)) continue;
+        for (const [cid, row] of l.data.rows) {
+          const s = statsOfTierRow(row);
+          if (s && (!best.has(cid) || s.games > best.get(cid).games)) best.set(cid, s);
+        }
+      }
+      return best.size ? best : null;
+    } catch (e) {
+      log2 == null ? void 0 : log2.warn("bans: no se pudo leer el meta", String(e));
+      return null;
+    }
+  }
+  async function advise({ tag = null, rosterId = null, unavailable = [] } = {}) {
+    const sc = await clash.getScoutingContext({ tag, rosterId });
+    if (!sc.ok) return sc;
+    const players = sc.data.players;
+    const metaMap = await loadMeta(averageTier(players.map((p) => p.rank)));
+    const ctx = { players, unavailable, now: now(), meta: metaMap ? (cid) => metaOf(metaMap, cid) : null };
+    const bans2 = rankBans(ctx);
+    const profiles = playerProfiles(ctx);
+    log2 == null ? void 0 : log2.info("bans: recomendaci\xF3n", JSON.stringify({ jugadores: players.length, bans: bans2.length, meta: !!metaMap, parcial: sc.data.partial }));
+    return {
+      ok: true,
+      data: {
+        team: { shortName: sc.data.shortName, name: sc.data.name },
+        partial: sc.data.partial,
+        hasMeta: !!metaMap,
+        fetchedAt: sc.data.fetchedAt,
+        players: players.map((p, i) => ({ name: p.gameName, rank: p.rank, ...profiles[i] })),
+        bans: bans2
+      }
+    };
+  }
+  return { advise };
+}
+var metaOf = (m, cid) => {
+  const s = m.get(cid);
+  return s ? { wr: s.wr, br: s.br } : null;
+};
+function createBanAdvisorController({ advisor: advisor2, prefs, debounceMs = 150, log: log2 = null }) {
+  const listeners = /* @__PURE__ */ new Set();
+  let state = { status: "idle", data: null, tag: null };
+  let generation = 0;
+  let wanted = null;
+  const setState = (s) => {
+    state = s;
+    for (const cb of [...listeners]) {
+      try {
+        cb(state);
+      } catch (e) {
+        log2 == null ? void 0 : log2.error("bans:", e);
+      }
+    }
+  };
+  async function run(tag, { force = false } = {}) {
+    if (!force && tag === state.tag && state.status !== "idle") return;
+    const gen = ++generation;
+    if (!tag || !prefs.get().enabled) {
+      if (state.status !== "idle") setState({ status: "idle", data: null, tag: null });
+      return;
+    }
+    setState({ status: "loading", data: tag === state.tag ? state.data : null, tag });
+    if (debounceMs > 0) {
+      await new Promise((r2) => setTimeout(r2, debounceMs));
+      if (gen !== generation) return;
+    }
+    let r;
+    try {
+      r = await advisor2.advise({ tag });
+    } catch (e) {
+      log2 == null ? void 0 : log2.error("bans fallaron:", String(e));
+      r = { ok: false, reason: "error" };
+    }
+    if (gen !== generation) return;
+    if (r.ok) setState({ status: "ready", data: r.data, tag });
+    else setState({ status: "error", data: null, tag, reason: r.reason });
+  }
+  return {
+    getState: () => state,
+    subscribe(cb) {
+      listeners.add(cb);
+      cb(state);
+      return () => listeners.delete(cb);
+    },
+    /** La interfaz indica qué roster se está viendo (tag) o null si no hay modal de scouting. */
+    target(tag) {
+      wanted = tag ? String(tag).trim() : null;
+      return run(wanted);
+    },
+    refresh: () => run(wanted, { force: true }),
+    isEnabled: () => prefs.get().enabled,
+    setEnabled(on) {
+      prefs.set({ enabled: !!on });
+      return run(wanted, { force: true });
     }
   };
 }
@@ -4623,16 +5062,16 @@ function remainingCost(id, owned, info) {
     if (!it || !Number.isFinite(it.priceTotal) || depth > 6) return null;
     const parts = it.from ?? [];
     if (!parts.length) return it.priceTotal;
-    let sum = 0, partsTotal = 0;
+    let sum2 = 0, partsTotal = 0;
     for (const p of parts) {
       const pi = info(p);
       if (!pi || !Number.isFinite(pi.priceTotal)) return null;
       partsTotal += pi.priceTotal;
       const r = go(p, depth + 1);
       if (r == null) return null;
-      sum += r;
+      sum2 += r;
     }
-    return sum + Math.max(0, it.priceTotal - partsTotal);
+    return sum2 + Math.max(0, it.priceTotal - partsTotal);
   };
   return go(id, 0);
 }
@@ -4855,10 +5294,10 @@ var SITE2 = "https://lolalytics.com/es/lol/";
 var BACKOFF_MS = [6e4, 5 * 6e4, 30 * 6e4];
 var BLOCK_STATUS = /* @__PURE__ */ new Set([403, 429, 503]);
 function buildPageUrl({ slug, lane, tier, rival }) {
-  const q = [`tier=${encodeURIComponent(tier)}`];
-  if (lane) q.push(`lane=${encodeURIComponent(lane)}`);
-  if (rival && lane) q.push(`vslane=${encodeURIComponent(lane)}`);
-  return `${SITE2}${encodeURIComponent(slug)}/${rival ? `vs/${encodeURIComponent(rival)}/` : ""}build/?${q.join("&")}`;
+  const q2 = [`tier=${encodeURIComponent(tier)}`];
+  if (lane) q2.push(`lane=${encodeURIComponent(lane)}`);
+  if (rival && lane) q2.push(`vslane=${encodeURIComponent(lane)}`);
+  return `${SITE2}${encodeURIComponent(slug)}/${rival ? `vs/${encodeURIComponent(rival)}/` : ""}build/?${q2.join("&")}`;
 }
 var tierlistUrl = ({ lane, tier }) => `${SITE2}tierlist/?lane=${encodeURIComponent(lane)}&tier=${encodeURIComponent(tier)}`;
 function createLolalyticsClient({ cache, log: log2 = null, fetchImpl = (...a) => globalThis.fetch(...a), now = () => Date.now(), timeoutMs = 1e4 }) {
@@ -5107,6 +5546,124 @@ function createEnglishNames({ log: log2 = null, fetchImpl = (...a) => globalThis
   };
 }
 
+// src/infrastructure/lcu/clash-provider.js
+var C = "/lol-clash/v1";
+var q = (v) => encodeURIComponent(JSON.stringify(v));
+var arr2 = (x) => Array.isArray(x) ? x : [];
+function createClashProvider({ lcuGet: lcuGet2, now = () => Date.now(), ttlMs = 10 * 60 * 1e3, log: log2 = null }) {
+  const cache = /* @__PURE__ */ new Map();
+  const inflight2 = /* @__PURE__ */ new Map();
+  async function build({ entry, bracket, target }) {
+    const t0 = now();
+    const roster = await lcuGet2(`${C}/roster/${encodeURIComponent(target.rosterId)}`);
+    const members = arr2(roster == null ? void 0 : roster.members).filter((m) => (m == null ? void 0 : m.summonerId) != null);
+    if (!members.length) return { ok: false, reason: "no-roster" };
+    const ids = members.map((m) => m.summonerId);
+    const summoners = arr2(await lcuGet2(`/lol-summoner/v2/summoners?ids=${q(ids)}`));
+    const bySid = new Map(summoners.filter((s) => (s == null ? void 0 : s.summonerId) != null && s.puuid).map((s) => [String(s.summonerId), s]));
+    const withPuuid = ids.filter((id) => bySid.has(String(id)));
+    if (!withPuuid.length) return { ok: false, reason: "no-players" };
+    const puuids = withPuuid.map((id) => bySid.get(String(id)).puuid);
+    const [tiersRaw, scoutRaw, stats2, ...masteries] = await Promise.all([
+      lcuGet2(`/lol-ranked/v2/tiers?summonerIds=${q(withPuuid)}&queueTypes=${q(["RANKED_SOLO_5x5", "RANKED_FLEX_SR"])}`),
+      lcuGet2(`${C}/scouting/champions?puuids=${q(puuids)}`),
+      lcuGet2(`${C}/roster/${encodeURIComponent(target.rosterId)}/stats`),
+      ...puuids.map((pu) => lcuGet2(`/lol-champion-mastery/v1/${encodeURIComponent(pu)}/champion-mastery`, { timeoutMs: 8e3 }))
+    ]);
+    const tiers = normalizeTiers(tiersRaw);
+    const scout = normalizeScouting(scoutRaw);
+    const picks = clashPicks(stats2, withPuuid, { ownRoster: true });
+    const partial = [];
+    if (!tiersRaw) partial.push("ranks");
+    if (!scoutRaw) partial.push("scouting");
+    if (masteries.every((m) => m == null)) partial.push("mastery");
+    if (!stats2) partial.push("stats");
+    const players = withPuuid.map((sid, i) => {
+      const s = scout.get(String(sid));
+      const tr = tiers.get(String(sid));
+      return {
+        summonerId: sid,
+        gameName: String(bySid.get(String(sid)).gameName ?? ""),
+        // solo en memoria; nunca se registra
+        rank: { solo: (tr == null ? void 0 : tr.solo) ?? null, flex: (tr == null ? void 0 : tr.flex) ?? null },
+        topMasteries: (s == null ? void 0 : s.topMasteries) ?? [],
+        seasonChamps: (s == null ? void 0 : s.seasonChamps) ?? [],
+        totalMasteryScore: (s == null ? void 0 : s.totalMasteryScore) ?? null,
+        pool: normalizeMastery(masteries[i]),
+        clashPicks: picks.filter((p) => p.summonerId === String(sid)).map(({ cid, win }) => ({ cid, win }))
+      };
+    });
+    const ms = now() - t0;
+    log2 == null ? void 0 : log2.info("clash: roster cargado", JSON.stringify({ jugadores: players.length, parcial: partial, ms }));
+    return { ok: true, data: { rosterId: target.rosterId, shortName: target.shortName, name: target.name, myRosterId: entry.rosterId, players, partial, fetchedAt: now() } };
+  }
+  async function resolve(opts) {
+    const entry = findMyEntry(await lcuGet2(`${C}/tournament-summary`));
+    if (!entry) return { ok: false, reason: "no-tournament" };
+    const bracket = await lcuGet2(`${C}/bracket/${encodeURIComponent(entry.bracketId)}`);
+    if (!bracket) return { ok: false, reason: "no-bracket" };
+    let target = null;
+    if (opts.tag) target = rosterByTag(bracket, opts.tag);
+    else if (opts.rosterId != null) target = arr2(bracket.rosters).find((r) => String(r.rosterId) === String(opts.rosterId)) ?? null;
+    else target = findOpponent(bracket, entry.rosterId);
+    if (!target) return { ok: false, reason: opts.tag || opts.rosterId != null ? "no-roster" : "no-opponent" };
+    if (String(target.rosterId) === String(entry.rosterId)) return { ok: false, reason: "own-roster" };
+    const key2 = String(target.rosterId);
+    const hit = cache.get(key2);
+    if (hit && now() - hit.at < ttlMs) return hit.value;
+    if (inflight2.has(key2)) return inflight2.get(key2);
+    const p = build({ entry, bracket, target }).then((v) => {
+      if (v.ok) cache.set(key2, { at: now(), value: v });
+      return v;
+    }).finally(() => inflight2.delete(key2));
+    inflight2.set(key2, p);
+    return p;
+  }
+  return {
+    async getScoutingContext(opts = {}) {
+      try {
+        return await resolve(opts);
+      } catch (e) {
+        log2 == null ? void 0 : log2.warn("clash: error leyendo el scouting", String(e));
+        return { ok: false, reason: "error" };
+      }
+    },
+    clear: () => cache.clear()
+  };
+}
+
+// src/domain/draft-actions.js
+var isChamp2 = (id) => Number.isInteger(id) && id > 0;
+var flat = (session) => (Array.isArray(session == null ? void 0 : session.actions) ? session.actions.flat() : []).filter((a) => a && (a.type === "ban" || a.type === "pick"));
+var uniq = (list) => [...new Set(list)];
+function parseDraftActions(session) {
+  const acts = flat(session);
+  const out = { bans: { ally: [], enemy: [] }, picks: { ally: [], enemy: [] }, phase: null, banSlotsLeft: { ally: 0, enemy: 0 }, turn: null };
+  if (!acts.length) return out;
+  let picksDone = 0;
+  for (const a of acts) {
+    const side = a.isAllyAction ? "ally" : "enemy";
+    if (a.completed) {
+      if (a.type === "pick") picksDone++;
+      if (isChamp2(a.championId)) (a.type === "ban" ? out.bans : out.picks)[side].push(a.championId);
+    } else if (a.type === "ban") out.banSlotsLeft[side]++;
+  }
+  out.bans.ally = uniq(out.bans.ally);
+  out.bans.enemy = uniq(out.bans.enemy);
+  const current3 = acts.find((a) => a.isInProgress && !a.completed);
+  if (current3) {
+    out.turn = { type: current3.type, isAlly: !!current3.isAllyAction, cellId: Number.isInteger(current3.actorCellId) ? current3.actorCellId : -1 };
+    out.phase = current3.type === "ban" ? picksDone >= 6 ? "ban2" : "ban1" : picksDone >= 6 ? "pick2" : "pick1";
+  } else if (acts.every((a) => a.completed)) out.phase = "done";
+  return out;
+}
+function allBans(session) {
+  var _a, _b;
+  const fromBans = [...((_a = session == null ? void 0 : session.bans) == null ? void 0 : _a.myTeamBans) ?? [], ...((_b = session == null ? void 0 : session.bans) == null ? void 0 : _b.theirTeamBans) ?? []].filter(isChamp2);
+  const d = parseDraftActions(session);
+  return uniq([...fromBans, ...d.bans.ally, ...d.bans.enemy]);
+}
+
 // src/infrastructure/lcu/champ-select-provider.js
 var GAME_PHASES = /* @__PURE__ */ new Set(["GameStart", "InProgress", "Reconnect"]);
 var key = (c) => c ? [
@@ -5134,8 +5691,8 @@ function createChampSelectProvider({ lcuGet: lcuGet2, activeMs = 1e3, idleMs = 2
   async function queueOf() {
     var _a, _b;
     if (queue2) return queue2;
-    const q = (_b = (_a = await lcuGet2("/lol-gameflow/v1/session")) == null ? void 0 : _a.gameData) == null ? void 0 : _b.queue;
-    if (q && typeof q.gameMode === "string") queue2 = { mode: q.gameMode.toUpperCase(), ...Number.isInteger(q.id) && { queueId: q.id } };
+    const q2 = (_b = (_a = await lcuGet2("/lol-gameflow/v1/session")) == null ? void 0 : _a.gameData) == null ? void 0 : _b.queue;
+    if (q2 && typeof q2.gameMode === "string") queue2 = { mode: q2.gameMode.toUpperCase(), ...Number.isInteger(q2.id) && { queueId: q2.id } };
     return queue2;
   }
   async function rawTierOf(puuid) {
@@ -5143,8 +5700,8 @@ function createChampSelectProvider({ lcuGet: lcuGet2, activeMs = 1e3, idleMs = 2
     if (rankCache.has(puuid)) return rankCache.get(puuid);
     const d = await lcuGet2(`/lol-ranked/v1/ranked-stats/${encodeURIComponent(puuid)}`);
     if (!d) return void 0;
-    const q = d.queueMap ?? {};
-    const tier = ((_a = q.RANKED_SOLO_5x5) == null ? void 0 : _a.tier) || ((_b = q.RANKED_FLEX_SR) == null ? void 0 : _b.tier) || ((_c = d.highestRankedEntry) == null ? void 0 : _c.tier);
+    const q2 = d.queueMap ?? {};
+    const tier = ((_a = q2.RANKED_SOLO_5x5) == null ? void 0 : _a.tier) || ((_b = q2.RANKED_FLEX_SR) == null ? void 0 : _b.tier) || ((_c = d.highestRankedEntry) == null ? void 0 : _c.tier);
     const raw = rawTierFromLcu(tier);
     rankCache.set(puuid, raw);
     return raw;
@@ -5157,24 +5714,24 @@ function createChampSelectProvider({ lcuGet: lcuGet2, activeMs = 1e3, idleMs = 2
     return lobbyTierFromRaw(raws.filter((x) => x != null));
   }
   async function buildContext(session) {
-    var _a, _b, _c, _d;
+    var _a, _b;
     const me = (session.myTeam ?? []).find((p) => p.cellId === session.localPlayerCellId);
     if (!me) return null;
     const hover = (_a = (session.actions ?? []).flat().find((a) => a.actorCellId === session.localPlayerCellId && a.type === "pick" && a.championId)) == null ? void 0 : _a.championId;
     const championId = me.championId || hover || me.championPickIntent || 0;
     const position = me.assignedPosition || "";
     const opponent = position ? (_b = (session.theirTeam ?? []).find((p) => p.assignedPosition === position && p.championId > 0)) == null ? void 0 : _b.championId : void 0;
-    const [lobbyTier, q] = await Promise.all([lobbyTierOf(session), queueOf()]);
+    const [lobbyTier, q2] = await Promise.all([lobbyTierOf(session), queueOf()]);
     const side = sideOfTeam(me.team);
-    const bans = [...((_c = session.bans) == null ? void 0 : _c.myTeamBans) ?? [], ...((_d = session.bans) == null ? void 0 : _d.theirTeamBans) ?? []].filter((id) => Number.isInteger(id) && id > 0);
+    const bans2 = allBans(session);
     return {
       championId,
       ...opponent && { opponentChampionId: opponent },
       role: roleFromPosition(position),
       ...lobbyTier && { lobbyTier },
-      ...q && { mode: q.mode },
+      ...q2 && { mode: q2.mode },
       ...side && { side },
-      bans,
+      bans: bans2,
       enemies: revealed(session.theirTeam),
       allies: revealed((session.myTeam ?? []).filter((p) => p.cellId !== me.cellId)),
       source: "lcu"
@@ -5376,7 +5933,7 @@ var controller = createChampSelectController({
     // Cliente reiniciado en plena partida: el campeón, rol y rivales salen de la Live Client Data API.
     recoverGameContext: async () => {
       await catalog.load();
-      const ctx = contextFromSnapshot(await liveClient.snapshot(), (q) => catalog.findChampion(q));
+      const ctx = contextFromSnapshot(await liveClient.snapshot(), (q2) => catalog.findChampion(q2));
       if (ctx) log.info("partida recuperada con la Live Client Data API:", ctx.championId);
       return ctx;
     }
@@ -5415,6 +5972,11 @@ var advisor = createPickAdvisorController({
   maxQueries: 12,
   log
 });
+var bans = createBanAdvisorController({
+  advisor: createBanAdvisor({ clash: createClashProvider({ lcuGet, log }), lola: lolaClient, getFilters: getFilterPrefs, log }),
+  prefs: { get: getClashPrefs, set: setClashPrefs },
+  log
+});
 var enemyRoles = createEnemyRoles({ source: controller, lola: lolaClient, getFilters: getFilterPrefs, log });
 var pickFilters = createPickFilters({ catalog, overlay, advisor, mastery, prefs: { get: getPickFilterPrefs, set: setPickFilterPrefs }, getContext: () => controller.getState().context });
 var applier = createConfigurationApplier({ gateway: createLoadoutGateway(), prefs: { get: getApplyPrefs, set: setApplyPrefs }, log });
@@ -5447,6 +6009,8 @@ var app = {
   advisor: Object.assign(advisor, { iteroStatus: () => iteroClient.status() }),
   /** Maestría del jugador (opcional, apagada por defecto) y filtros de la selección. */
   mastery,
+  /** Clash: recomendación de bans en el scouting del rival. */
+  bans,
   enemyRoles,
   pickFilters,
   /** Al cerrar sesión o cambiar de cuenta: nada de lo cacheado debe pasar a otra cuenta (puede variar el plan). */
@@ -5650,6 +6214,7 @@ function mainMenu() {
     filters: app.filters,
     source: app.source,
     overlay: app.overlay,
+    bans: app.bans,
     advisor: app.advisor,
     mastery: {
       isEnabled: () => getAdvisorPrefs().useMastery,
@@ -5982,7 +6547,7 @@ var DEFAULT_PERSPECTIVE = "auto";
 var COMFORT_POINTS = 1e4;
 var EDGE_CLEAR = 1;
 var SAMPLE_STEPS = Object.freeze({ medium: 500, high: 2e3 });
-var isNum4 = (v) => typeof v === "number" && Number.isFinite(v);
+var isNum5 = (v) => typeof v === "number" && Number.isFinite(v);
 var normalizePerspective = (p) => PERSPECTIVES.includes(p) ? p : DEFAULT_PERSPECTIVE;
 function resolvePerspective(requested, { lane, team }) {
   const p = normalizePerspective(requested);
@@ -5991,13 +6556,13 @@ function resolvePerspective(requested, { lane, team }) {
   return lane ? "lane" : team ? "team" : null;
 }
 function sampleLevel(n) {
-  if (!isNum4(n) || n <= 0) return null;
+  if (!isNum5(n) || n <= 0) return null;
   return n >= SAMPLE_STEPS.high ? "high" : n >= SAMPLE_STEPS.medium ? "medium" : "low";
 }
 function laneReasons(m) {
   if (!m) return [];
   const out = [];
-  if (isNum4(m.edge)) {
+  if (isNum5(m.edge)) {
     const polarity = m.edge >= EDGE_CLEAR ? "positive" : m.edge <= -EDGE_CLEAR ? "negative" : "neutral";
     out.push({ type: "lane-matchup", polarity, importance: "high", evidence: "statistical", wr: m.wr, edge: m.edge, n: m.n });
     if (polarity === "neutral" && m.wr > 50) out.push({ type: "general-strength", polarity: "neutral", importance: "medium", evidence: "statistical", wr: m.wr, edge: m.edge });
@@ -6026,11 +6591,11 @@ function candidate(cid, why, { laneOf, teamOf, masteryOf }) {
   const pts = masteryOf(cid);
   const all = [...laneReasons(m), ...teamReasons(p)];
   if (m && p && p.agree === "agree") all.push({ type: "both-sources", polarity: "positive", importance: "medium", evidence: "heuristic" });
-  if (isNum4(pts) && pts >= COMFORT_POINTS) all.push({ type: "comfort", polarity: "positive", importance: "medium", evidence: "statistical", points: pts });
+  if (isNum5(pts) && pts >= COMFORT_POINTS) all.push({ type: "comfort", polarity: "positive", importance: "medium", evidence: "statistical", points: pts });
   const reasons = all.filter((r) => r.polarity !== "negative").sort(byImportance);
   const tradeoffs = all.filter((r) => r.polarity === "negative").sort(byImportance);
-  const confidence = m ? { level: sampleLevel(m.n) ?? "low", evidence: "statistical", n: isNum4(m.n) ? m.n : null } : { level: "model", evidence: "model", n: isNum4(p == null ? void 0 : p.games) ? p.games : null };
-  return { cid, why, reasons, tradeoffs, confidence, lane: m ?? null, team: p ?? null, mastery: isNum4(pts) ? pts : null };
+  const confidence = m ? { level: sampleLevel(m.n) ?? "low", evidence: "statistical", n: isNum5(m.n) ? m.n : null } : { level: "model", evidence: "model", n: isNum5(p == null ? void 0 : p.games) ? p.games : null };
+  return { cid, why, reasons, tradeoffs, confidence, lane: m ?? null, team: p ?? null, mastery: isNum5(pts) ? pts : null };
 }
 function buildDraftSummary({ lanePicks = [], teamPicks = [], perspective = DEFAULT_PERSPECTIVE, masteryOf = () => null, maxAlternatives = 3 } = {}) {
   const requested = normalizePerspective(perspective);
@@ -6042,7 +6607,7 @@ function buildDraftSummary({ lanePicks = [], teamPicks = [], perspective = DEFAU
   const teamMap = new Map(teamPicks.map((p) => [p.championId, p]));
   const ctx = { laneOf: (cid) => laneMap.get(cid) ?? null, teamOf: (cid) => teamMap.get(cid) ?? null, masteryOf: (cid) => {
     const v = masteryOf(cid);
-    return isNum4(v) ? v : null;
+    return isNum5(v) ? v : null;
   } };
   const own = resolved === "lane" ? lanePicks.map((m) => m.cid) : teamPicks.map((p) => p.championId);
   const other = resolved === "lane" ? teamPicks.map((p) => p.championId) : lanePicks.map((m) => m.cid);
@@ -7825,6 +8390,216 @@ ${t("panel.retry")}`;
   };
 }
 
+// src/presentation/components/scouting.js
+var STYLE_ID9 = "draftsage-scouting-style";
+var MODAL = ".tournament-scouting";
+var TAG2 = ".clash-roster-details-team-tag";
+var ROMAN = { 1: "I", 2: "II", 3: "III", 4: "IV" };
+var ERR_KEY = { "no-tournament": "clash.err.no-tournament", "no-bracket": "clash.err.no-bracket", "no-opponent": "clash.err.no-opponent", "no-roster": "clash.err.no-roster", "no-players": "clash.err.no-players", error: "clash.err.error" };
+var PART_KEY = { ranks: "clash.part.ranks", scouting: "clash.part.scouting", mastery: "clash.part.mastery", stats: "clash.part.stats" };
+var TAG_KEY = { "one-trick": "clash.tag.one-trick", overlap: "clash.tag.overlap", "high-ban-rate": "clash.tag.high-ban-rate", "low-sample": "clash.tag.low-sample" };
+var REL_KEY = { high: "clash.rel.high", medium: "clash.rel.medium", low: "clash.rel.low" };
+var CSS8 = `
+.ecc{position:fixed;z-index:2147483000;box-sizing:border-box;width:300px;max-height:calc(100vh - 24px);overflow:auto;background:var(--ds-bg);color:var(--ds-text);border:1px solid var(--ds-gold-dim);box-shadow:0 0 18px #000;font:12px/1.35 sans-serif;user-select:none;-webkit-app-region:no-drag;pointer-events:auto}
+.ecc *{box-sizing:border-box;-webkit-app-region:no-drag}
+.ecc-head{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--ds-border-soft);background:var(--ds-surface)}
+.ecc-head b{flex:1;min-width:0;color:var(--ds-text-hi);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ecc-head button{background:none;border:0;color:var(--ds-gold);cursor:pointer;padding:2px;display:flex}
+.ecc-head button:hover{color:var(--ds-text-hi)}
+.ecc.ecc-fold .ecc-body{display:none}
+.ecc-body{padding:8px 10px}
+.ecc-note{margin:0 0 6px;color:var(--ds-amber);font-size:11px}
+.ecc-msg{margin:0;color:var(--ds-meta)}
+.ecc-sec{margin:8px 0 4px;color:var(--ds-meta);font-size:10px;text-transform:uppercase;letter-spacing:.05em}
+.ecc-pl{display:flex;align-items:center;gap:6px;padding:2px 0}
+.ecc-pl .ecc-nm{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--ds-text-hi)}
+.ecc-pl .ecc-rk{color:var(--ds-meta);font-size:11px;white-space:nowrap}
+.ecc-ic{width:22px;height:22px;border-radius:50%;object-fit:cover;border:1px solid var(--ds-border);background:var(--ds-surface-2);flex:none}
+.ecc-ic.ecc-ot{border-color:var(--ds-red)}
+.ecc-bn{padding:5px 0;border-top:1px solid var(--ds-border-soft)}
+.ecc-row{display:flex;align-items:center;gap:6px}
+.ecc-row .ecc-ic{width:28px;height:28px}
+.ecc-row .ecc-nm{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--ds-text-hi);font-size:13px}
+.ecc-bar{height:4px;margin:3px 0;background:var(--ds-surface-2)}
+.ecc-bar>i{display:block;height:100%;background:var(--ds-gold)}
+.ecc-bn[data-rel=low] .ecc-bar>i{background:var(--ds-mute)}
+.ecc-bn[data-rel=low] .ecc-row .ecc-nm{opacity:.75}
+.ecc-ch{display:flex;flex-wrap:wrap;gap:3px;margin-top:2px}
+.ecc-ch span{padding:0 5px;border:1px solid var(--ds-border);border-radius:8px;font-size:10px;color:var(--ds-meta)}
+.ecc-ch span.ecc-hot{border-color:var(--ds-red);color:var(--ds-red)}
+.ecc-who{margin-top:2px;color:var(--ds-meta);font-size:11px}
+.ecc-foot{margin:8px 0 0;color:var(--ds-mute);font-size:10px}
+.ecc-spin{width:14px;height:14px;border:2px solid var(--ds-gold-dim);border-top-color:var(--ds-text-hi);border-radius:50%;animation:ecc-rot .7s linear infinite;display:inline-block;vertical-align:middle;margin-right:6px}
+@keyframes ecc-rot{to{transform:rotate(360deg)}}
+`;
+function ensureStyle8() {
+  ensureTheme();
+  if (document.getElementById(STYLE_ID9)) return;
+  const s = document.createElement("style");
+  s.id = STYLE_ID9;
+  s.textContent = CSS8;
+  document.head.append(s);
+}
+function rankLabel(rank) {
+  const r = (rank == null ? void 0 : rank.solo) ?? (rank == null ? void 0 : rank.flex);
+  if (!(r == null ? void 0 : r.tier)) return "\u2013";
+  const name = r.tier.charAt(0) + r.tier.slice(1).toLowerCase();
+  return ["MASTER", "GRANDMASTER", "CHALLENGER"].includes(r.tier) ? name : name + (ROMAN[r.division] ? " " + ROMAN[r.division] : typeof r.division === "string" && r.division ? " " + r.division : "");
+}
+function evidenceLines(p) {
+  const out = [];
+  for (const e of p.evidence ?? []) {
+    if (e.key === "season") out.push(t("clash.ev.season", e.games, e.wins));
+    else if (e.key === "clash") out.push(t("clash.ev.clash", e.games, e.wins));
+    else if (e.key === "mastery") out.push(t("clash.ev.mastery", Math.round(e.points / 1e3) + "k", e.level) + " \xB7 " + (e.days != null ? t("clash.ev.days", e.days) : t("clash.ev.stale")));
+    else if (e.key === "strength") out.push(t("clash.ev.model", e.wr.toFixed(1), e.drop.toFixed(1), Math.round(p.usage * 100)));
+  }
+  return out;
+}
+async function mountScouting({ bans: bans2, catalog: catalog2, root = document }) {
+  await whenReady();
+  ensureStyle8();
+  const el = h("div", { class: "ecc", "data-ecc": "block" });
+  let folded = false;
+  let timer = 0;
+  let sig = "";
+  let visibleTag = null;
+  const icon26 = (cid, cls = "") => {
+    const c = catalog2.champion(cid);
+    return c.icon ? h("img", { class: "ecc-ic " + cls, src: c.icon, alt: c.name, draggable: "false" }) : h("div", { class: "ecc-ic " + cls });
+  };
+  function paint(st, modal) {
+    var _a, _b;
+    const d = st.data;
+    const head = h(
+      "div",
+      { class: "ecc-head" },
+      icon("shield", 16),
+      h("b", { title: t("clash.title") }, t("clash.title") + (((_a = d == null ? void 0 : d.team) == null ? void 0 : _a.shortName) ? " \xB7 " + t("clash.vs", d.team.shortName) : visibleTag ? " \xB7 " + t("clash.vs", visibleTag) : "")),
+      h("button", { type: "button", "data-ecc": "fold", "aria-expanded": String(!folded), title: folded ? t("clash.unfold") : t("clash.fold"), onclick: () => {
+        folded = !folded;
+        sig = "";
+        sync();
+      } }, icon(folded ? "chevron" : "close", 14))
+    );
+    const body = h("div", { class: "ecc-body" });
+    if (st.status === "loading" && !d) body.append(h("p", { class: "ecc-msg" }, h("span", { class: "ecc-spin" }), t("clash.loading")));
+    else if (st.status === "error") body.append(h("p", { class: "ecc-msg", "data-ecc": "error" }, t(ERR_KEY[st.reason] ?? "clash.err.error")));
+    else if (d) {
+      const notes = [];
+      if ((_b = d.partial) == null ? void 0 : _b.length) notes.push(t("clash.partial", d.partial.map((k) => t(PART_KEY[k] ?? "clash.part.stats")).join(", ")));
+      if (!d.hasMeta) notes.push(t("clash.nometa"));
+      for (const n of notes) body.append(h("p", { class: "ecc-note" }, n));
+      body.append(h("div", { class: "ecc-sec" }, t("clash.title")));
+      const max = Math.max(1e-4, ...d.bans.map((b) => b.value));
+      d.bans.forEach((b, i) => {
+        const c = catalog2.champion(b.championId);
+        const tip = b.perPlayer.map((p) => {
+          var _a2;
+          return (((_a2 = d.players[p.playerIdx]) == null ? void 0 : _a2.name) || "#" + (p.playerIdx + 1)) + ": " + evidenceLines(p).join(" \xB7 ");
+        }).join("\n");
+        const who = b.perPlayer.slice(0, 2).map((p) => {
+          var _a2;
+          return ((_a2 = d.players[p.playerIdx]) == null ? void 0 : _a2.name) || "#" + (p.playerIdx + 1);
+        }).join(", ");
+        body.append(h(
+          "div",
+          { class: "ecc-bn", "data-ban": b.championId, "data-rel": b.reliability, title: tip + "\n" + t(REL_KEY[b.reliability]) },
+          h("div", { class: "ecc-row" }, h("span", { style: "color:var(--ds-gold);width:14px;text-align:right" }, i + 1), icon26(b.championId), h("span", { class: "ecc-nm" }, c.name), h("small", { class: "ecc-rel" }, t(REL_KEY[b.reliability]))),
+          h("div", { class: "ecc-bar" }, h("i", { style: `width:${Math.max(4, Math.round(b.value / max * 100))}%` })),
+          b.tags.length ? h("div", { class: "ecc-ch" }, b.tags.map((g) => h("span", { class: g === "one-trick" || g === "high-ban-rate" ? "ecc-hot" : "" }, t(TAG_KEY[g])))) : null,
+          h("div", { class: "ecc-who" }, who)
+        ));
+      });
+      body.append(h("div", { class: "ecc-sec" }, "Scouting"));
+      for (const p of d.players) {
+        body.append(h(
+          "div",
+          { class: "ecc-pl", "data-player": p.playerIdx, title: p.oneTrick ? t("clash.oneTrick", catalog2.champion(p.oneTrick).name) : "" },
+          h("span", { class: "ecc-nm" }, p.name || "#" + (p.playerIdx + 1)),
+          h("span", { class: "ecc-rk" }, rankLabel(p.rank)),
+          p.top.map((x) => {
+            const i = icon26(x.cid, x.cid === p.oneTrick ? "ecc-ot" : "");
+            i.title = t("clash.top.tip", catalog2.champion(x.cid).name, (x.games ? x.games + "p \xB7 " : "") + (x.points ? Math.round(x.points / 1e3) + "k" : ""));
+            return i;
+          })
+        ));
+      }
+      body.append(h("p", { class: "ecc-foot" }, t("clash.footer")));
+    }
+    el.replaceChildren(head, body);
+    el.classList.toggle("ecc-fold", folded);
+    place(modal);
+  }
+  function place(modal) {
+    const r = modal.getBoundingClientRect();
+    const w = 300;
+    const left = r.right + 8 + w <= innerWidth ? r.right + 8 : Math.max(8, innerWidth - w - 12);
+    el.style.left = left + "px";
+    el.style.top = Math.max(8, r.top) + "px";
+  }
+  function sync() {
+    var _a, _b, _c;
+    clearTimeout(timer);
+    timer = 0;
+    const modal = root.querySelector(MODAL);
+    const shown = isShown(modal);
+    const tag = shown ? (((_a = modal.querySelector(TAG2)) == null ? void 0 : _a.textContent) ?? "").trim() : "";
+    if (tag !== (visibleTag ?? "")) {
+      visibleTag = tag || null;
+      sig = "";
+      log.debug("scouting de Clash: roster visible", tag ? "s\xED" : "no");
+    }
+    bans2.target(visibleTag);
+    const st = bans2.getState();
+    if (!shown || !visibleTag || !bans2.isEnabled() || st.status === "idle" || st.status === "error" && st.reason === "own-roster") {
+      if (el.isConnected) el.remove();
+      return;
+    }
+    const s = JSON.stringify([st.status, st.tag, st.reason ?? "", ((_b = st.data) == null ? void 0 : _b.fetchedAt) ?? 0, folded, visibleTag, ((_c = catalog2.isLoaded) == null ? void 0 : _c.call(catalog2)) ?? true]);
+    if (s !== sig) {
+      sig = s;
+      paint(st, modal);
+    } else place(modal);
+    if (el.parentElement !== root.body) root.body.append(el);
+  }
+  const schedule = () => {
+    if (!timer) timer = setTimeout(sync, 100);
+  };
+  const off = bans2.subscribe(schedule);
+  addEventListener("draftsage:prefs", schedule);
+  addEventListener("resize", schedule);
+  catalog2.load().then(schedule).catch(() => {
+  });
+  let observer = null;
+  if (typeof MutationObserver !== "undefined" && root.body) {
+    observer = new MutationObserver((recs) => {
+      var _a, _b;
+      for (const r of recs) if (!(r.target.nodeType === 1 && ((_b = (_a = r.target).closest) == null ? void 0 : _b.call(_a, ".ecc")))) {
+        schedule();
+        return;
+      }
+    });
+    observer.observe(root.body, { childList: true, subtree: true });
+  }
+  const guard = setInterval(schedule, 1500);
+  sync();
+  log.info("scouting de Clash: bloque de bans listo");
+  return {
+    sync,
+    destroy() {
+      clearInterval(guard);
+      clearTimeout(timer);
+      observer == null ? void 0 : observer.disconnect();
+      off == null ? void 0 : off();
+      removeEventListener("draftsage:prefs", schedule);
+      removeEventListener("resize", schedule);
+      el.remove();
+      bans2.target(null);
+    }
+  };
+}
+
 // src/application/bootstrap.js
 window.draftsage = Object.assign(window.draftsage ?? {}, {
   menu: () => mainMenu(),
@@ -7853,7 +8628,13 @@ window.draftsage = Object.assign(window.draftsage ?? {}, {
     const { points, ...rest } = app.mastery.getState();
     return { ...rest, campeones: points ? Object.keys(points).length : 0 };
   },
-  pickFilters: () => app.pickFilters.get()
+  pickFilters: () => app.pickFilters.get(),
+  // Clash: estado de la recomendación de bans (sin nombres ni ids de jugadores en el log).
+  clashState: () => {
+    var _a, _b;
+    const { data, ...rest } = app.bans.getState();
+    return { ...rest, bans: ((_a = data == null ? void 0 : data.bans) == null ? void 0 : _a.length) ?? 0, jugadores: ((_b = data == null ? void 0 : data.players) == null ? void 0 : _b.length) ?? 0, parcial: data == null ? void 0 : data.partial };
+  }
 });
 function watchUpdates() {
   var _a, _b;
@@ -7881,6 +8662,7 @@ async function start() {
     const st = app.controller.getState();
     return st.status !== "idle" && !!st.context && st.context.phase !== "game";
   } }).catch((e) => log.error("no se pudo montar las estad\xEDsticas de la selecci\xF3n:", e));
+  mountScouting({ bans: app.bans, catalog: app.catalog }).catch((e) => log.error("no se pudo montar el scouting de Clash:", e));
   if (await restoreSession()) {
     log.info("sesi\xF3n recuperada");
   } else if (needsLogin(getSourcePrefs().mode)) {
