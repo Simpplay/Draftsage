@@ -114,6 +114,22 @@ test('muestra pequeña sin premium: no se amplía el parche, va a la general', a
   assert.equal(calls.filter((c) => c[0] === 'keystones').length, 1) // sin premium no hay matchup: una sola pasada
 })
 
+test('general pequeña: se prueba también con un parche más (paso 4)', async () => {
+  const { svc } = mk({ keystones: async (f) => ({ ok: true, data: f.matchupChampionIds ? [e(8008, 3, 40)] : [e(8008, 0.1, f.patch.patchAdditions >= 2 ? 5000 : 800)] }) })
+  const r = await svc.getRecommendation({ ...CTX, opponentChampionId: 222 }, { premium: true })
+  assert.equal(r.data.meta.matchup, false); assert.equal(r.data.meta.patchRange, 2)
+  assert.ok(r.data.meta.notices.includes('matchup-low-sample')); assert.ok(r.data.meta.notices.includes('patch-widened'))
+})
+
+test('fragmentos: sin builds con el parche actual se piden con un parche más (premium)', async () => {
+  const B = [{ keystone: 8008, primaryTree: 8000, secondaryTree: 8300, shards: [5005, 5008, 5011], occurrence: 1000 }]
+  const mkB = () => async (f) => ({ ok: true, data: f.patch.patchAdditions >= 1 ? B : [] })
+  const prem = await mk({ builds: mkB() }).svc.getRecommendation(CTX, { premium: true })
+  assert.deepEqual(prem.data.shards, [5005, 5008, 5011])
+  const free = await mk({ builds: mkB() }).svc.getRecommendation(CTX, { premium: false })
+  assert.deepEqual(free.data.shards, [])
+})
+
 test('403 incluso sin filtros premium → forbidden', async () => {
   const { svc } = mk({ keystones: async () => ({ ok: false, reason: 'forbidden' }) })
   assert.deepEqual(await svc.getRecommendation(CTX, { premium: false }), { ok: false, reason: 'forbidden' })
