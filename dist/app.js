@@ -1,4 +1,4 @@
-/* draftsage v1.0.7 — generado por dev/tools/release.mjs; no editar */
+/* draftsage v1.0.8 — generado por dev/tools/release.mjs; no editar */
 
 // src/shared/strings.js
 var es = {
@@ -128,7 +128,10 @@ var es = {
   "mu.vsReason": "Los datos del matchup est\xE1n incompletos",
   "err.other": "Error inesperado",
   "notice.matchup-requires-premium": "El matchup requiere cuenta premium: se muestran los datos del campe\xF3n.",
-  "notice.matchup-low-sample": "Hay pocas partidas de este matchup: se muestran los datos del campe\xF3n.",
+  "notice.matchup-low-sample": "Hay pocas partidas de este matchup, incluso con un parche m\xE1s: se muestran los datos generales del campe\xF3n.",
+  "notice.short.matchup-low-sample": "General: pocas partidas del matchup",
+  "notice.patch-widened": "Pocas partidas con tus filtros: se a\xF1adi\xF3 un parche m\xE1s para tener m\xE1s muestra.",
+  "notice.short.patch-widened": "+1 parche: pocas partidas",
   "notice.filters-downgraded": "Tu cuenta no admite alg\xFAn filtro (rango de parches, matchup o regiones): se us\xF3 uno m\xE1s simple.",
   "notice.patch-low-sample": "El \xFAltimo parche tiene pocos datos: se usa el anterior.",
   "notice.spells-adjusted": "Hechizos ajustados al modo de juego y al rol.",
@@ -139,6 +142,7 @@ var es = {
   "apply.runes": "Solo las runas",
   "apply.spells": "Solo los hechizos",
   "apply.noRunes": "Faltan runas en la recomendaci\xF3n",
+  "apply.noShards": "Faltan los fragmentos de la recomendaci\xF3n",
   "apply.champSelect": "Solo en Champion Select",
   "apply.unconfirmed": "el cliente no confirm\xF3 el cambio",
   "apply.probRunes": "Runas: {0}",
@@ -381,6 +385,7 @@ var es = {
   "set.updSrcRemote": "descargada",
   "set.updSrcPackaged": "incluida",
   "upd.updated": "Draftsage se actualiz\xF3 a la versi\xF3n {0}",
+  "set.updAvailable": "Hay una versi\xF3n nueva (v{0}) lista. Reinicia el cliente de League para usarla.",
   "upd.ready": "Draftsage {0} descargada: se aplicar\xE1 al reiniciar el cliente",
   "upd.reinstall": "Hay una versi\xF3n nueva de Draftsage que exige reinstalar el plugin",
   "build.shards": "Fragmentos",
@@ -599,7 +604,10 @@ var en = {
   "mu.vsReason": "The matchup data is incomplete",
   "err.other": "Unexpected error",
   "notice.matchup-requires-premium": "Matchup data needs a premium account: champion data is shown.",
-  "notice.matchup-low-sample": "Few games for this matchup: champion data is shown.",
+  "notice.matchup-low-sample": "Few games for this matchup, even with one more patch: general champion data is shown.",
+  "notice.short.matchup-low-sample": "General: few matchup games",
+  "notice.patch-widened": "Few games with your filters: one more patch was added for a bigger sample.",
+  "notice.short.patch-widened": "+1 patch: few games",
   "notice.filters-downgraded": "Your account does not support a filter (patch range, matchup or regions): a simpler one was used.",
   "notice.patch-low-sample": "The latest patch has little data: the previous one is used.",
   "notice.spells-adjusted": "Spells adjusted to the game mode and role.",
@@ -610,6 +618,7 @@ var en = {
   "apply.runes": "Runes only",
   "apply.spells": "Spells only",
   "apply.noRunes": "The recommendation has missing runes",
+  "apply.noShards": "The recommendation has no stat shards",
   "apply.champSelect": "Only in Champion Select",
   "apply.unconfirmed": "the client did not confirm the change",
   "apply.probRunes": "Runes: {0}",
@@ -852,6 +861,7 @@ var en = {
   "set.updSrcRemote": "downloaded",
   "set.updSrcPackaged": "bundled",
   "upd.updated": "Draftsage updated to version {0}",
+  "set.updAvailable": "A new version (v{0}) is ready. Restart the League client to use it.",
   "upd.ready": "Draftsage {0} downloaded: it will apply when you restart the client",
   "upd.reinstall": "A new Draftsage version requires reinstalling the plugin",
   "build.shards": "Shards",
@@ -2287,6 +2297,21 @@ function icon(name, size = 16, cls = "") {
   return svg;
 }
 
+// src/domain/update.js
+var MAX_BUNDLE_BYTES = 6 * 1024 * 1024;
+var MAX_ENVELOPE_BYTES = 16 * 1024;
+var SEMVER_RE = /^(\d{1,4})\.(\d{1,4})\.(\d{1,4})$/;
+function parseVersion(v) {
+  const m = typeof v === "string" ? SEMVER_RE.exec(v) : null;
+  return m ? [Number(m[1]), Number(m[2]), Number(m[3])] : null;
+}
+function compareVersions(a, b) {
+  const x = parseVersion(a), y = parseVersion(b);
+  if (!x || !y) return null;
+  for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] < y[i] ? -1 : 1;
+  return 0;
+}
+
 // src/presentation/settings.js
 var STYLE_ID3 = "draftsage-settings-style";
 var CSS2 = `
@@ -2294,6 +2319,9 @@ var CSS2 = `
 .ecs-top{display:flex;align-items:center;gap:8px}
 .ecs-brand{flex:1;display:flex;align-items:center;gap:8px;font:bold 13px sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--ds-text-hi)}
 .ecs-brand .ec-ico{color:var(--ds-gold)}
+.ecs-ver{font:11px sans-serif;letter-spacing:.04em;text-transform:none;color:var(--ds-meta);padding:1px 7px;border:1px solid var(--ds-border);border-radius:9px}
+.ecs-upd{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--ds-gold);border-radius:6px;font-size:12px;line-height:1.35;color:var(--ds-gold-hi);background:var(--ds-surface)}
+.ecs-upd .ec-ico{flex:none}
 .ecs-plan{display:flex;align-items:center;gap:6px;padding:3px 11px 3px 8px;border:1px solid var(--ds-border);border-radius:12px;font-size:12px;background:var(--ds-surface);color:var(--ds-meta)}
 .ecs-plan[data-plan=premium]{border-color:var(--ds-gold);color:var(--ds-gold-hi);box-shadow:0 0 10px rgba(200,170,110,.35)}
 .ecs-plan[data-plan=none]{cursor:pointer}
@@ -2377,10 +2405,13 @@ function openSettings({ applier: applier2, catalog: catalog2, filters, source, o
     const cfg = applier2.getSettings();
     const ses = getSession();
     const plan = ses.loggedIn ? h("div", { class: "ecs-plan", "data-plan": ses.premium ? "premium" : "free", title: ses.email ?? "" }, icon(ses.premium ? "crown" : "user", 14), ses.premium ? t("set.premium") : t("set.free")) : h("button", { type: "button", class: "ecs-plan", "data-plan": "none", title: t("set.enterTip"), onclick: () => go(actions.login) }, icon("user", 14), t("set.enter"));
+    const cur = updates.build();
+    const newer = cur.pending && compareVersions(cur.pending, cur.version) > 0 ? cur.pending : null;
+    const updNotice = cur.needsReinstall ? h("div", { class: "ecs-upd", "data-update-notice": "reinstall", role: "status" }, icon("warn", 14), t("upd.reinstall")) : newer ? h("div", { class: "ecs-upd", "data-update-notice": "restart", role: "status" }, icon("refresh", 14), t("set.updAvailable", newer)) : null;
     const top = h(
       "div",
       { class: "ecs-top" },
-      h("div", { class: "ecs-brand" }, icon("gear", 16), "Draftsage"),
+      h("div", { class: "ecs-brand" }, icon("gear", 16), "Draftsage", h("span", { class: "ecs-ver", "data-version": cur.version, title: t("set.updatesTip", cur.version, t(cur.source === "remote" ? "set.updSrcRemote" : "set.updSrcPackaged")) }, "v" + cur.version)),
       plan,
       ses.loggedIn && h("button", { type: "button", class: "ecs-ib", title: t("set.logout"), "data-act": "logout", onclick: () => go(actions.logout) }, icon("logout", 15))
     );
@@ -2687,6 +2718,7 @@ function openSettings({ applier: applier2, catalog: catalog2, filters, source, o
     const desc = (key2) => h("p", { class: "ecs-desc" }, t(key2));
     return [
       top,
+      updNotice,
       sect("general", "eye", [h("div", { class: "ecs-grid" }, generalMinis)]),
       sect("data", "swap", [src, desc("set.d.source"), elo, desc("set.d.elo"), patches, regions]),
       sect("advisor", "spark", [h("div", { class: "ecs-grid" }, advisorMini), desc("set.d.advisor"), masteryRow, desc("set.d.mastery")]),
@@ -3003,6 +3035,13 @@ function treeOfRune(runeId, extra) {
   const g = Math.floor(runeId / 100) * 100;
   return TREE_IDS.includes(g) ? g : void 0;
 }
+function pickShards(builds, keystone) {
+  var _a;
+  const ok = (b) => Array.isArray(b == null ? void 0 : b.shards) && b.shards.length === 3 && b.shards.every((x) => Number.isInteger(x) && x > 0);
+  const rank = (a, b) => (a.tier ?? 99) - (b.tier ?? 99) || (b.occurrence ?? 0) - (a.occurrence ?? 0);
+  const list = (builds ?? []).filter(ok).sort(rank);
+  return ((_a = list.find((b) => b.keystone === keystone) ?? list[0]) == null ? void 0 : _a.shards) ?? [];
+}
 
 // src/domain/items.js
 var BLOCK = { STARTER: 0, EARLY: 1, CORE: 2, OPTIONS: 3, SITUATIONAL: 4 };
@@ -3252,6 +3291,8 @@ function createRecommendationService({ client: client2, log: log2, keystoneTrees
     for (const r of [prim, ...secs]) if (!r.ok && r.reason === "forbidden") return { status: "forbidden" };
     const rankedItems = (r, minShare) => (r == null ? void 0 : r.ok) ? rankBest(r.data, { minShare }) : [];
     const items = itemBuild ? buildItemPlan(itemBuild, { keystoneMatch: picked.keystoneMatch, boots: rankedItems(bootsRes, MIN_BOOTS_SHARE).slice(0, 3), next: rankedItems(nextRes, MIN_NEXT_SHARE).slice(0, 3) }) : null;
+    const shards = bd.ok ? pickShards(bd.data, keystone.rune) : [];
+    if (shards.length !== 3) log2.warn("sin fragmentos en las builds", JSON.stringify({ builds: bd.ok ? bd.data.length : bd.reason, keystone: keystone.rune }));
     const treeRows = {};
     others.forEach((t2, i) => {
       if (secs[i].ok) treeRows[t2] = secs[i].data.rows;
@@ -3288,7 +3329,7 @@ function createRecommendationService({ client: client2, log: log2, keystoneTrees
         primaryPicks: prim.ok ? pickRows(prim.data.rows) : [null, null, null],
         secondaryTree: (secondary == null ? void 0 : secondary.tree) ?? null,
         secondaryPicks: (secondary == null ? void 0 : secondary.picks) ?? [],
-        shards: (build == null ? void 0 : build.shards) ?? [],
+        shards,
         items,
         spells,
         alternatives: { keystones: altKeystones, autoKeystone: auto.rune, spells: altSpells },
@@ -3369,13 +3410,28 @@ function createRecommendationService({ client: client2, log: log2, keystoneTrees
       notices.push("filters-downgraded");
       res = await compute(ctx, patch, tiers, plan, signal);
     }
-    const noMatchupData = res.status === "error" && res.reason === "no-data";
-    if (plan.matchup && (res.status === "ok" && res.sample < MIN_MATCHUP_SAMPLE || noMatchupData)) {
+    const tooSmall = (r) => r.status === "ok" && r.sample < MIN_MATCHUP_SAMPLE || r.status === "error" && r.reason === "no-data";
+    const base = plan;
+    let widened = false;
+    if (tooSmall(res) && premium && plan.additions < MAX_PATCH_RANGE && !notices.includes("filters-downgraded")) {
+      const wider = { ...plan, additions: plan.additions + 1 };
+      const r2 = await compute(ctx, patch, tiers, wider, signal);
+      if (r2.status === "aborted") return aborted();
+      if (r2.status === "ok" && r2.sample > (res.sample ?? 0)) {
+        log2.info("muestra peque\xF1a (" + (res.sample ?? 0) + ", m\xEDnimo " + MIN_MATCHUP_SAMPLE + "); se a\xF1ade un parche m\xE1s (" + wider.additions + " \u2192 " + r2.sample + " partidas)");
+        plan = wider;
+        res = r2;
+        widened = true;
+      }
+    }
+    if (plan.matchup && tooSmall(res)) {
       log2.info("muestra del matchup peque\xF1a (" + (res.sample ?? 0) + ", m\xEDnimo " + MIN_MATCHUP_SAMPLE + ", rival " + ctx.opponentChampionId + "); se usa el campe\xF3n sin rival");
+      plan = { ...base, matchup: false };
+      widened = false;
       notices.push("matchup-low-sample");
-      plan = { ...plan, matchup: false };
       res = await compute(ctx, patch, tiers, plan, signal);
     }
+    if (widened) notices.push("patch-widened");
     if (res.status === "aborted") return aborted();
     if (res.status === "forbidden") return { ok: false, reason: "forbidden" };
     if (res.status !== "ok") return { ok: false, reason: res.reason };
@@ -5118,6 +5174,17 @@ var runeStat = (x) => ({ rune: x.rune, wpa: num3(x.wpaOverall ?? x.wpa), occurre
 var itemStat = (x) => ({ item: x.itemId, wpa: num3(x.wpaOverall), occurrence: num3(x.occurrence) ?? 0 });
 var spellStat = (x) => ({ spell: x.summonerSpell, wpa: num3(x.wpaOverall), occurrence: num3(x.occurrence) ?? 0 });
 var asList = (data, map) => Array.isArray(data) ? data.map(map).filter((x) => x.wpa != null) : null;
+var isShardId = (x) => Number.isInteger(x) && x > 0;
+function shardsOf(runes) {
+  const sel = Array.isArray(runes == null ? void 0 : runes.selectedShards) ? runes.selectedShards : [];
+  if (sel.length === 3 && sel.every(isShardId)) return sel;
+  const rows = Array.isArray(runes == null ? void 0 : runes.shardStats) ? runes.shardStats : [];
+  const best = rows.slice(0, 3).map((row) => {
+    var _a;
+    return Array.isArray(row) ? (_a = row.filter((e) => isShardId(e == null ? void 0 : e.rune)).sort((a, b) => (num3(b.wpa) ?? -Infinity) - (num3(a.wpa) ?? -Infinity))[0]) == null ? void 0 : _a.rune : void 0;
+  });
+  return best.length === 3 && best.every(isShardId) ? best : [];
+}
 function createCoachlessClient({ post: post2, get, cache }) {
   const call = (key2, fn, normalize) => cache.memo(
     key2,
@@ -5148,13 +5215,13 @@ function createCoachlessClient({ post: post2, get, cache }) {
      * itemBlocks: [{type, items:[{item, wpa, occurrence, chooseOne, highlighted}]}] (sin filtrar: un ítem sin partidas trae wpa 0 de relleno).
      */
     builds: (filters) => postNorm("ChampionWinprob/GetRecommendedBuilds", filters, {}, (d) => d && Array.isArray(d.builds) ? d.builds.map((b) => {
-      var _a, _b, _c, _d;
+      var _a, _b, _c;
       return {
         keystone: b.keystone,
         primaryTree: (_a = b.runes) == null ? void 0 : _a.primaryTree,
         secondaryTree: (_b = b.runes) == null ? void 0 : _b.secondaryTree,
         selectedRunes: ((_c = b.runes) == null ? void 0 : _c.selectedRunes) ?? [],
-        shards: ((_d = b.runes) == null ? void 0 : _d.selectedShards) ?? [],
+        shards: shardsOf(b.runes),
         occurrence: num3(b.occurrence) ?? 0,
         tier: Number.isInteger(b.tier) ? b.tier : null,
         winrate: num3(b.winrate),
@@ -6019,15 +6086,6 @@ var app = {
     resultCache.clear();
   }
 };
-
-// src/domain/update.js
-var MAX_BUNDLE_BYTES = 6 * 1024 * 1024;
-var MAX_ENVELOPE_BYTES = 16 * 1024;
-var SEMVER_RE = /^(\d{1,4})\.(\d{1,4})\.(\d{1,4})$/;
-function parseVersion(v) {
-  const m = typeof v === "string" ? SEMVER_RE.exec(v) : null;
-  return m ? [Number(m[1]), Number(m[2]), Number(m[3])] : null;
-}
 
 // src/application/update-prefs.js
 var KEY4 = "draftsage/updates";
@@ -7036,6 +7094,7 @@ var CSS5 = `
 var NOTICE_ICONS = {
   "matchup-requires-premium": "crown",
   "matchup-low-sample": "warn",
+  "patch-widened": "warn",
   "filters-downgraded": "warn",
   "patch-low-sample": "warn",
   "patch-range-requires-premium": "crown",
@@ -7043,6 +7102,7 @@ var NOTICE_ICONS = {
   "lola-tier-fallback": "warn",
   "source-fallback": "warn"
 };
+var VISIBLE_NOTICES = /* @__PURE__ */ new Set(["patch-widened", "matchup-low-sample"]);
 function ensureStyle5() {
   ensureTheme();
   if (document.getElementById(STYLE_ID6)) return;
@@ -7226,7 +7286,7 @@ function applyBlock(state, actions, ui) {
       "div",
       { class: "ecp-apply" },
       mk("all", "bolt", t("apply.btn"), !canRunes && !(canSpells && inChampSelect), t("apply.all"), all, ui.busy, "ecp-main"),
-      mk("runes", "page", "", !canRunes, canRunes ? t("apply.runes") : t("apply.noRunes"), doneRunes, ui.busy && ui.kind === "runes", "ecp-sec"),
+      mk("runes", "page", "", !canRunes, canRunes ? t("apply.runes") : t(d.shards.length !== 3 ? "apply.noShards" : "apply.noRunes"), doneRunes, ui.busy && ui.kind === "runes", "ecp-sec"),
       canSpells ? mk("spells", "spark", "", !inChampSelect, inChampSelect ? t("apply.spells") : t("apply.champSelect"), doneSpells, ui.busy && ui.kind === "spells", "ecp-sec") : null,
       h("button", {
         type: "button",
@@ -7268,7 +7328,7 @@ function tagsBlock(state) {
     m.matchup && h("span", { class: "ecp-tag ecp-gold ecp-tag-matchup", title: t("tag.matchup") }, icon("swords", 11)),
     ((_b = state.context) == null ? void 0 : _b.source) === "manual" && h("span", { class: "ecp-tag ecp-gold ecp-tag-sim", title: t("tag.sim") }, icon("target", 11)),
     ((_c = state.context) == null ? void 0 : _c.phase) === "game" && h("span", { class: "ecp-tag ecp-gold ecp-tag-game", title: t("items.game") }, icon("play", 11)),
-    m.notices.map((n) => NOTICE_ICONS[n] ? h("span", { class: "ecp-tag ecp-warn", title: t("notice." + n) }, icon(NOTICE_ICONS[n], 11)) : null)
+    m.notices.map((n) => NOTICE_ICONS[n] ? h("span", { class: "ecp-tag ecp-warn", "data-notice": n, title: t("notice." + n) }, icon(NOTICE_ICONS[n], 11), VISIBLE_NOTICES.has(n) ? t("notice.short." + n) : null) : null)
   );
 }
 var skeleton = (still = false) => [
