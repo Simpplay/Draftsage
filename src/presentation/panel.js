@@ -200,6 +200,7 @@ const CSS = `
 const NOTICE_ICONS = {
   'matchup-requires-premium': 'crown',
   'matchup-low-sample': 'warn',
+  'patch-widened': 'warn',
   'filters-downgraded': 'warn',
   'patch-low-sample': 'warn',
   'patch-range-requires-premium': 'crown',
@@ -207,6 +208,8 @@ const NOTICE_ICONS = {
   'lola-tier-fallback': 'warn',
   'source-fallback': 'warn',
 }
+
+const VISIBLE_NOTICES = new Set(['patch-widened', 'matchup-low-sample'])
 
 function ensureStyle() {
   ensureTheme()
@@ -391,7 +394,10 @@ function tagsBlock(state) {
     m.matchup && h('span', { class: 'ecp-tag ecp-gold ecp-tag-matchup', title: t('tag.matchup') }, icon('swords', 11)),
     state.context?.source === 'manual' && h('span', { class: 'ecp-tag ecp-gold ecp-tag-sim', title: t('tag.sim') }, icon('target', 11)),
     state.context?.phase === 'game' && h('span', { class: 'ecp-tag ecp-gold ecp-tag-game', title: t('items.game') }, icon('play', 11)),
-    m.notices.map((n) => (NOTICE_ICONS[n] ? h('span', { class: 'ecp-tag ecp-warn', title: t('notice.' + n) }, icon(NOTICE_ICONS[n], 11)) : null)))
+    m.notices.map((n) => (NOTICE_ICONS[n]
+      // Los cambios de preferencia por muestra pequeña llevan texto visible; el resto, solo icono con tooltip.
+      ? h('span', { class: 'ecp-tag ecp-warn', 'data-notice': n, title: t('notice.' + n) }, icon(NOTICE_ICONS[n], 11), VISIBLE_NOTICES.has(n) ? t('notice.short.' + n) : null)
+      : null)))
 }
 
 const skeleton = (still = false) => [

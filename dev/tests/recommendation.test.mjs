@@ -98,6 +98,22 @@ test('403 con filtros premium: reintenta sin rango ni matchup y avisa (no es err
   assert.equal(calls.filter((c) => c[0] === 'keystones').length, 2)
 })
 
+test('muestra pequeña: un parche más con matchup antes de pasar a la general', async () => {
+  const { svc, calls } = mk({ keystones: async (f) => ({ ok: true, data: f.matchupChampionIds ? [e(8008, 3, f.patch.patchAdditions >= 2 ? 5000 : 40)] : [e(8008, 0.1, 500000)] }) })
+  const r = await svc.getRecommendation({ ...CTX, opponentChampionId: 222 }, { premium: true })
+  assert.equal(r.data.meta.matchup, true); assert.equal(r.data.meta.patchRange, 2)
+  assert.ok(r.data.meta.notices.includes('patch-widened')); assert.ok(!r.data.meta.notices.includes('matchup-low-sample'))
+  assert.equal(calls.filter((c) => c[0] === 'keystones').length, 2)
+})
+
+test('muestra pequeña sin premium: no se amplía el parche, va a la general', async () => {
+  const { svc, calls } = mk({ keystones: async (f) => ({ ok: true, data: f.matchupChampionIds ? [e(8008, 3, 40)] : [e(8008, 0.1, 500000)] }) })
+  const r = await svc.getRecommendation({ ...CTX, opponentChampionId: 222 }, { premium: false })
+  assert.ok(!r.data.meta.notices.includes('patch-widened'))
+  assert.equal(r.data.meta.matchup, false); assert.ok(r.data.meta.notices.includes('matchup-requires-premium'))
+  assert.equal(calls.filter((c) => c[0] === 'keystones').length, 1) // sin premium no hay matchup: una sola pasada
+})
+
 test('403 incluso sin filtros premium → forbidden', async () => {
   const { svc } = mk({ keystones: async () => ({ ok: false, reason: 'forbidden' }) })
   assert.deepEqual(await svc.getRecommendation(CTX, { premium: false }), { ok: false, reason: 'forbidden' })
@@ -107,7 +123,8 @@ test('matchup con muy poca muestra: usa el campeón sin rival y avisa', async ()
   const { svc, calls } = mk({ keystones: async (f) => ({ ok: true, data: f.matchupChampionIds ? [e(8008, 3, 40)] : [e(8008, 0.1, 500000)] }) })
   const r = await svc.getRecommendation({ ...CTX, opponentChampionId: 222 }, { premium: true })
   assert.ok(r.data.meta.notices.includes('matchup-low-sample')); assert.equal(r.data.meta.matchup, false)
-  assert.equal(calls.filter((c) => c[0] === 'keystones').length, 2)
+  assert.equal(calls.filter((c) => c[0] === 'keystones').length, 3) // filtros del usuario → +1 parche → general
+  assert.ok(!r.data.meta.notices.includes('patch-widened'))
 })
 
 test('matchup sin ningún dato (rival raro): cae a la build del campeón, no a error', async () => {

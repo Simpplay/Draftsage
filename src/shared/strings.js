@@ -111,7 +111,10 @@ const es = {
   'err.other': 'Error inesperado',
 
   'notice.matchup-requires-premium': 'El matchup requiere cuenta premium: se muestran los datos del campeón.',
-  'notice.matchup-low-sample': 'Hay pocas partidas de este matchup: se muestran los datos del campeón.',
+  'notice.matchup-low-sample': 'Hay pocas partidas de este matchup, incluso con un parche más: se muestran los datos generales del campeón.',
+  'notice.short.matchup-low-sample': 'General: pocas partidas del matchup',
+  'notice.patch-widened': 'Pocas partidas con tus filtros: se añadió un parche más para tener más muestra.',
+  'notice.short.patch-widened': '+1 parche: pocas partidas',
   'notice.filters-downgraded': 'Tu cuenta no admite algún filtro (rango de parches, matchup o regiones): se usó uno más simple.',
   'notice.patch-low-sample': 'El último parche tiene pocos datos: se usa el anterior.',
   'notice.spells-adjusted': 'Hechizos ajustados al modo de juego y al rol.',
@@ -558,7 +561,10 @@ const en = {
   'err.other': 'Unexpected error',
 
   'notice.matchup-requires-premium': 'Matchup data needs a premium account: champion data is shown.',
-  'notice.matchup-low-sample': 'Few games for this matchup: champion data is shown.',
+  'notice.matchup-low-sample': 'Few games for this matchup, even with one more patch: general champion data is shown.',
+  'notice.short.matchup-low-sample': 'General: few matchup games',
+  'notice.patch-widened': 'Few games with your filters: one more patch was added for a bigger sample.',
+  'notice.short.patch-widened': '+1 patch: few games',
   'notice.filters-downgraded': 'Your account does not support a filter (patch range, matchup or regions): a simpler one was used.',
   'notice.patch-low-sample': 'The latest patch has little data: the previous one is used.',
   'notice.spells-adjusted': 'Spells adjusted to the game mode and role.',
