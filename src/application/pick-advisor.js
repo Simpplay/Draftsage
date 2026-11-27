@@ -107,15 +107,17 @@ export function createPickAdvisor({ itero, names, catalog, lola = null, stats = 
 
 /**
  * @param {{advisor:{advise:Function}, source:{getState:Function, subscribe:Function}, prefs:{get:()=>{enabled:boolean}, set:(p:object)=>object},
- *          getFilters?:()=>object, debounceMs?:number, maxQueries?:number, log?:object}} deps   source = el controlador de Champion Select
+ *          getFilters?:()=>object, debounceMs?:number, banDebounceMs?:number, maxQueries?:number, log?:object}} deps   source = el controlador de Champion Select
  * Estados: 'idle' (apagado o sin selección) · 'loading' (data = lo anterior, para no parpadear) · 'ready' · 'error' (reason: ver advise + 'limit').
  */
-export function createPickAdvisorController({ advisor, source, prefs, getFilters = () => undefined, debounceMs = 600, maxQueries = 12, log = null }) {
+export function createPickAdvisorController({ advisor, source, prefs, getFilters = () => undefined, debounceMs = 600, banDebounceMs = debounceMs * 5, maxQueries = 12, log = null }) {
   const listeners = new Set()
   let state = { status: 'idle', data: null, key: null }
   let lastKey = null
   let generation = 0
-  let queries = 0
+  let queries = 0 // consultas REALES a iTero (no cuentan los cambios descartados por el debounce)
+  let limitWarned = false
+  let firedBase = null // composición (sin bans) de la última consulta lanzada
   let unsubscribe = null
 
   const setState = (s) => { state = s; for (const cb of [...listeners]) { try { cb(state) } catch (e) { log?.error('consejero:', e) } } }
@@ -127,19 +129,27 @@ export function createPickAdvisorController({ advisor, source, prefs, getFilters
     return c
   }
   const ids = (l) => (l ?? []).map((m) => m.championId + ':' + (m.position ?? '')).join(',')
-  const keyOf = (c) => [c.role, c.lobbyTier ?? 0, c.side ?? '', (c.bans ?? []).join(','), ids(c.allies), ids(c.enemies), c.opponentChampionId ?? 0,
+  // Composición sin bans: los bans llegan de uno en uno (hasta 10) y cambian poco la respuesta; si solo cambian ellos, se espera más y se agrupan.
+  const baseOf = (c) => [c.role, c.lobbyTier ?? 0, c.side ?? '', ids(c.allies), ids(c.enemies), c.opponentChampionId ?? 0,
     JSON.stringify(getFilters()?.tiers ?? null), JSON.stringify(getFilters()?.regions ?? null), prefs.get().minPick, prefs.get().useMastery ? prefs.get().masteryWeight : 0].join('|')
+  const keyOf = (c) => baseOf(c) + '|' + (c.bans ?? []).join(',')
 
   async function evaluate({ force = false } = {}) {
     const ctx = contextOf(source.getState())
-    if (!ctx) { lastKey = null; generation++; queries = 0; if (state.status !== 'idle') setState({ status: 'idle', data: null, key: null }); return }
+    if (!ctx) { lastKey = null; firedBase = null; limitWarned = false; generation++; queries = 0; if (state.status !== 'idle') setState({ status: 'idle', data: null, key: null }); return }
     const key = keyOf(ctx)
     if (!force && key === lastKey) return
     lastKey = key
     const gen = ++generation
-    if (++queries > maxQueries) { log?.warn('consejero: tope de consultas por selección alcanzado (' + maxQueries + ')'); return setState({ status: 'error', data: state.data, reason: 'limit', key }) }
     setState({ status: 'loading', data: state.data, key })
-    if (debounceMs > 0) { await new Promise((r) => setTimeout(r, debounceMs)); if (gen !== generation) return }
+    const base = baseOf(ctx)
+    const wait = !force && base === firedBase ? banDebounceMs : debounceMs
+    if (wait > 0) { await new Promise((r) => setTimeout(r, wait)); if (gen !== generation) return }
+    if (++queries > maxQueries) {
+      if (!limitWarned) { limitWarned = true; log?.warn('consejero: tope de consultas por selección alcanzado (' + maxQueries + ')') }
+      return setState({ status: 'error', data: state.data, reason: 'limit', key })
+    }
+    firedBase = base
     let r
     try { r = await advisor.advise(ctx) } catch (e) { log?.error('consejero falló:', String(e)); r = { ok: false, reason: 'network' } }
     if (gen !== generation) return
@@ -152,7 +162,7 @@ export function createPickAdvisorController({ advisor, source, prefs, getFilters
     subscribe(cb) { listeners.add(cb); cb(state); return () => listeners.delete(cb) },
     start() { if (!unsubscribe) unsubscribe = source.subscribe(() => { evaluate() }) },
     stop() { unsubscribe?.(); unsubscribe = null; generation++ },
-    refresh: () => { queries = 0; return evaluate({ force: true }) },
+    refresh: () => { queries = 0; limitWarned = false; return evaluate({ force: true }) },
     isEnabled: () => prefs.get().enabled,
     setEnabled(on) { prefs.set({ enabled: !!on }); return evaluate({ force: true }) },
     /** Cambia los ajustes (minPick, useMastery, masteryWeight) y recalcula. */
