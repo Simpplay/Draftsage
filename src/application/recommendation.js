@@ -67,7 +67,7 @@ export function createRecommendationService({ client, log, keystoneTrees = () =>
   })
 
   // Una pasada con unos filtros concretos. status: 'ok' | 'forbidden' | 'error'
-  async function compute(ctx, patch, tiers, plan, signal) {
+  async function compute(ctx, patch, tiers, plan, signal, premium = false) {
     const f = filtersOf(ctx, patch, tiers, plan)
     const rules = spellRules(ctx)
 
@@ -126,7 +126,15 @@ export function createRecommendationService({ client, log, keystoneTrees = () =>
       : null
 
     // Fragmentos: de la build de la runa clave; si no los trae, de otra build. Sin ninguno la página no se puede aplicar → se deja rastro.
-    const shards = bd.ok ? pickShards(bd.data, keystone.rune) : []
+    let shards = bd.ok ? pickShards(bd.data, keystone.rune) : []
+    // Con el último parche y pocas partidas, GetRecommendedBuilds puede venir vacío (medido: builds 0 con patchAdditions 0, con datos en 1).
+    // Los fragmentos no dependen del matchup: se piden a las builds con un parche más (solo premium; una cuenta gratuita daría 403).
+    if (shards.length !== 3 && premium && plan.additions < MAX_PATCH_RANGE) {
+      const alt = await client.builds(filtersOf(ctx, patch, tiers, { ...plan, additions: plan.additions + 1, matchup: false }))
+      if (signal?.aborted) return { status: 'aborted' }
+      if (alt.ok) shards = pickShards(alt.data, keystone.rune)
+      log.info('fragmentos desde builds con un parche más', JSON.stringify({ ok: alt.ok, builds: alt.ok ? alt.data.length : alt.reason, fragmentos: shards.length === 3 }))
+    }
     if (shards.length !== 3) log.warn('sin fragmentos en las builds', JSON.stringify({ builds: bd.ok ? bd.data.length : bd.reason, keystone: keystone.rune }))
 
     const treeRows = {}
@@ -222,33 +230,42 @@ export function createRecommendationService({ client, log, keystoneTrees = () =>
     }))
     if (cached) return { ok: true, data: { ...cached, meta: { ...cached.meta, notices: [...new Set([...cached.meta.notices, ...notices])] } } }
 
-    let res = await compute(ctx, patch, tiers, plan, signal)
+    let res = await compute(ctx, patch, tiers, plan, signal, premium)
     if (res.status === 'forbidden' && (plan.additions > 0 || plan.matchup || plan.regions)) {
       log.warn('403 con filtros premium; se reintenta sin rango de parches, matchup ni regiones')
       plan = { additions: 0, matchup: false, regions: null }
       notices.push('filters-downgraded')
-      res = await compute(ctx, patch, tiers, plan, signal)
+      res = await compute(ctx, patch, tiers, plan, signal, premium)
     }
     // Orden de preferencia cuando la muestra es pequeña (cada cambio se avisa en pantalla):
-    //   1. los filtros del usuario  2. un parche más (solo premium; `patch-widened`)  3. la general, sin rival (`matchup-low-sample`).
+    //   1. los filtros del usuario  2. un parche más (solo premium; `patch-widened`)
+    //   3. la general, sin rival (`matchup-low-sample`)  4. la general con un parche más (`patch-widened`).
     const tooSmall = (r) => (r.status === 'ok' && r.sample < MIN_MATCHUP_SAMPLE) || (r.status === 'error' && r.reason === 'no-data')
     const base = plan
     let widened = false
-    if (tooSmall(res) && premium && plan.additions < MAX_PATCH_RANGE && !notices.includes('filters-downgraded')) {
-      const wider = { ...plan, additions: plan.additions + 1 }
-      const r2 = await compute(ctx, patch, tiers, wider, signal)
-      if (r2.status === 'aborted') return aborted()
-      if (r2.status === 'ok' && r2.sample > (res.sample ?? 0)) {
-        log.info('muestra pequeña (' + (res.sample ?? 0) + ', mínimo ' + MIN_MATCHUP_SAMPLE + '); se añade un parche más (' + wider.additions + ' → ' + r2.sample + ' partidas)')
-        plan = wider; res = r2; widened = true
-      }
+    // Un parche más sobre `from`; solo se adopta si da más muestra. Devuelve false si no aplica o no mejora.
+    const tryWiden = async (from) => {
+      if (!tooSmall(res) || !premium || from.additions >= MAX_PATCH_RANGE || notices.includes('filters-downgraded')) return false
+      const wider = { ...from, additions: from.additions + 1 }
+      const r2 = await compute(ctx, patch, tiers, wider, signal, premium)
+      if (r2.status === 'aborted') return null
+      if (r2.status !== 'ok' || r2.sample <= (res.sample ?? 0)) return false
+      log.info('muestra pequeña (' + (res.sample ?? 0) + ', mínimo ' + MIN_MATCHUP_SAMPLE + '); se añade un parche más (' + wider.additions + ' → ' + r2.sample + ' partidas)')
+      plan = wider; res = r2
+      return true
     }
+    const w1 = await tryWiden(plan)
+    if (w1 === null) return aborted()
+    widened = w1
     if (plan.matchup && tooSmall(res)) {
       log.info('muestra del matchup pequeña (' + (res.sample ?? 0) + ', mínimo ' + MIN_MATCHUP_SAMPLE + ', rival ' + ctx.opponentChampionId + '); se usa el campeón sin rival')
       plan = { ...base, matchup: false }
       widened = false
       notices.push('matchup-low-sample')
-      res = await compute(ctx, patch, tiers, plan, signal)
+      res = await compute(ctx, patch, tiers, plan, signal, premium)
+      const w2 = await tryWiden(plan)
+      if (w2 === null) return aborted()
+      widened = w2
     }
     if (widened) notices.push('patch-widened')
 
