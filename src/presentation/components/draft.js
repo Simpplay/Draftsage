@@ -26,6 +26,7 @@ const CSS = `
 .ecd-seg button:disabled{opacity:.4;cursor:not-allowed}
 .ecd-main{display:flex;flex-direction:column;gap:5px;padding:7px;border:1px solid var(--ds-gold-dim);border-radius:6px;background:linear-gradient(var(--ds-gold-bg),var(--ds-bg))}
 .ecd-who{display:flex;align-items:center;gap:8px}
+.ecd-ib{flex:none;padding:0;margin:0;border:0;background:none;cursor:pointer;border-radius:50%;display:block}.ecd-ib:hover .ecp-ico{border-color:var(--ds-gold)}
 .ecd-who .ecp-ico{width:42px;height:42px;border:2px solid var(--ds-gold)}
 .ecd-name{display:flex;flex-direction:column;min-width:0;flex:1}
 .ecd-name b{font-size:var(--ds-fs-name);color:var(--ds-text-hi);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -125,11 +126,18 @@ function locateButton(cid, name, actions, compact = false) {
   return btn
 }
 
+// Icono del campeón clicable: hace lo mismo que «Localizar».
+function clickPic(info, cid, actions) {
+  if (!actions.locate) return pic(info, 'ecp-ico')
+  const b = h('button', { type: 'button', class: 'ecd-ib', 'data-locate-icon': cid, title: info.name + '\n' + t('nat.find'), onclick: () => { if (!actions.locate(cid)) { b.classList.add('ecd-miss'); b.title = t('nat.notInGrid') } } }, pic(info, 'ecp-ico'))
+  return b
+}
+
 function primaryCard(c, ctx, actions) {
   const info = ctx.cat.champion(c.cid)
   const sources = [c.lane && 'LoLalytics', c.team && 'iTero'].filter(Boolean).join(' + ')
   return h('div', { class: 'ecd-main', 'data-primary': c.cid },
-    h('div', { class: 'ecd-who' }, pic(info, 'ecp-ico'),
+    h('div', { class: 'ecd-who' }, clickPic(info, c.cid, actions),
       h('div', { class: 'ecd-name' }, h('b', null, info.name), h('span', { class: 'ecd-sub', 'data-sources': sources }, sources)),
       confTag(c.confidence)),
     h('ul', { class: 'ecd-rs', 'aria-label': t('ds.whyFor', info.name) },
@@ -142,7 +150,7 @@ function altRow(c, ctx, actions) {
   const info = ctx.cat.champion(c.cid)
   const lead = c.reasons[0] ?? c.tradeoffs[0] ?? null
   return h('div', { class: 'ecd-alt', 'data-alt': c.cid, 'data-why': c.why },
-    pic(info, 'ecp-ico'),
+    clickPic(info, c.cid, actions),
     h('div', { class: 'ecd-name' },
       h('b', null, info.name, ' ', h('span', { class: 'ecd-why' }, '— ' + t('ds.why.' + c.why))),
       lead ? h('span', { class: 'ecd-sub', 'data-reason': lead.type }, SIGN[lead.polarity] + ' ' + reasonText(lead, ctx)) : null),
