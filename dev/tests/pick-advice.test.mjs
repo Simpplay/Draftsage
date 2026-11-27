@@ -219,6 +219,20 @@ test('controlador del consejero: errores, tope por selección y reinicio al term
   source.set(READY({ bans: [9] })); await tick(); assert.equal(calls.length, 4)                // nueva selección: contador a cero
 })
 
+test('controlador del consejero: los bans seguidos se agrupan en una consulta y los descartados no gastan tope', async () => {
+  const source = fakeSource(); const calls = []
+  const advisor = { advise: async (ctx) => { calls.push(ctx); return { ok: true, data: { picks: [], meta: {} } } } }
+  const prefs = { get: () => ({ enabled: true, minPick: 0.0025 }), set: () => ({}) }
+  const c = createPickAdvisorController({ advisor, source, prefs, debounceMs: 0, banDebounceMs: 30, maxQueries: 3 }); c.start()
+  source.set(READY({})); await tick()
+  assert.equal(calls.length, 1)
+  for (let i = 1; i <= 8; i++) { source.set(READY({ bans: Array.from({ length: i }, (_, k) => k + 1) })); await tick() } // 8 bans seguidos
+  await new Promise((r) => setTimeout(r, 80))
+  assert.equal(calls.length, 2)                                                               // una sola consulta para todos
+  source.set(READY({ bans: [1, 2, 3, 4, 5, 6, 7, 8], enemies: [{ championId: 51, position: '' }] })); await tick()
+  assert.equal(calls.length, 3); assert.equal(c.getState().status, 'ready')                   // un pick revelado no espera
+})
+
 test('controlador del consejero: ignora la partida, descarta respuestas obsoletas y conserva lo anterior al cargar', async () => {
   const source = fakeSource(); const pend = []
   const advisor = { advise: (ctx) => new Promise((res) => pend.push({ ctx, res })) }
