@@ -5,8 +5,8 @@
 //      secundario + un botón ⚡ para aplicar (giro → ✓). El clic en la runa abre la vista «build» (runas, hechizos, ítems, rivales) como popover
 //      que SUBE desde la barra. Estados: esperando campeón · consultando · lista · aplicada · sin sesión · error.
 //   2. CABECERA DE LA CUADRÍCULA (`.champion-grid-header`, antes de `.spacer`): tira con los mejores picks (contra tu rival, o los del draft de
-//      iTero si aún no hay rival) y un botón de filtros con su contador. El clic en un retrato LOCALIZA la ficha en la cuadrícula (la desplaza a
-//      la vista y la hace parpadear; nunca la elige por ti). El botón abre la vista «picks» (filtros, listas completas, rivales) que BAJA desde ahí.
+//      iTero si aún no hay rival) y un botón de filtros con su contador. El clic en un retrato LOCALIZA al campeón: escribe su nombre en el buscador
+//      de la cuadrícula (solo queda esa ficha; otro clic limpia); nunca lo elige por ti. El botón abre la vista «picks» (filtros, listas completas, rivales) que BAJA desde ahí.
 //   3. BOTÓN «DS» (menú de ajustes) FIJO ABAJO A LA DERECHA de la ventana, colgado de <body>: el contenedor nativo `.bottom-right-buttons`
 //      no dejaba hacer clic (el cliente lo cubre/ignora los eventos), así que ya no se usa como ancla. Aparece mientras haya selección.
 // Todo cuelga de panel.js (modo anclado: popover pegado al elemento, sin arrastre). Si el DOM no se reconoce (otra versión del cliente), si es una
@@ -117,11 +117,48 @@ export function probeNative(root = document) {
   return r
 }
 
-/** Localiza una ficha de la cuadrícula: la desplaza a la vista y la hace parpadear. false si no está pintada (la cuadrícula es virtual). */
+/** Cuadro de búsqueda nativo de la cuadrícula (`input.champion-input`), o null si no se ve. */
+export function findSearchInput(root = document) {
+  const input = root.querySelector('.champion-grid-header input.champion-input') ?? root.querySelector('input.champion-input')
+  return input && isShown(input) ? input : null
+}
+
+/** Escribe en un <input> como si lo hiciera el usuario (setter nativo + eventos), para que el framework del cliente se entere y filtre. */
+function typeInto(input, text) {
+  const proto = Object.getPrototypeOf(input)
+  const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set ?? Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+  if (setter) setter.call(input, text); else input.value = text
+  input.dispatchEvent(new Event('input', { bubbles: true }))
+  input.dispatchEvent(new Event('change', { bubbles: true }))
+}
+
+const norm = (x) => String(x ?? '').trim().toLowerCase()
+
+/**
+ * Localiza un campeón filtrando la cuadrícula con el buscador nativo: escribe su nombre y solo queda esa ficha. Un segundo clic (con el mismo
+ * nombre ya escrito) limpia la búsqueda. Si no hay buscador visible, se desplaza SOLO el contenedor de la cuadrícula hasta la ficha (nunca
+ * `scrollIntoView`, que movía también los ancestros y descolocaba la vista del cliente). Devuelve false si no pudo hacer nada.
+ */
+export function locateChampion(id, name, root = document) {
+  const input = findSearchInput(root)
+  if (input && name) {
+    const same = norm(input.value) === norm(name)
+    typeInto(input, same ? '' : name)
+    return true
+  }
+  return flashTile(id, root)
+}
+
+/** Sin buscador: desplaza el contenedor con scroll más cercano hasta la ficha y la hace parpadear. false si no está pintada (la cuadrícula es virtual). */
 export function flashTile(id, root = document) {
   const tile = root.querySelector(`.grid-champion[data-id="${Number(id)}"]`)
   if (!tile) return false
-  tile.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
+  let box = tile.parentElement
+  while (box && box !== root.body && !(box.scrollHeight > box.clientHeight + 1 && /(auto|scroll)/.test(getComputedStyle(box).overflowY))) box = box.parentElement
+  if (box && box !== root.body) {
+    const b = box.getBoundingClientRect(), r = tile.getBoundingClientRect()
+    box.scrollTop += r.top - b.top - (b.height - r.height) / 2
+  }
   tile.classList.add('ecx-flash')
   setTimeout(() => tile.classList.remove('ecx-flash'), 1700)
   return true
@@ -243,7 +280,7 @@ export async function mountNative({ panel, controller, catalog, overlay, advisor
         type: 'button', class: 'ecx-pk' + (k === 0 ? ' ecx-top' : ''), 'data-pick': i.cid, 'data-primary': k === 0 ? '' : null,
         'aria-label': (k === 0 ? t('ds.title') + ': ' : '') + info.name + ' — ' + i.label, title: (k === 0 ? t('ds.title') + ' — ' : '') + i.tip + '\n' + t('nat.find'),
         onclick: () => {
-          if (!flashTile(i.cid, root)) { btn.classList.add('ecx-shake'); btn.title = t('nat.notInGrid'); setTimeout(() => btn.classList.remove('ecx-shake'), 400) }
+          if (!locateChampion(i.cid, info.name, root)) { btn.classList.add('ecx-shake'); btn.title = t('nat.notInGrid'); setTimeout(() => btn.classList.remove('ecx-shake'), 400) }
         },
       }, info.icon ? h('img', { src: info.icon, alt: info.name, draggable: 'false' }) : h('div', { style: 'width:26px;height:26px;border-radius:50%;background:var(--ds-surface-2)' }),
       h('b', { class: i.good ? 'ecx-pos' : 'ecx-neg' }, i.label))
@@ -289,8 +326,8 @@ export async function mountNative({ panel, controller, catalog, overlay, advisor
   const schedule = () => { if (!timer) timer = setTimeout(sync, 80) }
 
   // Suscripciones: cada cambio de estado, del panel (aplicando/aplicado), de preferencias o del catálogo repinta como mucho una vez cada 80 ms.
-  // «Localizar» de la recomendación principal del panel usa la misma búsqueda de ficha que la tira.
-  panel.setLocator?.((cid) => flashTile(cid, root))
+  // «Localizar» de la recomendación principal del panel usa la misma búsqueda que la tira.
+  panel.setLocator?.((cid) => locateChampion(cid, catalog.champion(cid).name, root))
   const offs = [controller.subscribe(schedule), panel.subscribe(schedule), overlay?.subscribe(schedule), advisor?.subscribe(schedule), filters?.subscribe(schedule)].filter(Boolean)
   addEventListener('draftsage:prefs', schedule)
   addEventListener('resize', schedule)

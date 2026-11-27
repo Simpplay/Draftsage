@@ -181,7 +181,7 @@ function mkController(o = {}) {
   let enabled = o.enabled ?? true
   const advisor = { advise: async (ctx) => { calls.push(ctx); return o.result ?? { ok: true, data: { picks: [{ rank: 1 }], meta: {} } } } }
   const prefs = { get: () => ({ enabled, weight: 0.5, minPick: 0.0025 }), set: (p) => { if ('enabled' in p) enabled = p.enabled; return p } }
-  const c = createPickAdvisorController({ advisor, source, prefs, debounceMs: 0, maxQueries: o.max ?? 12 })
+  const c = createPickAdvisorController({ advisor, source, prefs, debounceMs: 0, maxQueries: o.max ?? 12, windowMs: o.win ?? 60000 })
   c.start(); return { c, source, calls }
 }
 
@@ -206,17 +206,21 @@ test('controlador del consejero: una consulta por cambio de composición, no por
   assert.equal(calls.length, 4); assert.equal(c.getState().status, 'ready')
 })
 
-test('controlador del consejero: errores, tope por selección y reinicio al terminar el Champion Select', async () => {
-  const { c, source, calls } = mkController({ result: { ok: false, reason: 'blocked' }, max: 3 })
+test('controlador del consejero: errores, reintento y reinicio al terminar el Champion Select', async () => {
+  const { c, source, calls } = mkController({ result: { ok: false, reason: 'blocked' } })
   source.set(READY({})); await tick()
   assert.deepEqual([c.getState().status, c.getState().reason], ['error', 'blocked'])
   source.set(READY({ bans: [1] })); await tick()                                               // tras un error se reintenta en el siguiente cambio
-  source.set(READY({ bans: [1, 2] })); await tick()
-  assert.equal(calls.length, 3)
-  source.set(READY({ bans: [1, 2, 3] })); await tick()                                         // 4.º: tope
-  assert.equal(calls.length, 3); assert.equal(c.getState().reason, 'limit')
+  assert.equal(calls.length, 2)
   source.set({ status: 'idle', context: null }); await tick(); assert.equal(c.getState().status, 'idle')
-  source.set(READY({ bans: [9] })); await tick(); assert.equal(calls.length, 4)                // nueva selección: contador a cero
+})
+
+test('controlador del consejero: el tope es por ventana y ESPERA (los últimos picks siempre se consultan)', async () => {
+  const { c, source, calls } = mkController({ max: 2, win: 60 })
+  for (let i = 1; i <= 3; i++) { source.set(READY({ bans: Array.from({ length: i }, (_, k) => k + 1) })); await tick() }
+  assert.equal(calls.length, 2); assert.equal(c.getState().status, 'loading')                  // la 3.ª espera hueco, no falla
+  await new Promise((r) => setTimeout(r, 120))
+  assert.equal(calls.length, 3); assert.equal(c.getState().status, 'ready')
 })
 
 test('controlador del consejero: los bans seguidos se agrupan en una consulta y los descartados no gastan tope', async () => {

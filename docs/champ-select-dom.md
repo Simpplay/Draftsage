@@ -29,7 +29,7 @@ Fixture anonimizado y recortado para las pruebas: `dev/tests/fixtures/champ-sele
 Reglas: solo se integra con una selección en curso del LCU (`phase != game`, contexto real, no simulación) y si el ancla **se ve** (tamaño > 0, sin `visibility:hidden`). Si no hay ninguna ancla se mantiene el panel flotante y se avisa en el log una vez (`draftsage.nativeProbe()` da el diagnóstico). Las piezas se reponen si Ember las borra (vigilancia por `MutationObserver` + sondeo cada 1,5 s) y la reconciliación es idempotente.
 
 ## Decisiones de diseño
-- Nada de clics sintéticos sobre el cliente: «localizar» una ficha solo la desplaza a la vista y la hace parpadear; elegir sigue siendo del jugador. Aplicar runas/hechizos sigue siendo un clic explícito (botón ⚡ o Ctrl+Shift+A) tras el aviso de políticas.
+- Nada de clics sintéticos sobre el cliente: «localizar» un campeón solo escribe su nombre en el buscador de la cuadrícula (`input.champion-input`; otro clic lo limpia) o, sin buscador, desplaza el contenedor de la cuadrícula y hace parpadear la ficha; elegir sigue siendo del jugador. Aplicar runas/hechizos sigue siendo un clic explícito (botón ⚡ o Ctrl+Shift+A) tras el aviso de políticas.
 - El popover cuelga del **contenedor** (estable) y no de los botones, que se regeneran al repintar. Su posición se recalcula cada fotograma mientras está abierto (el cliente anima y escala) y se compensa el zoom con una sonda fija de 100 px.
 - Los widgets sólo se repintan si cambia su firma (evita perder clics por reemplazar el botón bajo el ratón).
 
