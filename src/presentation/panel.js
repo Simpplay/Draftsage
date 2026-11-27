@@ -468,7 +468,7 @@ export function pickTip(p, info, meta, cat, mastery) {
 }
 
 // Lista de DRAFT (iTero). null si no hay nada que enseñar (apagado, sin línea, ARAM…). Antes de la primera respuesta, esqueletos.
-function advisorBlock(adv, cat, ui, actions, filters, mastery) {
+function advisorBlock(adv, cat, ui, actions, filters, mastery, locate = null) {
   if (!adv || adv.status === 'idle') return null
   if (adv.status === 'error') {
     if (adv.reason === 'no-lane' || adv.reason === 'mode') return null
@@ -493,7 +493,7 @@ function advisorBlock(adv, cat, ui, actions, filters, mastery) {
     const info = cat.champion(p.championId)
     return h('button', {
       type: 'button', class: 'ecp-pk' + (p.championId === sel?.championId ? ' ecp-on' : ''), 'data-pick': p.championId, 'data-agree': p.agree, title: pickTip(p, info, m, cat, mastery),
-      onclick: () => actions.advSelect(p.championId),
+      onclick: () => { actions.advSelect(p.championId); locate?.(p.championId) }, // elige para ver los motivos Y filtra la cuadrícula
     }, pic(info, 'ecp-ico'),
     p.agree ? h('span', { class: 'ecp-badge' + (p.agree === 'conflict' ? ' ecp-bad' : '') }, icon(p.agree === 'agree' ? 'check' : 'warn', 9)) : null,
     h('div', { class: 'ecp-w ' + (p.score >= 0 ? 'ecp-pos' : 'ecp-neg') }, signed(p.score)))
@@ -507,7 +507,7 @@ function advisorBlock(adv, cat, ui, actions, filters, mastery) {
 }
 
 // Lista de MATCHUP (LoLalytics, sin cuenta): los campeones con mejor win rate contra el rival de tu línea. Sin rival conocido: una pista con tooltip.
-function matchupBlock(ov, cat, filters, mastery) {
+function matchupBlock(ov, cat, filters, mastery, locate = null) {
   const d = ov?.data
   if (!d) return null
   if (!d.rival) {
@@ -518,11 +518,13 @@ function matchupBlock(ov, cat, filters, mastery) {
   const rivalName = cat.champion(d.rival).name
   const cell = (c) => {
     const info = cat.champion(c.cid)
-    return h('div', { class: 'ecp-pk', 'data-mu-pick': c.cid, title: t('mu.pickTip', info.name, c.wr.toFixed(1), rivalName, c.edge != null ? signed(c.edge) : '–', c.n) + masteryTip(mastery, c.cid) },
+    const btn = h('button', { type: 'button', class: 'ecp-pk', 'data-mu-pick': c.cid, title: t('mu.pickTip', info.name, c.wr.toFixed(1), rivalName, c.edge != null ? signed(c.edge) : '–', c.n) + masteryTip(mastery, c.cid) + (locate ? '\n' + t('nat.find') : ''),
+      onclick: () => { if (locate && !locate(c.cid)) { btn.classList.add('ecd-miss'); btn.title = t('nat.notInGrid') } } },
       pic(info, 'ecp-ico'),
       h('div', { class: 'ecp-w ' + (c.edge == null || c.edge >= 0 ? 'ecp-pos' : 'ecp-neg') }, c.wr.toFixed(0) + '%'),
       // Ventaja sobre su media en la línea (spec §2.1): un % alto con ventaja ~0 es fuerza general, no un counter.
       c.edge != null && h('div', { class: 'ecp-w', 'data-edge': c.edge, style: 'color:var(--ds-meta)' }, signed(c.edge)))
+    return btn
   }
   return h('div', { class: 'ecp-adv ecp-mu' + (ov.status === 'loading' ? ' ecp-dim' : ''), 'data-matchup': String(d.rival), title: t('mu.tip', rivalName) },
     picks.length
@@ -755,7 +757,7 @@ export async function mountPanel({ controller, catalog, applier, live, overlay, 
     ui.live = live?.getState() ?? null
     // Arriba, lo primero que se decide: filtros, picks de matchup (LoLalytics) y picks de draft (iTero). En partida no hay nada que elegir.
     const inGame = state.context?.phase === 'game'
-    const picksTop = inGame || view === 'build' ? [] : [decisionBlock(), teamContextBlock({ cat: catalog, context: state.context, roles: enemyRoles?.getState() }), filtersBlock(filters, ui, actions), matchupBlock(overlay?.getState(), catalog, filters, mastery), advisorBlock(advisor?.getState(), catalog, ui, actions, filters, mastery)]
+    const picksTop = inGame || view === 'build' ? [] : [decisionBlock(), teamContextBlock({ cat: catalog, context: state.context, roles: enemyRoles?.getState() }), filtersBlock(filters, ui, actions), matchupBlock(overlay?.getState(), catalog, filters, mastery, locator), advisorBlock(advisor?.getState(), catalog, ui, actions, filters, mastery, locator)]
     // Vista «picks»: solo lo que ayuda a elegir campeón (filtros, listas y rivales). Vista «build»: runas, aplicar, ítems y rivales (cambian el matchup).
     const main = view === 'picks' ? [rivalsBlock(state, catalog, actions, ui, enemyRoles?.getState())] : bodyOf(state, catalog, actions, ui, applier.getSettings().flashKey, enemyRoles?.getState())
     const body = !docked && prefs.collapsed ? null : h('div', { class: 'ecp-body', 'data-view': view }, [...picksTop, ...main])

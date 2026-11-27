@@ -1,5 +1,8 @@
 # Draftsage — estado para retomar (2026-11-23)
 
+## Clic en cualquier icono de campeón del desplegable filtra (2026-11-27)
+- En la vista «picks»: los iconos de la lista de matchup (antes `div`, ahora `button`), los del consejero iTero (además de elegirlo para ver los motivos) y los de la tarjeta de decisión (principal y alternativas) llaman al mismo localizador que Find: escriben el nombre en el buscador de la cuadrícula. Los retratos de rivales siguen eligiendo el matchup.
+
 ## Find por buscador, marcadores recortados y tope por ventana (2026-11-27)
 - **Find (🎯 de la tira y «Localizar» del panel)** ahora escribe el nombre del campeón en el buscador nativo (`input.champion-input`, con setter nativo + eventos `input`/`change`) y la cuadrícula deja solo esa ficha; un segundo clic limpia la búsqueda. Sin buscador visible cae a desplazar SOLO el contenedor con scroll de la cuadrícula (se quitó `scrollIntoView`, que movía los ancestros y descolocaba la vista del cliente: la parte superior de Champion Select quedaba oculta). Sigue sin elegir por ti. ❓ Pendiente de ver en el cliente real: que Ember reaccione al evento `input` (si no filtra, pegar el log/DOM de `lol-uikit-flat-input`) y que el nombre del catálogo coincida con el idioma del cliente.
 - **Marcadores de win rate sobre fichas fuera de la caja con scroll**: `overlay.js: visibleRect` recorta cada ficha con los contenedores `overflow` que la rodean; si menos de la mitad se ve, no hay marcador ni velo.
