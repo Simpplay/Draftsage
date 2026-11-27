@@ -1,4 +1,4 @@
-/* draftsage v1.0.9 — generado por dev/tools/release.mjs; no editar */
+/* draftsage v1.0.10 — generado por dev/tools/release.mjs; no editar */
 
 // src/shared/strings.js
 var es = {
@@ -4360,12 +4360,14 @@ function createPickAdvisor({ itero, names, catalog: catalog2, lola = null, stats
   }
   return { advise };
 }
-function createPickAdvisorController({ advisor: advisor2, source, prefs, getFilters = () => void 0, debounceMs = 600, maxQueries = 12, log: log2 = null }) {
+function createPickAdvisorController({ advisor: advisor2, source, prefs, getFilters = () => void 0, debounceMs = 600, banDebounceMs = debounceMs * 5, maxQueries = 12, log: log2 = null }) {
   const listeners = /* @__PURE__ */ new Set();
   let state = { status: "idle", data: null, key: null };
   let lastKey = null;
   let generation = 0;
   let queries = 0;
+  let limitWarned = false;
+  let firedBase = null;
   let unsubscribe = null;
   const setState = (s) => {
     state = s;
@@ -4383,13 +4385,12 @@ function createPickAdvisorController({ advisor: advisor2, source, prefs, getFilt
     return c;
   }
   const ids = (l) => (l ?? []).map((m) => m.championId + ":" + (m.position ?? "")).join(",");
-  const keyOf = (c) => {
+  const baseOf = (c) => {
     var _a, _b;
     return [
       c.role,
       c.lobbyTier ?? 0,
       c.side ?? "",
-      (c.bans ?? []).join(","),
       ids(c.allies),
       ids(c.enemies),
       c.opponentChampionId ?? 0,
@@ -4399,10 +4400,13 @@ function createPickAdvisorController({ advisor: advisor2, source, prefs, getFilt
       prefs.get().useMastery ? prefs.get().masteryWeight : 0
     ].join("|");
   };
+  const keyOf = (c) => baseOf(c) + "|" + (c.bans ?? []).join(",");
   async function evaluate({ force = false } = {}) {
     const ctx = contextOf(source.getState());
     if (!ctx) {
       lastKey = null;
+      firedBase = null;
+      limitWarned = false;
       generation++;
       queries = 0;
       if (state.status !== "idle") setState({ status: "idle", data: null, key: null });
@@ -4412,15 +4416,21 @@ function createPickAdvisorController({ advisor: advisor2, source, prefs, getFilt
     if (!force && key2 === lastKey) return;
     lastKey = key2;
     const gen = ++generation;
-    if (++queries > maxQueries) {
-      log2 == null ? void 0 : log2.warn("consejero: tope de consultas por selecci\xF3n alcanzado (" + maxQueries + ")");
-      return setState({ status: "error", data: state.data, reason: "limit", key: key2 });
-    }
     setState({ status: "loading", data: state.data, key: key2 });
-    if (debounceMs > 0) {
-      await new Promise((r2) => setTimeout(r2, debounceMs));
+    const base = baseOf(ctx);
+    const wait = !force && base === firedBase ? banDebounceMs : debounceMs;
+    if (wait > 0) {
+      await new Promise((r2) => setTimeout(r2, wait));
       if (gen !== generation) return;
     }
+    if (++queries > maxQueries) {
+      if (!limitWarned) {
+        limitWarned = true;
+        log2 == null ? void 0 : log2.warn("consejero: tope de consultas por selecci\xF3n alcanzado (" + maxQueries + ")");
+      }
+      return setState({ status: "error", data: state.data, reason: "limit", key: key2 });
+    }
+    firedBase = base;
     let r;
     try {
       r = await advisor2.advise(ctx);
@@ -4454,6 +4464,7 @@ function createPickAdvisorController({ advisor: advisor2, source, prefs, getFilt
     },
     refresh: () => {
       queries = 0;
+      limitWarned = false;
       return evaluate({ force: true });
     },
     isEnabled: () => prefs.get().enabled,
