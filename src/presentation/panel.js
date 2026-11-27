@@ -361,7 +361,7 @@ function applyBlock(state, actions, ui) {
   return h('div', { class: 'ecp-sect' },
     h('div', { class: 'ecp-apply' },
       mk('all', 'bolt', t('apply.btn'), !canRunes && !(canSpells && inChampSelect), t('apply.all'), all, ui.busy, 'ecp-main'),
-      mk('runes', 'page', '', !canRunes, canRunes ? t('apply.runes') : t('apply.noRunes'), doneRunes, ui.busy && ui.kind === 'runes', 'ecp-sec'),
+      mk('runes', 'page', '', !canRunes, canRunes ? t('apply.runes') : t(d.shards.length !== 3 ? 'apply.noShards' : 'apply.noRunes'), doneRunes, ui.busy && ui.kind === 'runes', 'ecp-sec'),
       canSpells ? mk('spells', 'spark', '', !inChampSelect, inChampSelect ? t('apply.spells') : t('apply.champSelect'), doneSpells, ui.busy && ui.kind === 'spells', 'ecp-sec') : null,
       h('button', {
         type: 'button', class: 'ecp-btn ecp-sec' + (state.pinned ? ' ecp-pinned' : ''), 'data-act': 'pin', 'aria-pressed': String(!!state.pinned),

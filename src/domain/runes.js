@@ -35,3 +35,14 @@ export function treeOfRune(runeId, extra) {
   const g = Math.floor(runeId / 100) * 100
   return TREE_IDS.includes(g) ? g : undefined
 }
+
+/**
+ * Fragmentos (3 ids) de las builds recomendadas: los de la build con la runa clave elegida; si esa no los trae,
+ * los de la build más relevante que sí los tenga (mejor tier, más partidas). [] si ninguna build los trae.
+ */
+export function pickShards(builds, keystone) {
+  const ok = (b) => Array.isArray(b?.shards) && b.shards.length === 3 && b.shards.every((x) => Number.isInteger(x) && x > 0)
+  const rank = (a, b) => (a.tier ?? 99) - (b.tier ?? 99) || (b.occurrence ?? 0) - (a.occurrence ?? 0)
+  const list = (builds ?? []).filter(ok).sort(rank)
+  return (list.find((b) => b.keystone === keystone) ?? list[0])?.shards ?? []
+}

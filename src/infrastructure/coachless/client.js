@@ -14,6 +14,16 @@ const spellStat = (x) => ({ spell: x.summonerSpell, wpa: num(x.wpaOverall), occu
 
 const asList = (data, map) => (Array.isArray(data) ? data.map(map).filter((x) => x.wpa != null) : null)
 
+// Fragmentos de una build: `selectedShards` si trae los 3; si no, el de mayor WPA de cada fila de `shardStats` (3 filas × 3 opciones).
+const isShardId = (x) => Number.isInteger(x) && x > 0
+function shardsOf(runes) {
+  const sel = Array.isArray(runes?.selectedShards) ? runes.selectedShards : []
+  if (sel.length === 3 && sel.every(isShardId)) return sel
+  const rows = Array.isArray(runes?.shardStats) ? runes.shardStats : []
+  const best = rows.slice(0, 3).map((row) => (Array.isArray(row) ? row.filter((e) => isShardId(e?.rune)).sort((a, b) => (num(b.wpa) ?? -Infinity) - (num(a.wpa) ?? -Infinity))[0]?.rune : undefined))
+  return best.length === 3 && best.every(isShardId) ? best : []
+}
+
 export function createCoachlessClient({ post, get, cache }) {
   const call = (key, fn, normalize) =>
     cache.memo(
@@ -69,7 +79,7 @@ export function createCoachlessClient({ post, get, cache }) {
               primaryTree: b.runes?.primaryTree,
               secondaryTree: b.runes?.secondaryTree,
               selectedRunes: b.runes?.selectedRunes ?? [],
-              shards: b.runes?.selectedShards ?? [],
+              shards: shardsOf(b.runes),
               occurrence: num(b.occurrence) ?? 0,
               tier: Number.isInteger(b.tier) ? b.tier : null,
               winrate: num(b.winrate),

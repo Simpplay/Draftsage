@@ -27,7 +27,7 @@
 import { choosePatch, patchSpanLabel } from '../domain/patch.js'
 import { ROLE_FILL } from '../domain/lobby.js'
 import { resolveAdditions, resolveRegions, resolveTiers } from '../domain/filters.js'
-import { TREE_IDS, treeOfKeystone } from '../domain/runes.js'
+import { TREE_IDS, treeOfKeystone, pickShards } from '../domain/runes.js'
 import { buildItemPlan, pickBuild } from '../domain/items.js'
 import { pickKeystone, pickRows, pickSecondary, pickSpell, rankBest, rankKeystones } from '../domain/selection.js'
 import { isValidPair, replaceableIndex, rulesKey, spellRules } from '../domain/spells.js'
@@ -125,6 +125,10 @@ export function createRecommendationService({ client, log, keystoneTrees = () =>
       ? buildItemPlan(itemBuild, { keystoneMatch: picked.keystoneMatch, boots: rankedItems(bootsRes, MIN_BOOTS_SHARE).slice(0, 3), next: rankedItems(nextRes, MIN_NEXT_SHARE).slice(0, 3) })
       : null
 
+    // Fragmentos: de la build de la runa clave; si no los trae, de otra build. Sin ninguno la página no se puede aplicar → se deja rastro.
+    const shards = bd.ok ? pickShards(bd.data, keystone.rune) : []
+    if (shards.length !== 3) log.warn('sin fragmentos en las builds', JSON.stringify({ builds: bd.ok ? bd.data.length : bd.reason, keystone: keystone.rune }))
+
     const treeRows = {}
     others.forEach((t, i) => { if (secs[i].ok) treeRows[t] = secs[i].data.rows })
     const secondary = pickSecondary(treeRows)
@@ -163,7 +167,7 @@ export function createRecommendationService({ client, log, keystoneTrees = () =>
         primaryPicks: prim.ok ? pickRows(prim.data.rows) : [null, null, null],
         secondaryTree: secondary?.tree ?? null,
         secondaryPicks: secondary?.picks ?? [],
-        shards: build?.shards ?? [],
+        shards,
         items,
         spells,
         alternatives: { keystones: altKeystones, autoKeystone: auto.rune, spells: altSpells },
