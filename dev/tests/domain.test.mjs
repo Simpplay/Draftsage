@@ -84,3 +84,13 @@ test('pickSpell: excluye el ya elegido', () => {
   assert.equal(pickSpell(list).spell, 3)             // 6 tiene <5 % de muestra
   assert.equal(pickSpell(list, [3]).spell, 4)
 })
+
+// --- fragmentos de las builds (pickShards): una build sin fragmentos no debe dejar la página sin ellos ---
+import { pickShards } from '../../src/domain/runes.js'
+test('pickShards: usa la build de la runa clave; si no trae fragmentos, otra que sí', () => {
+  const b = (keystone, shards, tier = 0, occurrence = 1) => ({ keystone, shards, tier, occurrence })
+  assert.deepEqual(pickShards([b(1, [5008, 5008, 5001]), b(2, [5005, 5008, 5011])], 2), [5005, 5008, 5011])
+  assert.deepEqual(pickShards([b(1, []), b(2, [5005, 5008, 5011])], 1), [5005, 5008, 5011])
+  assert.deepEqual(pickShards([b(1, [5008, 5008]), b(2, [])], 1), [])
+  assert.deepEqual(pickShards(null, 1), [])
+})

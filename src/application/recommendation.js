@@ -26,8 +26,8 @@
 
 import { choosePatch, patchSpanLabel } from '../domain/patch.js'
 import { ROLE_FILL } from '../domain/lobby.js'
-import { resolveAdditions, resolveRegions, resolveTiers } from '../domain/filters.js'
-import { TREE_IDS, treeOfKeystone } from '../domain/runes.js'
+import { MAX_PATCH_RANGE, resolveAdditions, resolveRegions, resolveTiers } from '../domain/filters.js'
+import { TREE_IDS, treeOfKeystone, pickShards } from '../domain/runes.js'
 import { buildItemPlan, pickBuild } from '../domain/items.js'
 import { pickKeystone, pickRows, pickSecondary, pickSpell, rankBest, rankKeystones } from '../domain/selection.js'
 import { isValidPair, replaceableIndex, rulesKey, spellRules } from '../domain/spells.js'
@@ -125,6 +125,10 @@ export function createRecommendationService({ client, log, keystoneTrees = () =>
       ? buildItemPlan(itemBuild, { keystoneMatch: picked.keystoneMatch, boots: rankedItems(bootsRes, MIN_BOOTS_SHARE).slice(0, 3), next: rankedItems(nextRes, MIN_NEXT_SHARE).slice(0, 3) })
       : null
 
+    // Fragmentos: de la build de la runa clave; si no los trae, de otra build. Sin ninguno la página no se puede aplicar → se deja rastro.
+    const shards = bd.ok ? pickShards(bd.data, keystone.rune) : []
+    if (shards.length !== 3) log.warn('sin fragmentos en las builds', JSON.stringify({ builds: bd.ok ? bd.data.length : bd.reason, keystone: keystone.rune }))
+
     const treeRows = {}
     others.forEach((t, i) => { if (secs[i].ok) treeRows[t] = secs[i].data.rows })
     const secondary = pickSecondary(treeRows)
@@ -163,7 +167,7 @@ export function createRecommendationService({ client, log, keystoneTrees = () =>
         primaryPicks: prim.ok ? pickRows(prim.data.rows) : [null, null, null],
         secondaryTree: secondary?.tree ?? null,
         secondaryPicks: secondary?.picks ?? [],
-        shards: build?.shards ?? [],
+        shards,
         items,
         spells,
         alternatives: { keystones: altKeystones, autoKeystone: auto.rune, spells: altSpells },
@@ -225,14 +229,28 @@ export function createRecommendationService({ client, log, keystoneTrees = () =>
       notices.push('filters-downgraded')
       res = await compute(ctx, patch, tiers, plan, signal)
     }
-    // Matchup sin datos suficientes (o ninguno): se muestra la build del campeón sin rival, nunca un error.
-    const noMatchupData = res.status === 'error' && res.reason === 'no-data'
-    if (plan.matchup && ((res.status === 'ok' && res.sample < MIN_MATCHUP_SAMPLE) || noMatchupData)) {
+    // Orden de preferencia cuando la muestra es pequeña (cada cambio se avisa en pantalla):
+    //   1. los filtros del usuario  2. un parche más (solo premium; `patch-widened`)  3. la general, sin rival (`matchup-low-sample`).
+    const tooSmall = (r) => (r.status === 'ok' && r.sample < MIN_MATCHUP_SAMPLE) || (r.status === 'error' && r.reason === 'no-data')
+    const base = plan
+    let widened = false
+    if (tooSmall(res) && premium && plan.additions < MAX_PATCH_RANGE && !notices.includes('filters-downgraded')) {
+      const wider = { ...plan, additions: plan.additions + 1 }
+      const r2 = await compute(ctx, patch, tiers, wider, signal)
+      if (r2.status === 'aborted') return aborted()
+      if (r2.status === 'ok' && r2.sample > (res.sample ?? 0)) {
+        log.info('muestra pequeña (' + (res.sample ?? 0) + ', mínimo ' + MIN_MATCHUP_SAMPLE + '); se añade un parche más (' + wider.additions + ' → ' + r2.sample + ' partidas)')
+        plan = wider; res = r2; widened = true
+      }
+    }
+    if (plan.matchup && tooSmall(res)) {
       log.info('muestra del matchup pequeña (' + (res.sample ?? 0) + ', mínimo ' + MIN_MATCHUP_SAMPLE + ', rival ' + ctx.opponentChampionId + '); se usa el campeón sin rival')
+      plan = { ...base, matchup: false }
+      widened = false
       notices.push('matchup-low-sample')
-      plan = { ...plan, matchup: false }
       res = await compute(ctx, patch, tiers, plan, signal)
     }
+    if (widened) notices.push('patch-widened')
 
     if (res.status === 'aborted') return aborted()
     if (res.status === 'forbidden') return { ok: false, reason: 'forbidden' }

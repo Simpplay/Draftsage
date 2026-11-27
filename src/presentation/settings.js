@@ -12,6 +12,7 @@ import { getLang, t } from '../shared/i18n.js'
 import { log } from '../shared/logger.js'
 import { MAX_PATCH_RANGE, REGIONS, regionCode, toggleRegion, toggleTier } from '../domain/filters.js'
 import { MASTERY_WEIGHTS } from '../domain/itero.js'
+import { compareVersions } from '../domain/update.js'
 
 const STYLE_ID = 'draftsage-settings-style'
 const CSS = `
@@ -19,6 +20,9 @@ const CSS = `
 .ecs-top{display:flex;align-items:center;gap:8px}
 .ecs-brand{flex:1;display:flex;align-items:center;gap:8px;font:bold 13px sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--ds-text-hi)}
 .ecs-brand .ec-ico{color:var(--ds-gold)}
+.ecs-ver{font:11px sans-serif;letter-spacing:.04em;text-transform:none;color:var(--ds-meta);padding:1px 7px;border:1px solid var(--ds-border);border-radius:9px}
+.ecs-upd{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--ds-gold);border-radius:6px;font-size:12px;line-height:1.35;color:var(--ds-gold-hi);background:var(--ds-surface)}
+.ecs-upd .ec-ico{flex:none}
 .ecs-plan{display:flex;align-items:center;gap:6px;padding:3px 11px 3px 8px;border:1px solid var(--ds-border);border-radius:12px;font-size:12px;background:var(--ds-surface);color:var(--ds-meta)}
 .ecs-plan[data-plan=premium]{border-color:var(--ds-gold);color:var(--ds-gold-hi);box-shadow:0 0 10px rgba(200,170,110,.35)}
 .ecs-plan[data-plan=none]{cursor:pointer}
@@ -119,8 +123,15 @@ export function openSettings({ applier, catalog, filters, source, overlay, bans,
       ? h('div', { class: 'ecs-plan', 'data-plan': ses.premium ? 'premium' : 'free', title: ses.email ?? '' }, icon(ses.premium ? 'crown' : 'user', 14), ses.premium ? t('set.premium') : t('set.free'))
       : h('button', { type: 'button', class: 'ecs-plan', 'data-plan': 'none', title: t('set.enterTip'), onclick: () => go(actions.login) }, icon('user', 14), t('set.enter'))
 
+    // Versión en uso y aviso si hay otra descargada (se aplica al reiniciar el cliente) o que exige reinstalar.
+    const cur = updates.build()
+    const newer = cur.pending && compareVersions(cur.pending, cur.version) > 0 ? cur.pending : null
+    const updNotice = cur.needsReinstall ? h('div', { class: 'ecs-upd', 'data-update-notice': 'reinstall', role: 'status' }, icon('warn', 14), t('upd.reinstall'))
+      : newer ? h('div', { class: 'ecs-upd', 'data-update-notice': 'restart', role: 'status' }, icon('refresh', 14), t('set.updAvailable', newer))
+      : null
+
     const top = h('div', { class: 'ecs-top' },
-      h('div', { class: 'ecs-brand' }, icon('gear', 16), 'Draftsage'),
+      h('div', { class: 'ecs-brand' }, icon('gear', 16), 'Draftsage', h('span', { class: 'ecs-ver', 'data-version': cur.version, title: t('set.updatesTip', cur.version, t(cur.source === 'remote' ? 'set.updSrcRemote' : 'set.updSrcPackaged')) }, 'v' + cur.version)),
       plan,
       ses.loggedIn && h('button', { type: 'button', class: 'ecs-ib', title: t('set.logout'), 'data-act': 'logout', onclick: () => go(actions.logout) }, icon('logout', 15)))
 
@@ -255,6 +266,7 @@ export function openSettings({ applier, catalog, filters, source, overlay, bans,
     const desc = (key) => h('p', { class: 'ecs-desc' }, t(key))
     return [
       top,
+      updNotice,
       sect('general', 'eye', [h('div', { class: 'ecs-grid' }, generalMinis)]),
       sect('data', 'swap', [src, desc('set.d.source'), elo, desc('set.d.elo'), patches, regions]),
       sect('advisor', 'spark', [h('div', { class: 'ecs-grid' }, advisorMini), desc('set.d.advisor'), masteryRow, desc('set.d.mastery')]),
