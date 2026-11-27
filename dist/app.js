@@ -1,4 +1,4 @@
-/* draftsage v1.0.10 — generado por dev/tools/release.mjs; no editar */
+/* draftsage v1.0.11 — generado por dev/tools/release.mjs; no editar */
 
 // src/shared/strings.js
 var es = {
@@ -47,7 +47,7 @@ var es = {
   "nat.picksOpen": "Picks sugeridos y filtros",
   "nat.picksRival": "Mejores contra {0}",
   "nat.picksDraft": "Mejores para tu draft (iTero)",
-  "nat.find": "Clic: localizarlo en la cuadr\xEDcula",
+  "nat.find": "Clic: buscarlo en el buscador de la cuadr\xEDcula (otro clic lo limpia)",
   "nat.picksNone": "A\xFAn sin sugerencias: revela a tu rival o activa el consejero (Ajustes \u2192 M\xE1s)",
   "nat.notInGrid": "No est\xE1 a la vista en la cuadr\xEDcula: despl\xE1zate o usa el buscador",
   "nat.launch": "Draftsage: ajustes (Ctrl+Shift+E)",
@@ -523,7 +523,7 @@ var en = {
   "nat.picksOpen": "Suggested picks and filters",
   "nat.picksRival": "Best against {0}",
   "nat.picksDraft": "Best for your draft (iTero)",
-  "nat.find": "Click: find it in the grid",
+  "nat.find": "Click: search it in the grid search box (click again to clear)",
   "nat.picksNone": "No suggestions yet: reveal your opponent or turn on the advisor (Settings \u2192 More)",
   "nat.notInGrid": "Not visible in the grid: scroll or use the search box",
   "nat.launch": "Draftsage settings (Ctrl+Shift+E)",
@@ -4360,12 +4360,12 @@ function createPickAdvisor({ itero, names, catalog: catalog2, lola = null, stats
   }
   return { advise };
 }
-function createPickAdvisorController({ advisor: advisor2, source, prefs, getFilters = () => void 0, debounceMs = 600, banDebounceMs = debounceMs * 5, maxQueries = 12, log: log2 = null }) {
+function createPickAdvisorController({ advisor: advisor2, source, prefs, getFilters = () => void 0, debounceMs = 600, banDebounceMs = debounceMs * 5, maxQueries = 12, windowMs = 6e4, log: log2 = null }) {
   const listeners = /* @__PURE__ */ new Set();
   let state = { status: "idle", data: null, key: null };
   let lastKey = null;
   let generation = 0;
-  let queries = 0;
+  let stamps = [];
   let limitWarned = false;
   let firedBase = null;
   let unsubscribe = null;
@@ -4408,7 +4408,7 @@ function createPickAdvisorController({ advisor: advisor2, source, prefs, getFilt
       firedBase = null;
       limitWarned = false;
       generation++;
-      queries = 0;
+      stamps = [];
       if (state.status !== "idle") setState({ status: "idle", data: null, key: null });
       return;
     }
@@ -4423,13 +4423,21 @@ function createPickAdvisorController({ advisor: advisor2, source, prefs, getFilt
       await new Promise((r2) => setTimeout(r2, wait));
       if (gen !== generation) return;
     }
-    if (++queries > maxQueries) {
+    const prune = () => {
+      const t0 = Date.now() - windowMs;
+      stamps = stamps.filter((x) => x > t0);
+    };
+    prune();
+    if (stamps.length >= maxQueries) {
       if (!limitWarned) {
         limitWarned = true;
-        log2 == null ? void 0 : log2.warn("consejero: tope de consultas por selecci\xF3n alcanzado (" + maxQueries + ")");
+        log2 == null ? void 0 : log2.warn("consejero: ritmo de consultas alto (" + maxQueries + " cada " + Math.round(windowMs / 1e3) + " s); se espera un hueco");
       }
-      return setState({ status: "error", data: state.data, reason: "limit", key: key2 });
+      await new Promise((r2) => setTimeout(r2, Math.max(0, stamps[0] + windowMs - Date.now()) + 5));
+      if (gen !== generation) return;
+      prune();
     }
+    stamps.push(Date.now());
     firedBase = base;
     let r;
     try {
@@ -4463,7 +4471,7 @@ function createPickAdvisorController({ advisor: advisor2, source, prefs, getFilt
       generation++;
     },
     refresh: () => {
-      queries = 0;
+      stamps = [];
       limitWarned = false;
       return evaluate({ force: true });
     },
@@ -8046,6 +8054,25 @@ function probeGrid(root = document) {
   log.info("overlayProbe", JSON.stringify(r));
   return r;
 }
+function visibleRect(el, cache = /* @__PURE__ */ new Map()) {
+  const r = el.getBoundingClientRect();
+  let top = Math.max(0, r.top), bottom = Math.min(window.innerHeight, r.bottom), left = Math.max(0, r.left), right = Math.min(window.innerWidth, r.right);
+  for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) {
+    let c = cache.get(a);
+    if (c === void 0) {
+      const o = getComputedStyle(a);
+      c = /(auto|scroll|hidden|clip)/.test(o.overflowY + o.overflowX) ? a.getBoundingClientRect() : null;
+      cache.set(a, c);
+    }
+    if (c) {
+      top = Math.max(top, c.top);
+      bottom = Math.min(bottom, c.bottom);
+      left = Math.max(left, c.left);
+      right = Math.min(right, c.right);
+    }
+  }
+  return { r, visible: bottom > top && right > left, top, bottom, left, right };
+}
 function tipOf(name, c) {
   const lines = [name];
   if (c) {
@@ -8094,9 +8121,11 @@ async function mountOverlay({ overlay: overlay2, catalog: catalog2, getPrefs, fi
     const f = veils ? filters.get() : null;
     const avail = veils ? filters.availability() : null;
     const nodes = [];
+    const clips = /* @__PURE__ */ new Map();
     for (const { el, id } of tiles) {
-      const r = el.getBoundingClientRect();
-      if (r.width < 16 || r.height < 16 || r.bottom < 0 || r.top > window.innerHeight) continue;
+      const v = visibleRect(el, clips);
+      const r = v.r;
+      if (r.width < 16 || r.height < 16 || !v.visible || v.top > r.top + r.height * 0.5 || v.bottom < r.bottom - r.height * 0.5) continue;
       if (veils && !filters.matches(id, f, avail)) {
         nodes.push(h("div", { class: "ecb-veil", "data-veil": String(id), style: `left:${Math.round(r.left)}px;top:${Math.round(r.top)}px;width:${Math.round(r.width)}px;height:${Math.round(r.height)}px` }));
       }
@@ -8227,11 +8256,38 @@ function probeNative(root = document) {
   log.info("nativeProbe", JSON.stringify(r));
   return r;
 }
+function findSearchInput(root = document) {
+  const input = root.querySelector(".champion-grid-header input.champion-input") ?? root.querySelector("input.champion-input");
+  return input && isShown(input) ? input : null;
+}
+function typeInto(input, text) {
+  var _a, _b;
+  const proto = Object.getPrototypeOf(input);
+  const setter = ((_a = Object.getOwnPropertyDescriptor(proto, "value")) == null ? void 0 : _a.set) ?? ((_b = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")) == null ? void 0 : _b.set);
+  if (setter) setter.call(input, text);
+  else input.value = text;
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+}
+var norm4 = (x) => String(x ?? "").trim().toLowerCase();
+function locateChampion(id, name, root = document) {
+  const input = findSearchInput(root);
+  if (input && name) {
+    const same2 = norm4(input.value) === norm4(name);
+    typeInto(input, same2 ? "" : name);
+    return true;
+  }
+  return flashTile(id, root);
+}
 function flashTile(id, root = document) {
-  var _a;
   const tile = root.querySelector(`.grid-champion[data-id="${Number(id)}"]`);
   if (!tile) return false;
-  (_a = tile.scrollIntoView) == null ? void 0 : _a.call(tile, { block: "nearest", inline: "nearest" });
+  let box = tile.parentElement;
+  while (box && box !== root.body && !(box.scrollHeight > box.clientHeight + 1 && /(auto|scroll)/.test(getComputedStyle(box).overflowY))) box = box.parentElement;
+  if (box && box !== root.body) {
+    const b = box.getBoundingClientRect(), r = tile.getBoundingClientRect();
+    box.scrollTop += r.top - b.top - (b.height - r.height) / 2;
+  }
   tile.classList.add("ecx-flash");
   setTimeout(() => tile.classList.remove("ecx-flash"), 1700);
   return true;
@@ -8375,7 +8431,7 @@ ${t("panel.retry")}`;
           "aria-label": (k === 0 ? t("ds.title") + ": " : "") + info.name + " \u2014 " + i.label,
           title: (k === 0 ? t("ds.title") + " \u2014 " : "") + i.tip + "\n" + t("nat.find"),
           onclick: () => {
-            if (!flashTile(i.cid, root)) {
+            if (!locateChampion(i.cid, info.name, root)) {
               btn.classList.add("ecx-shake");
               btn.title = t("nat.notInGrid");
               setTimeout(() => btn.classList.remove("ecx-shake"), 400);
@@ -8436,7 +8492,7 @@ ${t("panel.retry")}`;
   const schedule = () => {
     if (!timer) timer = setTimeout(sync, 80);
   };
-  (_a = panel.setLocator) == null ? void 0 : _a.call(panel, (cid) => flashTile(cid, root));
+  (_a = panel.setLocator) == null ? void 0 : _a.call(panel, (cid) => locateChampion(cid, catalog2.champion(cid).name, root));
   const offs = [controller2.subscribe(schedule), panel.subscribe(schedule), overlay2 == null ? void 0 : overlay2.subscribe(schedule), advisor2 == null ? void 0 : advisor2.subscribe(schedule), filters == null ? void 0 : filters.subscribe(schedule)].filter(Boolean);
   addEventListener("draftsage:prefs", schedule);
   addEventListener("resize", schedule);
