@@ -1,4 +1,4 @@
-/* draftsage v1.0.8 — generado por dev/tools/release.mjs; no editar */
+/* draftsage v1.0.9 — generado por dev/tools/release.mjs; no editar */
 
 // src/shared/strings.js
 var es = {
@@ -3247,7 +3247,7 @@ function createRecommendationService({ client: client2, log: log2, keystoneTrees
     regions,
     role: ctx.role ?? ROLE_FILL
   });
-  async function compute(ctx, patch, tiers, plan, signal) {
+  async function compute(ctx, patch, tiers, plan, signal, premium = false) {
     const f = filtersOf(ctx, patch, tiers, plan);
     const rules = spellRules(ctx);
     const [ks, sp, bd] = await Promise.all([client2.keystones(f), client2.spells(f), client2.builds(f)]);
@@ -3291,7 +3291,13 @@ function createRecommendationService({ client: client2, log: log2, keystoneTrees
     for (const r of [prim, ...secs]) if (!r.ok && r.reason === "forbidden") return { status: "forbidden" };
     const rankedItems = (r, minShare) => (r == null ? void 0 : r.ok) ? rankBest(r.data, { minShare }) : [];
     const items = itemBuild ? buildItemPlan(itemBuild, { keystoneMatch: picked.keystoneMatch, boots: rankedItems(bootsRes, MIN_BOOTS_SHARE).slice(0, 3), next: rankedItems(nextRes, MIN_NEXT_SHARE).slice(0, 3) }) : null;
-    const shards = bd.ok ? pickShards(bd.data, keystone.rune) : [];
+    let shards = bd.ok ? pickShards(bd.data, keystone.rune) : [];
+    if (shards.length !== 3 && premium && plan.additions < MAX_PATCH_RANGE) {
+      const alt = await client2.builds(filtersOf(ctx, patch, tiers, { ...plan, additions: plan.additions + 1, matchup: false }));
+      if (signal == null ? void 0 : signal.aborted) return { status: "aborted" };
+      if (alt.ok) shards = pickShards(alt.data, keystone.rune);
+      log2.info("fragmentos desde builds con un parche m\xE1s", JSON.stringify({ ok: alt.ok, builds: alt.ok ? alt.data.length : alt.reason, fragmentos: shards.length === 3 }));
+    }
     if (shards.length !== 3) log2.warn("sin fragmentos en las builds", JSON.stringify({ builds: bd.ok ? bd.data.length : bd.reason, keystone: keystone.rune }));
     const treeRows = {};
     others.forEach((t2, i) => {
@@ -3403,33 +3409,39 @@ function createRecommendationService({ client: client2, log: log2, keystoneTrees
       cache: !!cached
     }));
     if (cached) return { ok: true, data: { ...cached, meta: { ...cached.meta, notices: [.../* @__PURE__ */ new Set([...cached.meta.notices, ...notices])] } } };
-    let res = await compute(ctx, patch, tiers, plan, signal);
+    let res = await compute(ctx, patch, tiers, plan, signal, premium);
     if (res.status === "forbidden" && (plan.additions > 0 || plan.matchup || plan.regions)) {
       log2.warn("403 con filtros premium; se reintenta sin rango de parches, matchup ni regiones");
       plan = { additions: 0, matchup: false, regions: null };
       notices.push("filters-downgraded");
-      res = await compute(ctx, patch, tiers, plan, signal);
+      res = await compute(ctx, patch, tiers, plan, signal, premium);
     }
     const tooSmall = (r) => r.status === "ok" && r.sample < MIN_MATCHUP_SAMPLE || r.status === "error" && r.reason === "no-data";
     const base = plan;
     let widened = false;
-    if (tooSmall(res) && premium && plan.additions < MAX_PATCH_RANGE && !notices.includes("filters-downgraded")) {
-      const wider = { ...plan, additions: plan.additions + 1 };
-      const r2 = await compute(ctx, patch, tiers, wider, signal);
-      if (r2.status === "aborted") return aborted();
-      if (r2.status === "ok" && r2.sample > (res.sample ?? 0)) {
-        log2.info("muestra peque\xF1a (" + (res.sample ?? 0) + ", m\xEDnimo " + MIN_MATCHUP_SAMPLE + "); se a\xF1ade un parche m\xE1s (" + wider.additions + " \u2192 " + r2.sample + " partidas)");
-        plan = wider;
-        res = r2;
-        widened = true;
-      }
-    }
+    const tryWiden = async (from) => {
+      if (!tooSmall(res) || !premium || from.additions >= MAX_PATCH_RANGE || notices.includes("filters-downgraded")) return false;
+      const wider = { ...from, additions: from.additions + 1 };
+      const r2 = await compute(ctx, patch, tiers, wider, signal, premium);
+      if (r2.status === "aborted") return null;
+      if (r2.status !== "ok" || r2.sample <= (res.sample ?? 0)) return false;
+      log2.info("muestra peque\xF1a (" + (res.sample ?? 0) + ", m\xEDnimo " + MIN_MATCHUP_SAMPLE + "); se a\xF1ade un parche m\xE1s (" + wider.additions + " \u2192 " + r2.sample + " partidas)");
+      plan = wider;
+      res = r2;
+      return true;
+    };
+    const w1 = await tryWiden(plan);
+    if (w1 === null) return aborted();
+    widened = w1;
     if (plan.matchup && tooSmall(res)) {
       log2.info("muestra del matchup peque\xF1a (" + (res.sample ?? 0) + ", m\xEDnimo " + MIN_MATCHUP_SAMPLE + ", rival " + ctx.opponentChampionId + "); se usa el campe\xF3n sin rival");
       plan = { ...base, matchup: false };
       widened = false;
       notices.push("matchup-low-sample");
-      res = await compute(ctx, patch, tiers, plan, signal);
+      res = await compute(ctx, patch, tiers, plan, signal, premium);
+      const w2 = await tryWiden(plan);
+      if (w2 === null) return aborted();
+      widened = w2;
     }
     if (widened) notices.push("patch-widened");
     if (res.status === "aborted") return aborted();
