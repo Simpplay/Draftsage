@@ -1,4 +1,4 @@
-/* draftsage v1.0.11 — generado por dev/tools/release.mjs; no editar */
+/* draftsage v1.0.12 — generado por dev/tools/release.mjs; no editar */
 
 // src/shared/strings.js
 var es = {
@@ -6755,6 +6755,7 @@ var CSS4 = `
 .ecd-seg button:disabled{opacity:.4;cursor:not-allowed}
 .ecd-main{display:flex;flex-direction:column;gap:5px;padding:7px;border:1px solid var(--ds-gold-dim);border-radius:6px;background:linear-gradient(var(--ds-gold-bg),var(--ds-bg))}
 .ecd-who{display:flex;align-items:center;gap:8px}
+.ecd-ib{flex:none;padding:0;margin:0;border:0;background:none;cursor:pointer;border-radius:50%;display:block}.ecd-ib:hover .ecp-ico{border-color:var(--ds-gold)}
 .ecd-who .ecp-ico{width:42px;height:42px;border:2px solid var(--ds-gold)}
 .ecd-name{display:flex;flex-direction:column;min-width:0;flex:1}
 .ecd-name b{font-size:var(--ds-fs-name);color:var(--ds-text-hi);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -6871,6 +6872,16 @@ function locateButton(cid, name, actions, compact = false) {
   }, icon("target", 13), compact ? null : t("ds.locate"));
   return btn;
 }
+function clickPic(info, cid, actions) {
+  if (!actions.locate) return pic(info, "ecp-ico");
+  const b = h("button", { type: "button", class: "ecd-ib", "data-locate-icon": cid, title: info.name + "\n" + t("nat.find"), onclick: () => {
+    if (!actions.locate(cid)) {
+      b.classList.add("ecd-miss");
+      b.title = t("nat.notInGrid");
+    }
+  } }, pic(info, "ecp-ico"));
+  return b;
+}
 function primaryCard(c, ctx, actions) {
   const info = ctx.cat.champion(c.cid);
   const sources = [c.lane && "LoLalytics", c.team && "iTero"].filter(Boolean).join(" + ");
@@ -6880,7 +6891,7 @@ function primaryCard(c, ctx, actions) {
     h(
       "div",
       { class: "ecd-who" },
-      pic(info, "ecp-ico"),
+      clickPic(info, c.cid, actions),
       h("div", { class: "ecd-name" }, h("b", null, info.name), h("span", { class: "ecd-sub", "data-sources": sources }, sources)),
       confTag(c.confidence)
     ),
@@ -6899,7 +6910,7 @@ function altRow(c, ctx, actions) {
   return h(
     "div",
     { class: "ecd-alt", "data-alt": c.cid, "data-why": c.why },
-    pic(info, "ecp-ico"),
+    clickPic(info, c.cid, actions),
     h(
       "div",
       { class: "ecd-name" },
@@ -7435,7 +7446,7 @@ function pickTip(p, info, meta, cat, mastery2) {
   if (p.agree) parts.push(t("adv." + p.agree));
   return parts.join(" \u2014 ") + masteryTip(mastery2, p.championId);
 }
-function advisorBlock(adv, cat, ui, actions, filters, mastery2) {
+function advisorBlock(adv, cat, ui, actions, filters, mastery2, locate = null) {
   var _a;
   if (!adv || adv.status === "idle") return null;
   if (adv.status === "error") {
@@ -7478,7 +7489,11 @@ function advisorBlock(adv, cat, ui, actions, filters, mastery2) {
         "data-pick": p.championId,
         "data-agree": p.agree,
         title: pickTip(p, info, m, cat, mastery2),
-        onclick: () => actions.advSelect(p.championId)
+        onclick: () => {
+          actions.advSelect(p.championId);
+          locate == null ? void 0 : locate(p.championId);
+        }
+        // elige para ver los motivos Y filtra la cuadrícula
       },
       pic(info, "ecp-ico"),
       p.agree ? h("span", { class: "ecp-badge" + (p.agree === "conflict" ? " ecp-bad" : "") }, icon(p.agree === "agree" ? "check" : "warn", 9)) : null,
@@ -7495,7 +7510,7 @@ function advisorBlock(adv, cat, ui, actions, filters, mastery2) {
     tags
   );
 }
-function matchupBlock(ov, cat, filters, mastery2) {
+function matchupBlock(ov, cat, filters, mastery2, locate = null) {
   const d = ov == null ? void 0 : ov.data;
   if (!d) return null;
   if (!d.rival) {
@@ -7509,14 +7524,26 @@ function matchupBlock(ov, cat, filters, mastery2) {
   const rivalName = cat.champion(d.rival).name;
   const cell = (c) => {
     const info = cat.champion(c.cid);
-    return h(
-      "div",
-      { class: "ecp-pk", "data-mu-pick": c.cid, title: t("mu.pickTip", info.name, c.wr.toFixed(1), rivalName, c.edge != null ? signed(c.edge) : "\u2013", c.n) + masteryTip(mastery2, c.cid) },
+    const btn = h(
+      "button",
+      {
+        type: "button",
+        class: "ecp-pk",
+        "data-mu-pick": c.cid,
+        title: t("mu.pickTip", info.name, c.wr.toFixed(1), rivalName, c.edge != null ? signed(c.edge) : "\u2013", c.n) + masteryTip(mastery2, c.cid) + (locate ? "\n" + t("nat.find") : ""),
+        onclick: () => {
+          if (locate && !locate(c.cid)) {
+            btn.classList.add("ecd-miss");
+            btn.title = t("nat.notInGrid");
+          }
+        }
+      },
       pic(info, "ecp-ico"),
       h("div", { class: "ecp-w " + (c.edge == null || c.edge >= 0 ? "ecp-pos" : "ecp-neg") }, c.wr.toFixed(0) + "%"),
       // Ventaja sobre su media en la línea (spec §2.1): un % alto con ventaja ~0 es fuerza general, no un counter.
       c.edge != null && h("div", { class: "ecp-w", "data-edge": c.edge, style: "color:var(--ds-meta)" }, signed(c.edge))
     );
+    return btn;
   };
   return h(
     "div",
@@ -7830,7 +7857,7 @@ async function mountPanel({ controller: controller2, catalog: catalog2, applier:
     }
     ui.live = (live2 == null ? void 0 : live2.getState()) ?? null;
     const inGame = ((_d = state.context) == null ? void 0 : _d.phase) === "game";
-    const picksTop = inGame || view === "build" ? [] : [decisionBlock(), teamContextBlock({ cat: catalog2, context: state.context, roles: enemyRoles2 == null ? void 0 : enemyRoles2.getState() }), filtersBlock(filters, ui, actions), matchupBlock(overlay2 == null ? void 0 : overlay2.getState(), catalog2, filters, mastery2), advisorBlock(advisor2 == null ? void 0 : advisor2.getState(), catalog2, ui, actions, filters, mastery2)];
+    const picksTop = inGame || view === "build" ? [] : [decisionBlock(), teamContextBlock({ cat: catalog2, context: state.context, roles: enemyRoles2 == null ? void 0 : enemyRoles2.getState() }), filtersBlock(filters, ui, actions), matchupBlock(overlay2 == null ? void 0 : overlay2.getState(), catalog2, filters, mastery2, locator), advisorBlock(advisor2 == null ? void 0 : advisor2.getState(), catalog2, ui, actions, filters, mastery2, locator)];
     const main = view === "picks" ? [rivalsBlock(state, catalog2, actions, ui, enemyRoles2 == null ? void 0 : enemyRoles2.getState())] : bodyOf(state, catalog2, actions, ui, applier2.getSettings().flashKey, enemyRoles2 == null ? void 0 : enemyRoles2.getState());
     const body = !docked && prefs.collapsed ? null : h("div", { class: "ecp-body", "data-view": view }, [...picksTop, ...main]);
     root.replaceChildren(head, ...body ? [body] : []);
