@@ -93,6 +93,25 @@ export function probeGrid(root = document) {
   return r
 }
 
+/**
+ * Zona realmente visible de una ficha: la intersección de los contenedores con desplazamiento/recorte que la rodean (la cuadrícula es una lista
+ * con scroll: las fichas fuera de su caja siguen en el DOM y `getBoundingClientRect` no las excluye). null si no queda nada visible.
+ */
+export function visibleRect(el, cache = new Map()) {
+  const r = el.getBoundingClientRect()
+  let top = Math.max(0, r.top), bottom = Math.min(window.innerHeight, r.bottom), left = Math.max(0, r.left), right = Math.min(window.innerWidth, r.right)
+  for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) {
+    let c = cache.get(a)
+    if (c === undefined) {
+      const o = getComputedStyle(a)
+      c = /(auto|scroll|hidden|clip)/.test(o.overflowY + o.overflowX) ? a.getBoundingClientRect() : null
+      cache.set(a, c)
+    }
+    if (c) { top = Math.max(top, c.top); bottom = Math.min(bottom, c.bottom); left = Math.max(left, c.left); right = Math.min(right, c.right) }
+  }
+  return { r, visible: bottom > top && right > left, top, bottom, left, right }
+}
+
 function tipOf(name, c) {
   const lines = [name]
   if (c) {
@@ -143,9 +162,12 @@ export async function mountOverlay({ overlay, catalog, getPrefs, filters = null,
     const f = veils ? filters.get() : null
     const avail = veils ? filters.availability() : null
     const nodes = []
+    const clips = new Map()
     for (const { el, id } of tiles) {
-      const r = el.getBoundingClientRect()
-      if (r.width < 16 || r.height < 16 || r.bottom < 0 || r.top > window.innerHeight) continue
+      const v = visibleRect(el, clips)
+      const r = v.r
+      // Sin marcador ni velo si la ficha está (casi) fuera de la caja desplazable de la cuadrícula: el marcador cuelga encima de la ficha (7 px) y no debe asomar por el borde.
+      if (r.width < 16 || r.height < 16 || !v.visible || v.top > r.top + r.height * 0.5 || v.bottom < r.bottom - r.height * 0.5) continue
       if (veils && !filters.matches(id, f, avail)) {
         nodes.push(h('div', { class: 'ecb-veil', 'data-veil': String(id), style: `left:${Math.round(r.left)}px;top:${Math.round(r.top)}px;width:${Math.round(r.width)}px;height:${Math.round(r.height)}px` }))
       }

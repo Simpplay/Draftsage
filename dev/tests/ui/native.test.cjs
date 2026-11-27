@@ -95,10 +95,19 @@ try {
   ok(!(await page.$('.ecp-v-picks')), 'abrir la otra vista reemplaza la actual')
   await page.keyboard.press('Escape')
 
-  // ---- Localizar la ficha con un clic ----
+  // ---- Localizar al campeón con un clic: escribe su nombre en el buscador nativo ----
+  await page.evaluate(() => { window.__ev = []; const i = document.querySelector('input.champion-input'); i.addEventListener('input', () => window.__ev.push(i.value)) })
   await page.click('.ecx-pk[data-pick="15"]')
-  ok(await page.$eval('.grid-champion[data-id="15"]', (e) => e.classList.contains('ecx-flash')), 'clic en un pick resalta su ficha en la cuadrícula')
-  ok(await page.$eval('.grid-champion[data-id="15"]', (e) => !e.classList.contains('selected')), 'no hace clic por ti: solo resalta')
+  const typed = await page.$eval('input.champion-input', (i) => i.value)
+  ok(typed.length > 0 && (await page.$eval('.ecx-pk[data-pick="15"]', (b) => b.getAttribute('aria-label'))).includes(typed), 'clic en un pick escribe su nombre en el buscador de la cuadrícula')
+  ok((await page.evaluate(() => window.__ev)).length === 1, 'el cliente recibe el evento input')
+  ok(await page.$eval('.grid-champion[data-id="15"]', (e) => !e.classList.contains('selected')), 'no hace clic por ti: solo busca')
+  await page.click('.ecx-pk[data-pick="15"]')
+  ok(await page.$eval('input.champion-input', (i) => i.value === ''), 'un segundo clic limpia la búsqueda')
+  // sin buscador visible: cae al resalte de la ficha (sin scrollIntoView)
+  await page.evaluate(() => { document.querySelector('input.champion-input').style.display = 'none' })
+  await page.click('.ecx-pk[data-pick="15"]')
+  ok(await page.$eval('.grid-champion[data-id="15"]', (e) => e.classList.contains('ecx-flash')), 'sin buscador, resalta la ficha')
   await page.waitForTimeout(1900)
   ok(await page.$eval('.grid-champion[data-id="15"]', (e) => !e.classList.contains('ecx-flash')), 'el resalte se apaga solo')
   await page.evaluate(() => document.querySelector('.grid-champion[data-id="15"]').parentElement.remove()) // ficha fuera de la parte virtualizada
